@@ -146,7 +146,7 @@ public class OrquestradorAgendamentoService {
 
         CriarAgendamentoRequest criarAgendamentoRequest = new CriarAgendamentoRequest(conversa.getSalaEscolhida(),conversa.getDataAgendamento(),conversa.getHoraInicio(), conversa.getHoraFim(),conversa.getQntdPessoas(),null,null);
 
-        ConfimacaoAgendamentoResponse agendamento = agendamentoService.create(criarAgendamentoRequest,conversa.getUsuarioId().getId());
+        ConfimacaoAgendamentoResponse agendamento = agendamentoService.criar(criarAgendamentoRequest,conversa.getUsuarioId().getId());
 
         conversa.setStatus(StatusAgendamento.CONFIRMADO);
         salvarConversa(conversa);

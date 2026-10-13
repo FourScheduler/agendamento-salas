@@ -9,6 +9,7 @@ import br.com.foursys.agendamento_salas.domain.Agendamento;
 import br.com.foursys.agendamento_salas.domain.Log;
 import br.com.foursys.agendamento_salas.domain.Sala;
 import br.com.foursys.agendamento_salas.domain.Usuario;
+import br.com.foursys.agendamento_salas.enums.StatusLog;
 import br.com.foursys.agendamento_salas.exception.*;
 import br.com.foursys.agendamento_salas.mapper.AgendamentoMapper;
 import br.com.foursys.agendamento_salas.port.out.AgendamentoRepositoryPort;
@@ -45,7 +46,7 @@ public class AgendamentoService {
     }
 
     @Transactional
-    public ConfimacaoAgendamentoResponse create(CriarAgendamentoRequest agendamentoRequest, Long idUsuario) {
+    public ConfimacaoAgendamentoResponse criar(CriarAgendamentoRequest agendamentoRequest, Long idUsuario) {
         Usuario usuario = buscarUsuario(idUsuario);
 
         Sala sala = salaRepositoryPort.buscarPorId(agendamentoRequest.salaId().getId())
@@ -94,12 +95,9 @@ public class AgendamentoService {
 
         Log log = Log
                 .builder()
-                .usuario(usuario)
-                .dataAgendamento(agendamento.getDataAgendamento())
-                .dataCriacao(agendamento.getDataCriacao())
-                .salaAgendamento(agendamento.getSalaId())
-                .horaInicioAgendamento(agendamento.getHoraInicio())
-                .horaFimAgendamento(agendamento.getHoraFim())
+                .agendamento(agendamento)
+                .usuario(usuario).status(StatusLog.CRIACAO)
+                .dataCriacao(LocalDateTime.now())
                 .build();
 
         logRepositoryPort.salvar(log);
@@ -157,6 +155,35 @@ public class AgendamentoService {
                 .toList();
     }
 
+    @Transactional
+    public void cancelarAgendamento(Long idAgendamento, Long usuarioAutenticado) {
+        Usuario usuario = buscarUsuario(usuarioAutenticado);
+
+        boolean isAdmin = usuario.getPerfilUsuario() == PerfilUsuario.ADMIN;
+
+        Agendamento agendamento = buscarAgendamento(idAgendamento);
+
+        if(!isAdmin) {
+            if(!usuario.getId().equals(usuarioAutenticado)) {
+                throw new UsuarioSemPermissaoException();
+            }
+        }
+
+        agendamento.setDataCancelamento(LocalDateTime.now());
+        agendamento.setStatus(StatusAgendamento.CANCELADO);
+
+        agendamentoRepositoryPort.cancelar(agendamento);
+
+        Log log = Log
+                .builder()
+                .agendamento(agendamento)
+                .usuario(usuario).status(StatusLog.CANCELAMENTO)
+                .dataCriacao(LocalDateTime.now())
+                .build();
+
+        logRepositoryPort.salvar(log);
+    }
+
 //  Métodos Utilitarios
     private long calcularDuracao(LocalTime inicio, LocalTime fim) {
         return Duration.between(inicio, fim).toMinutes();
@@ -194,5 +221,10 @@ public class AgendamentoService {
     private Usuario buscarUsuario(Long id) {
         return usuarioRepositoryPort.buscarPorId(id)
                 .orElseThrow(UsuarioInexistenteException::new);
+    }
+
+    private Agendamento buscarAgendamento(Long id) {
+        return agendamentoRepositoryPort.buscarPorId(id)
+                .orElseThrow(AgendamentoInexistenteException::new);
     }
 }

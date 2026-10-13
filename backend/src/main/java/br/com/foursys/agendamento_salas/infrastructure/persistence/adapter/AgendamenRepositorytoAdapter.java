@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class AgendamenRepositorytoAdapter implements AgendamentoRepositoryPort {
@@ -46,5 +47,15 @@ public class AgendamenRepositorytoAdapter implements AgendamentoRepositoryPort {
     @Override
     public boolean existeConflito(Long salaId, LocalDate dataAgendamento, LocalTime horaInicio, LocalTime horaFim) {
         return agendamentoJpaRepository.existeConflito(salaId, dataAgendamento, horaInicio, horaFim);
+    }
+
+    @Override
+    public void cancelar(Agendamento agendamento) {
+        agendamentoJpaRepository.save(agendamento);
+    }
+
+    @Override
+    public Optional<Agendamento> buscarPorId(Long id) {
+        return agendamentoJpaRepository.findById(id);
     }
 }

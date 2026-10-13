@@ -9,5 +9,6 @@ public enum StatusAgendamento {
     AGUARDANDO_CONFIRMACAO,
     RESERVANDO,
     CONFIRMADO,
+    CANCELADO,
     ERRO
 }

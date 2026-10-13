@@ -43,4 +43,6 @@ public class Agendamento {
     private StatusAgendamento status;
 
     private LocalDateTime ultimaAtualizacao;
+
+    private LocalDateTime dataCancelamento;
 }

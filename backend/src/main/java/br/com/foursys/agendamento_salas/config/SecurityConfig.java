@@ -55,7 +55,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/usuarios").permitAll()
                         .requestMatchers("/api/salas/**").permitAll()
                         .requestMatchers("/api/ollama/**").permitAll()
-                        .requestMatchers("/api/salas/admin/criar").hasAnyRole("ADMIN")
+                        //TIRAR O COMENTARIO QUANDO FINALIZAR O PROJETO
+                        //.requestMatchers("/api/salas/admin/criar").hasAnyRole("ADMIN")
+                        .requestMatchers("/api/salas/admin/criar").permitAll()
                         .requestMatchers("/api/agendamento/busca/todos").hasAnyRole("ADMIN")
                         .requestMatchers("/api/usuarios").hasAnyRole("ADMIN")
                         .anyRequest().authenticated()

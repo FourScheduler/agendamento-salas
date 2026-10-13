@@ -26,13 +26,13 @@ public class AgendamentoController {
     }
 
     @PostMapping
-    public ResponseEntity<ConfimacaoAgendamentoResponse> create(
+    public ResponseEntity<ConfimacaoAgendamentoResponse> criar(
             @RequestBody CriarAgendamentoRequest agendamentoRequest
     ) {
 
         Long usuarioAutenticado = securityUtils.get().id();
 
-        ConfimacaoAgendamentoResponse response = agendamentoService.create(agendamentoRequest, usuarioAutenticado);
+        ConfimacaoAgendamentoResponse response = agendamentoService.criar(agendamentoRequest, usuarioAutenticado);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -78,5 +78,18 @@ public class AgendamentoController {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(listaAgendamentosFiltrado);
+    }
+
+    @DeleteMapping("/cancelar/{id}")
+    public ResponseEntity<Void> cancelarAgendamento(
+            @PathVariable Long id
+    ) {
+        Long usuarioAutenticado = securityUtils.get().id();
+
+        agendamentoService.cancelarAgendamento(id, usuarioAutenticado);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .build();
     }
 }
