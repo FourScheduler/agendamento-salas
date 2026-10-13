@@ -46,6 +46,16 @@ npm.cmd run build
 
 O frontend consome somente a API do backend.
 
+### Mock da API (sem backend)
+
+Para rodar so o frontend, sem subir o Spring nem o MySQL:
+
+```powershell
+node mock\mock-api.js
+```
+
+O mock responde em `http://localhost:8080` com a lista de salas e ja atende o frontend na porta 4200.
+
 ## Fluxo do MVP
 
 1. Usuário acessa o Portal
