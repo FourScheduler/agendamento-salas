@@ -56,4 +56,27 @@ describe('Portal', () => {
     expect(link).toBeTruthy();
     expect(link?.textContent).toContain('Agendamento de Salas');
   });
+
+  it('should break the grid after the first ten apps', async () => {
+    const fixture = TestBed.createComponent(Portal);
+    await fixture.whenStable();
+
+    const lista = (fixture.nativeElement as HTMLElement).querySelector('ul.portal__apps');
+    expect(lista).toBeTruthy();
+
+    const apps = Array.from(lista?.querySelectorAll('li.portal__app') ?? []);
+    const indiceQuebra = apps.findIndex(
+      (app) => app.previousElementSibling?.classList.contains('portal__quebra'),
+    );
+    expect(indiceQuebra).toBe(10);
+  });
+
+  it('should show the Novo badge only on the booking access', async () => {
+    const fixture = TestBed.createComponent(Portal);
+    await fixture.whenStable();
+
+    const selos = (fixture.nativeElement as HTMLElement).querySelectorAll('.portal__selo');
+    expect(selos.length).toBe(1);
+    expect(selos[0].closest('li.portal__app')?.textContent).toContain('Agendamento de Salas');
+  });
 });
