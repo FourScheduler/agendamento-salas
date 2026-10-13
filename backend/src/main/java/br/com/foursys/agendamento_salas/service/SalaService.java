@@ -14,10 +14,13 @@ import br.com.foursys.agendamento_salas.port.out.SalaRepositoryPort;
 import br.com.foursys.agendamento_salas.port.out.UsuarioRepositoryPort;
 import org.springframework.stereotype.Service;
 
+import java.text.Normalizer;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -64,21 +67,91 @@ public class SalaService {
                 .toList();
     }
 
-    public List<SalaResponse> buscarSalasDisponiveis(LocalDate data, LocalTime inicio, LocalTime fim, Integer pessoas, String email) {
+
+    public List<SalaResponse> buscarSalasDisponiveis(
+            LocalDate data,
+            LocalTime inicio,
+            LocalTime fim,
+            Integer pessoas,
+            String email
+    ) {
+        return buscarSalasDisponiveis(
+                data, inicio, fim, pessoas, null, email
+        );
+    }
+
+    public List<SalaResponse> buscarSalasDisponiveis(
+            LocalDate data,
+            LocalTime inicio,
+            LocalTime fim,
+            Integer pessoas,
+            String localizacao,
+            String email
+    ) {
         validar(data, inicio, fim, pessoas);
 
-        if (calcularDuracao(inicio, fim) > 120 && perfilDoUsuario(email) == PerfilUsuario.USER) {
+        if (calcularDuracao(inicio, fim) > 120
+                && perfilDoUsuario(email) == PerfilUsuario.USER) {
             throw new ValidacaoBuscaException(
                     "A duração não pode ser maior que 2 horas."
             );
         }
 
-        return salaRepositoryPort.buscarDisoniveis(data,inicio,fim,pessoas)
+        return salaRepositoryPort
+                .buscarDisoniveis(data, inicio, fim, pessoas)
                 .stream()
+                .sorted(
+                        Comparator
+                                .comparingInt((Sala sala) ->
+                                        pontuacaoLocalizacao(
+                                                sala.getLocalizacao(),
+                                                localizacao
+                                        )
+                                )
+                                .thenComparingInt(Sala::getCapacidade)
+                )
+
                 .map(salaMapper::entityToResponse)
                 .toList();
-
     }
+
+    private int pontuacaoLocalizacao(
+            String localizacaoSala,
+            String localizacaoDesejada
+    ) {
+        if (localizacaoDesejada == null
+                || localizacaoDesejada.isBlank()) {
+            return 0;
+        }
+
+        if (localizacaoSala == null || localizacaoSala.isBlank()) {
+            return 2;
+        }
+
+        String sala = normalizarLocalizacao(localizacaoSala);
+        String desejada = normalizarLocalizacao(localizacaoDesejada);
+
+        if (sala.equals(desejada)) {
+            return 0;
+        }
+
+        if (sala.contains(desejada) || desejada.contains(sala)) {
+            return 1;
+        }
+
+        return 2;
+    }
+
+    private String normalizarLocalizacao(String localizacao) {
+        return Normalizer.normalize(
+                        localizacao.trim(),
+                        Normalizer.Form.NFD
+                )
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("\\s+", " ");
+    }
+
 
     private String normalizarNome(String nome) {
         return nome.trim().replaceAll("\\s+", " ");

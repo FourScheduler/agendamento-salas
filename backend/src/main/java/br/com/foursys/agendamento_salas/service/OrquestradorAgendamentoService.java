@@ -67,7 +67,8 @@ public class OrquestradorAgendamentoService {
                         conversa.getDataAgendamento(),
                         conversa.getHoraInicio(),
                         conversa.getHoraFim(),
-                        conversa.getQntdPessoas()
+                        conversa.getQntdPessoas(),
+                        conversa.getLocalizacao()
                 );
 
 
@@ -201,6 +202,14 @@ public class OrquestradorAgendamentoService {
                     interpretacao.quantidadePessoas().valor()
             );
         }
+
+        if (interpretacao.localizacao() != null
+                && interpretacao.localizacao().informado()) {
+
+            conversa.setLocalizacao(
+                    interpretacao.localizacao().valor()
+            );
+        }
     }
 
 
@@ -242,7 +251,9 @@ public class OrquestradorAgendamentoService {
                 conversa.getHoraInicio(),
                 conversa.getHoraFim(),
                 conversa.getQntdPessoas(),
+                conversa.getLocalizacao(),
                 conversa.getUsuarioId().getEmail()
+
         );
     }
 

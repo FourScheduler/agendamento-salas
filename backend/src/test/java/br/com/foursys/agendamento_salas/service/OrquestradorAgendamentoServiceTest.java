@@ -115,12 +115,14 @@ class OrquestradorAgendamentoServiceTest {
                 isNull(),
                 isNull(),
                 isNull(),
+                isNull(),
                 isNull()
         )).thenReturn(new InterpretarAgendamentoResponse(
                 new CampoInterpretado<>(null, false),
                 new CampoInterpretado<>(null, false),
                 new CampoInterpretado<>(null, false),
-                new CampoInterpretado<>(null, false)
+                new CampoInterpretado<>(null, false),
+                new CampoInterpretado<>(null,false)
         ));
 
         when(agendamentoConversaRepositoryPort.salvar(any(AgendamentoConversa.class)))
@@ -144,6 +146,7 @@ class OrquestradorAgendamentoServiceTest {
 
         verify(ollamaService).interpretarAgendamento(
                 eq("quero reservar uma sala"),
+                isNull(),
                 isNull(),
                 isNull(),
                 isNull(),
@@ -171,12 +174,14 @@ class OrquestradorAgendamentoServiceTest {
                 eq(conversa.getDataAgendamento()),
                 eq(conversa.getHoraInicio()),
                 eq(conversa.getHoraFim()),
-                eq(5)
+                eq(5),
+                isNull()
         )).thenReturn(new InterpretarAgendamentoResponse(
                 new CampoInterpretado<>(null, false),
                 new CampoInterpretado<>(null, false),
                 new CampoInterpretado<>(null, false),
-                new CampoInterpretado<>(null, false)
+                new CampoInterpretado<>(null, false),
+                new CampoInterpretado<>("tamboré", true)
         ));
 
         when(salaService.buscarSalasDisponiveis(
@@ -184,6 +189,7 @@ class OrquestradorAgendamentoServiceTest {
                 any(LocalTime.class),
                 any(LocalTime.class),
                 eq(5),
+                eq("tamboré"),
                 eq("teste@email.com")
         )).thenReturn(List.of());
 
@@ -200,14 +206,18 @@ class OrquestradorAgendamentoServiceTest {
         );
         assertTrue(resposta.sugestoes().isEmpty());
 
+        assertEquals("tamboré", conversa.getLocalizacao());
+
         verify(salaService).buscarSalasDisponiveis(
                 conversa.getDataAgendamento(),
                 conversa.getHoraInicio(),
                 conversa.getHoraFim(),
                 5,
+                "tamboré",
                 "teste@email.com"
         );
     }
+
 
     @Test
     void deveRetornarSugestoesQuandoExistiremSalasDisponiveis() {
@@ -219,18 +229,22 @@ class OrquestradorAgendamentoServiceTest {
         when(agendamentoConversaRepositoryPort.buscarPorId(1L))
                 .thenReturn(Optional.of(conversa));
 
+
         when(ollamaService.interpretarAgendamento(
                 eq("amanhã"),
-                any(LocalDate.class),
-                any(LocalTime.class),
-                any(LocalTime.class),
-                eq(5)
+                eq(conversa.getDataAgendamento()),
+                eq(conversa.getHoraInicio()),
+                eq(conversa.getHoraFim()),
+                eq(5),
+                isNull()
         )).thenReturn(new InterpretarAgendamentoResponse(
                 new CampoInterpretado<>(null, false),
                 new CampoInterpretado<>(null, false),
                 new CampoInterpretado<>(null, false),
-                new CampoInterpretado<>(null, false)
+                new CampoInterpretado<>(null, false),
+                new CampoInterpretado<>("Tamboré", true)
         ));
+
 
         SalaResponse salaResponse =
                 new SalaResponse(10L, "Sala Focus", true,2, "Tamboré");
@@ -240,6 +254,7 @@ class OrquestradorAgendamentoServiceTest {
                 any(LocalTime.class),
                 any(LocalTime.class),
                 eq(5),
+                eq("Tamboré"),
                 eq("teste@email.com")
         )).thenReturn(List.of(salaResponse));
 
@@ -265,6 +280,7 @@ class OrquestradorAgendamentoServiceTest {
                 any(LocalTime.class),
                 any(LocalTime.class),
                 eq(5),
+                eq("Tamboré"),
                 eq("teste@email.com")
         );
     }

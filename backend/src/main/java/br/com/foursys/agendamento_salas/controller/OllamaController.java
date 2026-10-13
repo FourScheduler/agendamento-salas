@@ -25,6 +25,6 @@ public class OllamaController {
             @RequestParam String mensagem
     ) {
         AgendamentoConversa conversa = orquestradorAgendamentoService.buscarConversa(conversaId);
-        return ollamaService.interpretarAgendamento(mensagem,conversa.getDataAgendamento(),conversa.getHoraInicio(),conversa.getHoraFim(),conversa.getQntdPessoas());
+        return ollamaService.interpretarAgendamento(mensagem,conversa.getDataAgendamento(),conversa.getHoraInicio(),conversa.getHoraFim(),conversa.getQntdPessoas(), conversa.getLocalizacao());
     }
 }

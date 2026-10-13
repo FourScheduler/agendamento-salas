@@ -36,4 +36,6 @@ public class AgendamentoConversa {
     private Sala salaEscolhida;
 
     private String titulo;
+
+    private String localizacao;
 }
