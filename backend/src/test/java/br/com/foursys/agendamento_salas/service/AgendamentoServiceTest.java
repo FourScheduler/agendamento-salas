@@ -9,6 +9,7 @@ import br.com.foursys.agendamento_salas.dto.response.AgendamentoResponse;
 import br.com.foursys.agendamento_salas.dto.response.ConfimacaoAgendamentoResponse;
 import br.com.foursys.agendamento_salas.enums.PerfilUsuario;
 import br.com.foursys.agendamento_salas.enums.StatusAgendamento;
+import br.com.foursys.agendamento_salas.enums.StatusLog;
 import br.com.foursys.agendamento_salas.exception.CapacidadeNaoSuportadaException;
 import br.com.foursys.agendamento_salas.exception.HorarioAgendamentoInvalidoException;
 import br.com.foursys.agendamento_salas.exception.SalaIndisponivelException;
@@ -91,7 +92,7 @@ class AgendamentoServiceTest {
                 return salvo;
             });
 
-            ConfimacaoAgendamentoResponse confirmacao = service.create(request, usuario.getId());
+            ConfimacaoAgendamentoResponse confirmacao = service.criar(request, usuario.getId());
 
             ArgumentCaptor<Agendamento> agendamentoCaptor = ArgumentCaptor.forClass(Agendamento.class);
             ArgumentCaptor<Log> logCaptor = ArgumentCaptor.forClass(Log.class);
@@ -113,10 +114,8 @@ class AgendamentoServiceTest {
             assertThat(salvo.getQntdPessoas()).isEqualTo(8);
             assertThat(salvo.getDataCriacao()).isNotNull();
             assertThat(log.getUsuario()).isEqualTo(usuario);
-            assertThat(log.getSalaAgendamento()).isEqualTo(sala);
-            assertThat(log.getDataAgendamento()).isEqualTo(request.data());
-            assertThat(log.getHoraInicioAgendamento()).isEqualTo(request.horaInicio());
-            assertThat(log.getHoraFimAgendamento()).isEqualTo(request.horaFim());
+            assertThat(log.getAgendamento()).isSameAs(salvo);
+            assertThat(log.getStatus()).isEqualTo(StatusLog.CRIACAO);
         }
 
         @Test
@@ -131,7 +130,7 @@ class AgendamentoServiceTest {
             prepararCriacao(admin, sala, request);
             when(usuarioRepositoryPort.buscarPorId(solicitante.getId())).thenReturn(Optional.of(solicitante));
 
-            ConfimacaoAgendamentoResponse confirmacao = service.create(request, admin.getId());
+            ConfimacaoAgendamentoResponse confirmacao = service.criar(request, admin.getId());
 
             ArgumentCaptor<Agendamento> agendamentoCaptor = ArgumentCaptor.forClass(Agendamento.class);
             verify(agendamentoRepositoryPort).salvar(agendamentoCaptor.capture());
@@ -147,7 +146,7 @@ class AgendamentoServiceTest {
 
             assertThrows(
                     UsuarioInexistenteException.class,
-                    () -> service.create(request(sala(12L), null, LocalTime.of(9, 0), LocalTime.of(10, 0)), 7L)
+                    () -> service.criar(request(sala(12L), null, LocalTime.of(9, 0), LocalTime.of(10, 0)), 7L)
             );
 
             verifyNoInteractions(salaRepositoryPort, agendamentoRepositoryPort, logRepositoryPort);
@@ -162,7 +161,7 @@ class AgendamentoServiceTest {
 
             assertThrows(
                     SalaInexistenteException.class,
-                    () -> service.create(request(sala(12L), null, LocalTime.of(9, 0), LocalTime.of(10, 0)), 7L)
+                    () -> service.criar(request(sala(12L), null, LocalTime.of(9, 0), LocalTime.of(10, 0)), 7L)
             );
 
             verifyNoInteractions(agendamentoRepositoryPort, logRepositoryPort);
@@ -181,7 +180,7 @@ class AgendamentoServiceTest {
 
             ValidacaoBuscaException exception = assertThrows(
                     ValidacaoBuscaException.class,
-                    () -> service.create(request, 7L)
+                    () -> service.criar(request, 7L)
             );
 
             assertThat(exception).hasMessage("A duração não pode ser maior que 2 horas.");
@@ -199,7 +198,7 @@ class AgendamentoServiceTest {
                     .thenReturn(Optional.of(usuario(7L, PerfilUsuario.USER)));
             when(salaRepositoryPort.buscarPorId(sala.getId())).thenReturn(Optional.of(sala));
 
-            assertThrows(CapacidadeNaoSuportadaException.class, () -> service.create(request, 7L));
+            assertThrows(CapacidadeNaoSuportadaException.class, () -> service.criar(request, 7L));
 
             verifyNoInteractions(logRepositoryPort, agendamentoRepositoryPort);
         }
@@ -218,7 +217,7 @@ class AgendamentoServiceTest {
                     sala.getId(), request.data(), request.horaInicio(), request.horaFim()
             )).thenReturn(true);
 
-            assertThrows(SalaIndisponivelException.class, () -> service.create(request, 7L));
+            assertThrows(SalaIndisponivelException.class, () -> service.criar(request, 7L));
 
             verify(agendamentoRepositoryPort, never()).salvar(any());
             verify(logRepositoryPort, never()).salvar(any());
@@ -233,7 +232,7 @@ class AgendamentoServiceTest {
             );
             prepararCriacao(usuario(7L, PerfilUsuario.USER), sala, request);
 
-            assertThrows(SalaIndisponivelException.class, () -> service.create(request, 7L));
+            assertThrows(SalaIndisponivelException.class, () -> service.criar(request, 7L));
 
             verify(agendamentoRepositoryPort, never()).salvar(any());
             verify(logRepositoryPort, never()).salvar(any());
@@ -250,7 +249,7 @@ class AgendamentoServiceTest {
                     .thenReturn(Optional.of(usuario(7L, PerfilUsuario.USER)));
             when(salaRepositoryPort.buscarPorId(sala.getId())).thenReturn(Optional.of(sala));
 
-            assertThrows(HorarioAgendamentoInvalidoException.class, () -> service.create(request, 7L));
+            assertThrows(HorarioAgendamentoInvalidoException.class, () -> service.criar(request, 7L));
 
             verify(agendamentoRepositoryPort, never()).salvar(any());
             verify(logRepositoryPort, never()).salvar(any());
@@ -265,7 +264,7 @@ class AgendamentoServiceTest {
             );
             prepararCriacao(usuario(7L, PerfilUsuario.USER), sala, request);
 
-            assertThrows(UsuarioSemPermissaoException.class, () -> service.create(request, 7L));
+            assertThrows(UsuarioSemPermissaoException.class, () -> service.criar(request, 7L));
 
             verify(usuarioRepositoryPort, never()).buscarPorId(8L);
             verify(agendamentoRepositoryPort, never()).salvar(any());
@@ -282,7 +281,7 @@ class AgendamentoServiceTest {
             prepararCriacao(usuario(7L, PerfilUsuario.ADMIN), sala, request);
             when(usuarioRepositoryPort.buscarPorId(8L)).thenReturn(Optional.empty());
 
-            assertThrows(UsuarioInexistenteException.class, () -> service.create(request, 7L));
+            assertThrows(UsuarioInexistenteException.class, () -> service.criar(request, 7L));
 
             verify(agendamentoRepositoryPort, never()).salvar(any());
             verify(logRepositoryPort, never()).salvar(any());
