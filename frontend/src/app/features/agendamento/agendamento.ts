@@ -1,11 +1,7 @@
 import { DestroyRef, Component, OnInit, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { EMPTY, Subject, catchError, switchMap } from 'rxjs';
-import { ConfirmacaoAgendamento, CredenciaisLogin } from '../../core/models/api.models';
+import { BuscaSalasRequest } from '../../core/models/api.models';
 import { mensagemDeErro } from '../../core/http/api-error';
-import { AgendamentoService } from '../../core/services/agendamento.service';
-import { AuthService } from '../../core/auth/auth.service';
 import { SalasService } from '../../core/services/salas.service';
 import { SalaPlanta, resolverEstados } from '../../core/data/mapa-mock';
 import {
@@ -21,16 +17,13 @@ import { PainelReserva } from './painel-reserva';
 
 @Component({
   selector: 'app-agendamento',
-  imports: [MapaSalas, PainelReserva, RouterLink],
+  imports: [MapaSalas, PainelReserva],
   templateUrl: './agendamento.html',
   styleUrl: './agendamento.css',
 })
 export class Agendamento implements OnInit {
   private readonly salasService = inject(SalasService);
-  private readonly agendamentoService = inject(AgendamentoService);
-  private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly buscas = new Subject<void>();
 
   readonly duracoes = [30, 60, 90, 120];
   readonly hoje = hojeIso();
@@ -47,12 +40,6 @@ export class Agendamento implements OnInit {
   readonly erroApi = signal<string | null>(null);
   readonly erroValidacao = signal<string | null>(null);
 
-  readonly logado = this.authService.logado;
-  readonly ocupado = signal(false);
-  readonly erroLogin = signal<string | null>(null);
-  readonly erroConfirmacao = signal<string | null>(null);
-  readonly reserva = signal<ConfirmacaoAgendamento | null>(null);
-
   readonly salaEscolhida = computed(() => {
     const nome = this.selecionada();
     if (!nome) {
@@ -63,39 +50,6 @@ export class Agendamento implements OnInit {
   });
 
   ngOnInit(): void {
-    this.buscas
-      .pipe(
-        switchMap(() => {
-          this.erroValidacao.set(null);
-          this.erroApi.set(null);
-          this.carregando.set(true);
-
-          return this.salasService
-            .buscarDisponiveis({
-              data: this.data(),
-              horaInicio: this.horaInicio(),
-              horaFim: horaFinal(this.horaInicio(), this.duracao()),
-              qntdPessoas: this.pessoas(),
-            })
-            .pipe(
-              catchError((erro: unknown) => {
-                this.salas.set([]);
-                this.selecionada.set(null);
-                this.carregando.set(false);
-                this.erroApi.set(mensagemDeErro(erro));
-                return EMPTY;
-              }),
-            );
-        }),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((respostas) => {
-        const livres = respostas.map((sala) => sala.nome);
-        this.atualizarSelecao(livres);
-        this.salas.set(resolverEstados(livres));
-        this.carregando.set(false);
-      });
-
     this.buscar();
   }
 
@@ -136,73 +90,34 @@ export class Agendamento implements OnInit {
       return;
     }
 
-    this.buscas.next();
-  }
+    const requisicao: BuscaSalasRequest = {
+      data: this.data(),
+      horaInicio: this.horaInicio(),
+      horaFim: horaFinal(this.horaInicio(), this.duracao()),
+      qntdPessoas: this.pessoas(),
+    };
 
-  entrar(credenciais: CredenciaisLogin): void {
-    this.ocupado.set(true);
-    this.erroLogin.set(null);
+    this.erroValidacao.set(null);
+    this.erroApi.set(null);
+    this.carregando.set(true);
 
-    this.authService
-      .login(credenciais)
+    this.salasService
+      .buscarDisponiveis(requisicao)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => this.ocupado.set(false),
-        error: (erro: unknown) => {
-          this.ocupado.set(false);
-          this.erroLogin.set(mensagemDeErro(erro));
-        },
-      });
-  }
-
-  confirmar(): void {
-    const sala = this.salaEscolhida();
-    if (!sala || !this.logado()) {
-      return;
-    }
-
-    this.ocupado.set(true);
-    this.erroLogin.set(null);
-    this.erroConfirmacao.set(null);
-
-    this.agendamentoService
-      .confirmar({
-        salaId: { id: sala.id },
-        data: this.data(),
-        horaInicio: this.horaInicio(),
-        horaFim: horaFinal(this.horaInicio(), this.duracao()),
-        qntdPessoas: this.pessoas(),
-        titulo: 'Reunião',
-      })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (reserva) => {
-          this.ocupado.set(false);
-          this.reserva.set(reserva);
+        next: (respostas) => {
+          const livres = respostas.map((sala) => sala.nome);
+          this.atualizarSelecao(livres);
+          this.salas.set(resolverEstados(livres));
+          this.carregando.set(false);
         },
         error: (erro: unknown) => {
-          this.ocupado.set(false);
-          this.erroConfirmacao.set(mensagemDeErro(erro));
-          if (this.ehNaoAutenticado(erro)) {
-            this.authService.logout();
-          }
+          this.salas.set([]);
+          this.selecionada.set(null);
+          this.carregando.set(false);
+          this.erroApi.set(mensagemDeErro(erro));
         },
       });
-  }
-
-  novaReserva(): void {
-    this.reserva.set(null);
-    this.selecionada.set(null);
-    this.buscar();
-  }
-
-  tentarNovamente(): void {
-    this.erroConfirmacao.set(null);
-    this.buscar();
-  }
-
-  private ehNaoAutenticado(erro: unknown): boolean {
-    return typeof erro === 'object' && erro !== null && 'status' in erro && erro.status === 401;
   }
 
   private atualizarSelecao(livres: string[]): void {

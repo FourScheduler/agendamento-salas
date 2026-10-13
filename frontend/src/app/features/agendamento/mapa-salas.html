@@ -25,20 +25,9 @@
     </p>
   </header>
 
-  <div class="planta__corpo" [attr.aria-busy]="carregando()">
-    @if (carregando() && salas().length === 0) {
-      <div class="esqueletoMapa" role="status" aria-label="Verificando a planta...">
-        <div class="esqueletoMapa__grade" aria-hidden="true">
-          @for (bloco of [1, 2, 3, 4, 5, 6, 7, 8]; track bloco) {
-            <app-skeleton altura="5rem" raio="8px" />
-          }
-        </div>
-        <div class="esqueletoMapa__lista" aria-hidden="true">
-          @for (linha of [1, 2, 3]; track linha) {
-            <app-skeleton altura="2.75rem" raio="8px" />
-          }
-        </div>
-      </div>
+  <div class="planta__corpo">
+    @if (carregando()) {
+      <app-carregando texto="Verificando a planta..." />
     } @else if (erro(); as mensagem) {
       <app-erro
         titulo="Não foi possível carregar a planta"
@@ -51,79 +40,77 @@
         mensagem="Ajuste o horário, a duração ou a quantidade de pessoas."
       />
     } @else {
-      <div class="planta__conteudo" [class.planta__conteudo--recarregando]="carregando()">
-        <div class="planta__rolagem">
-          <div class="planta__grade">
-            <div class="faixa faixa--margem faixa--vertical" aria-hidden="true">
-              <span>Circulação</span>
-            </div>
-            <div class="faixa faixa--topo" aria-hidden="true"><span>Circulação</span></div>
-            <div class="faixa faixa--corredor faixa--vertical" aria-hidden="true">
-              <span>Circulação</span>
-            </div>
-            <div class="faixa faixa--janelas faixa--vertical" aria-hidden="true">
-              <span>Janelas</span>
-            </div>
-            <div class="faixa faixa--rodape" aria-hidden="true"><span>Mesas</span></div>
-  
-            <div class="estrutural estrutural--servidor">
-              <span>Sala de servidores</span>
-            </div>
-            <div class="estrutural estrutural--suporte">
-              <span>Time do suporte</span>
-            </div>
-  
-            <div class="sala sala--restrita">
-              <span class="sala__nome">Auditório</span>
-              <span class="sala__capacidade">A definir</span>
-              <span class="sala__restricao dica" tabindex="0" aria-describedby="dica-auditorio">
-                Agendamento somente com um responsável
-                <span class="dica__caixa" id="dica-auditorio" role="tooltip">
-                  Reserve com a equipe de Facilities
-                </span>
-              </span>
-            </div>
-  
-            @for (sala of salas(); track sala.id) {
-              <button
-                type="button"
-                class="sala"
-                [style.grid-area]="sala.area"
-                [class.sala--ocupada]="sala.estado === 'ocupada'"
-                [class.sala--indisponivel]="sala.estado === 'indisponivel'"
-                [class.sala--selecionada]="selecionada() === sala.nome"
-                [attr.aria-pressed]="selecionada() === sala.nome"
-                [disabled]="sala.estado !== 'disponivel'"
-                (click)="selecionar.emit(sala.nome)"
-              >
-                <span class="sala__nome">{{ sala.nome }}</span>
-                <span class="sala__capacidade">Até {{ sala.capacidade }}</span>
-  
-                @if (selecionada() === sala.nome) {
-                  <span class="sala__marca" aria-hidden="true">
-                    <svg viewBox="0 0 12 12" width="10" height="10" x="10" y="3">
-                      <path
-                        d="M2 6.4 4.6 9 10 3.4"
-                        fill="none"
-                        stroke="#ffffff"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-                }
-              </button>
-            }
+      <div class="planta__rolagem">
+        <div class="planta__grade">
+          <div class="faixa faixa--margem faixa--vertical" aria-hidden="true">
+            <span>Circulação</span>
           </div>
-        </div>
+          <div class="faixa faixa--topo" aria-hidden="true"><span>Circulação</span></div>
+          <div class="faixa faixa--corredor faixa--vertical" aria-hidden="true">
+            <span>Circulação</span>
+          </div>
+          <div class="faixa faixa--janelas faixa--vertical" aria-hidden="true">
+            <span>Janelas</span>
+          </div>
+          <div class="faixa faixa--rodape" aria-hidden="true"><span>Mesas</span></div>
 
-        <app-lista-salas
-          [salas]="salas()"
-          [selecionada]="selecionada()"
-          (selecionar)="selecionar.emit($event)"
-        />
+          <div class="estrutural estrutural--servidor">
+            <span>Sala de servidores</span>
+          </div>
+          <div class="estrutural estrutural--suporte">
+            <span>Time do suporte</span>
+          </div>
+
+          <div class="sala sala--restrita">
+            <span class="sala__nome">Auditório</span>
+            <span class="sala__capacidade">A definir</span>
+            <span class="sala__restricao dica" tabindex="0" aria-describedby="dica-auditorio">
+              Agendamento somente com um responsável
+              <span class="dica__caixa" id="dica-auditorio" role="tooltip">
+                Reserve com a equipe de Facilities
+              </span>
+            </span>
+          </div>
+
+          @for (sala of salas(); track sala.id) {
+            <button
+              type="button"
+              class="sala"
+              [style.grid-area]="sala.area"
+              [class.sala--ocupada]="sala.estado === 'ocupada'"
+              [class.sala--indisponivel]="sala.estado === 'indisponivel'"
+              [class.sala--selecionada]="selecionada() === sala.nome"
+              [attr.aria-pressed]="selecionada() === sala.nome"
+              [disabled]="sala.estado !== 'disponivel'"
+              (click)="selecionar.emit(sala.nome)"
+            >
+              <span class="sala__nome">{{ sala.nome }}</span>
+              <span class="sala__capacidade">Até {{ sala.capacidade }}</span>
+
+              @if (selecionada() === sala.nome) {
+                <span class="sala__marca" aria-hidden="true">
+                  <svg viewBox="0 0 12 12" width="10" height="10" x="10" y="3">
+                    <path
+                      d="M2 6.4 4.6 9 10 3.4"
+                      fill="none"
+                      stroke="#ffffff"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+              }
+            </button>
+          }
+        </div>
       </div>
+
+      <app-lista-salas
+        [salas]="salas()"
+        [selecionada]="selecionada()"
+        (selecionar)="selecionar.emit($event)"
+      />
     }
   </div>
 

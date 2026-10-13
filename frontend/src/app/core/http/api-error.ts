@@ -14,7 +14,7 @@ const MENSAGENS_PADRAO: Record<number, string> = {
 
 export function paraApiError(erro: unknown): ApiError {
   if (erro instanceof HttpErrorResponse) {
-    const corpo = interpretarCorpo(erro.error);
+    const corpo = erro.error;
     if (ehErroResposta(corpo)) {
       return { status: corpo.status, message: corpo.message };
     }
@@ -22,18 +22,6 @@ export function paraApiError(erro: unknown): ApiError {
   }
 
   return { status: 0, message: MENSAGENS_PADRAO[0] };
-}
-
-function interpretarCorpo(corpo: unknown): unknown {
-  if (typeof corpo !== 'string' || corpo.length === 0) {
-    return corpo;
-  }
-
-  try {
-    return JSON.parse(corpo);
-  } catch {
-    return corpo;
-  }
 }
 
 export const apiErrorInterceptor: HttpInterceptorFn = (requisicao, proximo) =>

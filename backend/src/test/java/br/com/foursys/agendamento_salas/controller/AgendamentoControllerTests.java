@@ -95,20 +95,6 @@ class AgendamentoControllerTests {
     }
 
     @Test
-    @DisplayName("Deve retornar apenas os meus agendamentos em /meus")
-    void deveRetornarMeusAgendamentos() {
-        when(securityUtils.get()).thenReturn(new AuthenticatedUser(42L, "usuario@email.com"));
-        List<AgendamentoResponse> expected = List.of(agendamentoResponse());
-        when(agendamentoService.buscaAgendamentos(42L, false)).thenReturn(expected);
-
-        var response = agendamentoController.buscaMeusAgendamentos();
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(expected, response.getBody());
-        verify(agendamentoService).buscaAgendamentos(42L, false);
-    }
-
-    @Test
     @DisplayName("Deve retornar todos os agendamentos pela consulta administrativa")
     void deveRetornarTodosAgendamentos() {
         when(securityUtils.get()).thenReturn(new AuthenticatedUser(7L, "admin@email.com"));

@@ -33,21 +33,4 @@ describe('App', () => {
     expect(compiled.querySelector('.topbar')).toBeTruthy();
     expect(compiled.textContent).toContain('Portal');
   });
-
-  it('should render the CCH label without a navigation menu', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.topbar__cch')?.textContent?.trim()).toBe('CCH');
-    expect(compiled.querySelector('.topbar__menu')).toBeNull();
-  });
-
-  it('should render the notification and clock icons', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.topbar__sino')).toBeTruthy();
-    expect(compiled.querySelector('.topbar__badge')?.textContent?.trim()).toBe('1');
-    expect(compiled.querySelector('.topbar__relogio')).toBeTruthy();
-  });
 });
