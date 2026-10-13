@@ -18,3 +18,7 @@ backend/target/
 .github/instructions/foursys-*.instructions.md
 agentes_foursys/
 doc_projeto/
+
+# Skills locais de agentes (instalacao local do playwriter)
+.agents/
+skills-lock.json
