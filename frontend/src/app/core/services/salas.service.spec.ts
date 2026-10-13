@@ -36,7 +36,7 @@ describe('SalasService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should search available rooms with query params', () => {
+  it('should search available rooms with a GET body', () => {
     const esperadas: Sala[] = [
       {
         id: 1,
@@ -51,15 +51,9 @@ describe('SalasService', () => {
       expect(respostas).toEqual(esperadas);
     });
 
-    const chamada = httpMock.expectOne(
-      (requisicaoHttp) => requisicaoHttp.url === url,
-    );
+    const chamada = httpMock.expectOne(url);
     expect(chamada.request.method).toBe('GET');
-    expect(chamada.request.params.get('data')).toBe('2026-10-10');
-    expect(chamada.request.params.get('inicio')).toBe('09:00');
-    expect(chamada.request.params.get('fim')).toBe('10:00');
-    expect(chamada.request.params.get('pessoas')).toBe('6');
-    expect(chamada.request.body).toBeNull();
+    expect(chamada.request.body).toEqual(requisicao);
     chamada.flush(esperadas);
   });
 
@@ -70,9 +64,7 @@ describe('SalasService', () => {
       error: (erro: unknown) => (erroRecebido = erro),
     });
 
-    const chamada = httpMock.expectOne(
-      (requisicaoHttp) => requisicaoHttp.url === url,
-    );
+    const chamada = httpMock.expectOne(url);
     chamada.flush(
       { status: 400, message: 'A data não pode estar no passado.' },
       { status: 400, statusText: 'Bad Request' },

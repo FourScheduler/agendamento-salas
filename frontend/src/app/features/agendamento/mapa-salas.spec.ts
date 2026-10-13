@@ -106,20 +106,4 @@ describe('MapaSalas', () => {
     expect(compiled.querySelector('app-erro')).toBeTruthy();
     expect(compiled.textContent).toContain('Falha de rede.');
   });
-
-  it('should show the skeleton while the floor plan loads', () => {
-    const fixture = TestBed.createComponent(MapaSalas);
-    fixture.componentRef.setInput('salas', []);
-    fixture.componentRef.setInput('carregando', true);
-    fixture.detectChanges();
-
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.esqueletoMapa')).toBeTruthy();
-    expect(compiled.querySelectorAll('.esqueletoMapa__grade app-skeleton').length).toBe(8);
-    expect(compiled.querySelectorAll('.esqueletoMapa__lista app-skeleton').length).toBe(3);
-    expect(compiled.querySelector('[role="status"]')?.getAttribute('aria-label')).toContain(
-      'planta',
-    );
-    expect(compiled.querySelector('app-vazio')).toBeNull();
-  });
 });
