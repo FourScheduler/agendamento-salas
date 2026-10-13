@@ -5,23 +5,25 @@ import br.com.foursys.agendamento_salas.domain.Sala;
 import br.com.foursys.agendamento_salas.domain.Usuario;
 import br.com.foursys.agendamento_salas.enums.PerfilUsuario;
 import br.com.foursys.agendamento_salas.enums.StatusAgendamento;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Transactional
 @DisplayName("AgendamentoJpaRepository - Conflito de horário e busca de disponibilidade")
 class AgendamentoJpaRepositoryTests {
 
@@ -43,13 +45,6 @@ class AgendamentoJpaRepositoryTests {
     void setUp() {
         usuario = usuarioJpaRepository.save(usuario());
         sala = salaJpaRepository.save(sala());
-    }
-
-    @AfterEach
-    void tearDown() {
-        agendamentoJpaRepository.deleteAll();
-        salaJpaRepository.deleteAll();
-        usuarioJpaRepository.deleteAll();
     }
 
     @Test
@@ -131,7 +126,7 @@ class AgendamentoJpaRepositoryTests {
 
     private Usuario usuario() {
         Usuario novo = new Usuario();
-        novo.setEmail("teste.conflito@foursys.com.br");
+        novo.setEmail("teste.conflito." + UUID.randomUUID() + "@foursys.com.br");
         novo.setNome("Teste Conflito");
         novo.setPassword("$2a$10$abcdefghijklmnopqrstuv");
         novo.setPerfilUsuario(PerfilUsuario.USER);
