@@ -66,6 +66,7 @@ class OllamaServiceTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -126,6 +127,7 @@ class OllamaServiceTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -177,6 +179,7 @@ class OllamaServiceTest {
 
         var resposta = ollamaService.interpretarAgendamento(
                 "quero uma sala amanhã das 14h às 15h para cinco pessoas",
+                null,
                 null,
                 null,
                 null,
@@ -240,7 +243,8 @@ class OllamaServiceTest {
                 null,
                 LocalTime.of(14, 0),
                 LocalTime.of(15, 0),
-                5
+                5,
+                "Tamboré"
         );
 
         assertNotNull(resposta);
@@ -274,6 +278,7 @@ class OllamaServiceTest {
                 RuntimeException.class,
                 () -> ollamaService.interpretarAgendamento(
                         "quero uma sala amanhã",
+                        null,
                         null,
                         null,
                         null,

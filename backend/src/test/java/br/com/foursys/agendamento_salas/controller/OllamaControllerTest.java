@@ -72,6 +72,10 @@ class OllamaControllerTest {
                         new CampoInterpretado<>(
                                 5,
                                 true
+                        ),
+                        new CampoInterpretado<>(
+                                "Tamboré",
+                                true
                         )
                 );
 
@@ -93,7 +97,8 @@ class OllamaControllerTest {
                 dataConhecida,
                 inicioConhecido,
                 fimConhecido,
-                quantidadePessoasConhecida
+                quantidadePessoasConhecida,
+                conversa.getLocalizacao()
         )).thenReturn(resposta);
 
         mockMvc.perform(
@@ -115,7 +120,8 @@ class OllamaControllerTest {
                 dataConhecida,
                 inicioConhecido,
                 fimConhecido,
-                quantidadePessoasConhecida
+                quantidadePessoasConhecida,
+                conversa.getLocalizacao()
         );
 
         verify(orquestradorAgendamentoService).buscarConversa(1L);
