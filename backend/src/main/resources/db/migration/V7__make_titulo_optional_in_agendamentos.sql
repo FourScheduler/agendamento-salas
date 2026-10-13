@@ -1,2 +1,0 @@
-ALTER TABLE agendamentos
-MODIFY COLUMN titulo VARCHAR(255) NULL;
