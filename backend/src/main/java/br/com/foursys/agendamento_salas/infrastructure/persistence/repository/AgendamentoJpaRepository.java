@@ -15,14 +15,14 @@ public interface AgendamentoJpaRepository extends JpaRepository<Agendamento, Lon
     List<Agendamento> findByUsuarioId_Id(Long id);
 
     @Query("""
-    SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END
-    FROM Agendamento a
-    WHERE a.salaId.id = :salaId
-    AND a.dataAgendamento = :dataAgendamento
-    AND a.horaInicio < :horaFim
-    AND a.horaFim > :horaInicio
-    AND a.status = br.com.foursys.agendamento_salas.enums.StatusAgendamento.CONFIRMADO
-""")
+            SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END
+            FROM Agendamento a
+            WHERE a.salaId.id = :salaId
+              AND a.dataAgendamento = :dataAgendamento
+              AND a.dataCancelamento IS NULL
+              AND a.horaInicio < :horaFim
+              AND a.horaFim > :horaInicio
+            """)
     boolean existeConflito(
             @Param("salaId") Long salaId,
             @Param("dataAgendamento") LocalDate dataAgendamento,

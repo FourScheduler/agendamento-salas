@@ -11,18 +11,3 @@ ALTER TABLE agendamentos
 
 ALTER TABLE agendamentos
     MODIFY COLUMN data_agendamento DATE NOT NULL;
-
-
--- LOGS
-ALTER TABLE logs
-    ADD COLUMN data_criacao DATETIME NULL;
-
-UPDATE logs
-SET data_criacao = CURRENT_TIMESTAMP
-WHERE data_criacao IS NULL;
-
-ALTER TABLE logs
-    MODIFY COLUMN data_criacao DATETIME NOT NULL;
-
-ALTER TABLE logs
-    MODIFY COLUMN data_agendamento DATE NOT NULL;

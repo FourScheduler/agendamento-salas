@@ -70,13 +70,13 @@ class AgendamentoControllerTests {
                 .solicitante(null)
                 .build();
 
-        when(agendamentoService.create(request, 42L)).thenReturn(expected);
+        when(agendamentoService.criar(request, 42L)).thenReturn(expected);
 
-        var response = agendamentoController.create(request);
+        var response = agendamentoController.criar(request);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals(expected, response.getBody());
-        verify(agendamentoService).create(request, 42L);
+        verify(agendamentoService).criar(request, 42L);
     }
 
     @Test

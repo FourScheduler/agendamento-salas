@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public interface AgendamentoRepositoryPort {
@@ -21,5 +22,10 @@ public interface AgendamentoRepositoryPort {
             StatusAgendamento status
     );
 
-    boolean existeConflito(Long salaId, LocalDate dataAgendamento, LocalTime horaInicio, LocalTime horaFim);
+    boolean existeConflito(Long salaId, LocalDate dataAgendamento,
+                           LocalTime horaInicio, LocalTime horaFim);
+
+    void cancelar(Agendamento agendamento);
+
+    Optional<Agendamento> buscarPorId(Long id);
 }

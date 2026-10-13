@@ -78,9 +78,9 @@ class AgendamentoJpaRepositoryTests {
     }
 
     @Test
-    @DisplayName("Deve ignorar agendamento não confirmado na checagem de conflito")
-    void deveIgnorarAgendamentoNaoConfirmado() {
-        agendamentoJpaRepository.save(agendamento(StatusAgendamento.ERRO, LocalTime.of(9, 0), LocalTime.of(10, 0)));
+    @DisplayName("Deve ignorar agendamento cancelado na checagem de conflito")
+    void deveIgnorarAgendamentoCancelado() {
+        agendamentoJpaRepository.save(agendamento(StatusAgendamento.CANCELADO, LocalTime.of(9, 0), LocalTime.of(10, 0)));
 
         boolean conflito = agendamentoJpaRepository.existeConflito(
                 sala.getId(), DATA, LocalTime.of(9, 0), LocalTime.of(10, 0)
@@ -102,9 +102,9 @@ class AgendamentoJpaRepositoryTests {
     }
 
     @Test
-    @DisplayName("Deve manter sala na busca quando o agendamento existente não está confirmado")
-    void deveManterSalaNaBuscaQuandoNaoConfirmado() {
-        agendamentoJpaRepository.save(agendamento(StatusAgendamento.ERRO, LocalTime.of(9, 0), LocalTime.of(10, 0)));
+    @DisplayName("Deve manter sala na busca quando o agendamento existente está cancelado")
+    void deveManterSalaNaBuscaQuandoCancelado() {
+        agendamentoJpaRepository.save(agendamento(StatusAgendamento.CANCELADO, LocalTime.of(9, 0), LocalTime.of(10, 0)));
 
         List<Sala> disponiveis = salaJpaRepository.buscarSalasDisponiveis(
                 DATA, LocalTime.of(9, 30), LocalTime.of(10, 30), 2
@@ -125,6 +125,7 @@ class AgendamentoJpaRepositoryTests {
                 .titulo("Reunião de teste")
                 .status(status)
                 .ultimaAtualizacao(LocalDateTime.now())
+                .dataCancelamento(status == StatusAgendamento.CANCELADO ? LocalDateTime.now() : null)
                 .build();
     }
 
