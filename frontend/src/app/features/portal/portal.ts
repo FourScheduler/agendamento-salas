@@ -6,6 +6,7 @@ interface Aplicativo {
   readonly icone: string;
   readonly href?: string;
   readonly rota?: string;
+  readonly novo?: boolean;
 }
 
 @Component({
@@ -57,6 +58,11 @@ export class Portal {
       icone: 'apps/gestao-pessoal.svg',
       href: 'https://login.lg.com.br/login/bwg_foursys',
     },
-    { nome: 'Agendamento de Salas', icone: 'apps/agendamento.svg', rota: '/agendamento' },
+    {
+      nome: 'Agendamento de Salas',
+      icone: 'apps/agendamento.svg',
+      rota: '/agendamento',
+      novo: true,
+    },
   ];
 }

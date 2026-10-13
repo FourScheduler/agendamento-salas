@@ -39,16 +39,17 @@ public class AgendamentoController {
                 .body(response);
     }
 
-//    @GetMapping("/meus")
-//    public ResponseEntity<List<AgendamentoResponse>> buscaMeusAgendamentos() {
-//        Long usuarioAutenticado = securityUtils.get().id();
-//
-//        List<AgendamentoResponse> listaAgendamentos = agendamentoService.buscaAgendamentos(usuarioAutenticado);
-//
-//        return ResponseEntity
-//                .status(HttpStatus.OK)
-//                .body(listaAgendamentos);
-//    }
+    @GetMapping("/meus")
+    public ResponseEntity<List<AgendamentoResponse>> buscaMeusAgendamentos() {
+        Long usuarioAutenticado = securityUtils.get().id();
+
+        List<AgendamentoResponse> listaAgendamentos = agendamentoService
+                .buscaAgendamentos(usuarioAutenticado, false);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(listaAgendamentos);
+    }
 
     @GetMapping("/busca")
     public ResponseEntity<List<AgendamentoResponse>> buscaAgendamentos(

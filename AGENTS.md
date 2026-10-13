@@ -53,10 +53,10 @@ Regras de grupo: Focus para 1 a 2 pessoas, Salas 01 a 03 até 4, Comp a partir d
 ## Identidade visual
 
 - Os padrões obrigatórios de todas as telas estão em `docs/padroes-visuais.md`, com os tokens extraídos do portal oficial (`portal.app.foursys.com`).
-- Barra superior `#222239`, símbolo laranja à esquerda e texto `Portal` com divisória branca.
+- Barra superior `#222239`, símbolo laranja à esquerda, texto `Portal` com divisória branca e `CCH`, como no portal oficial; a barra não tem menu de navegação.
 - Ações principais em laranja `#ff5315`; detalhes, ícones de estado e avatar em `#ff892e`.
 - Fundo das telas `#f7f8fa`, cartões brancos com borda de 1px, fonte `Nunito`.
-- Não exibir o texto `CCH`.
+- **Meus Agendamentos** é acessível somente pelas telas de agendamento, não pela barra superior.
 - Interface corporativa, limpa, minimalista e responsiva.
 - O acesso se chama **Agendamento de Salas**, usa ícone de calendário e exibe a etiqueta `Novo`.
 

@@ -53,20 +53,18 @@ Padrão do portal (extraído do bundle oficial):
 
 - Fundo `--navy`, `padding: 0 30px`, `height: 6vh` com `min-height: 50px` (a barra cresce em telas altas).
 - À esquerda: símbolo laranja + texto `Portal` em branco, `1.25rem`, peso 600, com divisória branca de 2px
-  (`border-right` e `padding-right: 1.25rem`) separando do menu.
+  (`border-right`, `margin-right` e `padding-right` de `0.75rem`) e o texto `CCH` logo depois, como no
+  portal oficial. A barra não tem menu de navegação.
 - O símbolo é a imagem `public/logo-portal.png` (`<img>` decorativo, `alt=""`, com `height: 23px` e
   largura automática).
-- Abaixo de `900px` o texto `Portal` e a divisória somem, deixando só o símbolo (mesma regra do portal).
+- Abaixo de `480px` o texto `CCH` some e `Portal` permanece; abaixo de `400px` o relógio também some.
 - O favicon da aba é o mesmo `4SYS.ico` do portal (`/4SYS.ico`, ícone quadrado de 256x256 com o
   símbolo laranja), servido como `public/favicon.ico`. O logo horizontal nunca vira favicon: o
   navegador desenha o ícone em 16x16 quadrado e a imagem estica.
-- Item de menu: `0.75rem` (12px), peso 700, `padding: 0.875rem 1.125rem`, com ícone de calendário,
-  rótulo `Agendamento de Salas` e selo `Novo` em laranja, texto branco.
-- Hover do item colore o texto em `--orange-400`; o item ativo fica com texto `--orange` e
-  `border-bottom: 2px solid var(--orange)`, igual ao portal. O item fica ativo só na rota
-  `agendamento`; a rota inicial (`''`) abre a home mockada do portal (`portal`).
-- À direita: nome do usuário + avatar circular de 2rem, fundo branco, borda 1px `--gray-200`,
-  texto `--navy` com as iniciais. O nome some até `700px`.
+- À direita: sino com selo laranja `1`, relógio e avatar circular de 2rem, fundo branco, borda 1px
+  `--gray-200`, texto `--navy` com as iniciais. Sino e relógio são decorativos (`aria-hidden`),
+  sem ação; o avatar mostra o e-mail no tooltip. O botão `Sair` fica ao lado do avatar e encerra a
+  sessão local.
 - Ícones da barra são brancos. Fundo transparente nos botões de ícone.
 
 ## 4. Estrutura de página
@@ -130,7 +128,8 @@ Nunca deixe a área em branco enquanto a chamada acontece.
 
 ## 11. Restrições
 
-- Não exibir o texto `CCH`.
+- A barra superior exibe `CCH` ao lado de `Portal` e não tem menu de navegação; **Meus Agendamentos**
+  só pelas telas de agendamento.
 - Não carregar SDKs de IA, Graph ou Outlook no frontend.
 - Não usar cores fora desta tabela sem registrar o token aqui primeiro.
 - Nenhuma tela nova começa sem passar por esta lista.
@@ -182,13 +181,17 @@ responsável` e dica acessível com `Reserve com a equipe de Facilities`. É o q
 
 - Rota `portal`, inicial da aplicação (`''` → `portal`) e destino do catch-all. O acesso
   `Agendamento de Salas` leva para `/agendamento`.
-- Hero: `Portal ` em `--orange`, `Foursys` em `--navy`, ambos `1.25rem` peso 700, frase
-  `Juntos vamos mais longe.`, faixa cinza `#f8f8f9` com raio de 42px atrás do bloco e ilustração
-  `public/apps/hero-home.svg` à direita.
-- Grade de apps: caixa de 8rem, ícone de 2.25rem, nome de 13px peso 600 em `--navy`, hover com
-  sombra suave e `transform: scale(1.05)`.
+- Fundo branco da seção (as demais telas usam `--page-bg`), ocupando a viewport com o rodapé
+  ancorado no fim.
+- Hero: banner cinza `#f4f4f6` com raio de 42px, título `Portal ` em `--orange` + `Foursys` em
+  `--navy` a `1.75rem` peso 700, frase `Juntos vamos mais longe.` e ilustração
+  `public/apps/hero-home.svg` à direita, ultrapassando a borda superior do banner.
+- Grade de apps em duas linhas como no portal oficial: 10 acessos na primeira e os demais
+  centralizados na segunda, com quebra explícita após o décimo item. Caixa de `8.5rem`, ícone de
+  `2.5rem`, nome de 13px peso 600 em `--navy`, hover com sombra suave e `transform: scale(1.05)`.
 - 14 acessos: os 13 do portal oficial mais `Agendamento de Salas`, colocado logo depois de
-  `Portal de Gestão Pessoal`. Ícones oficiais em `public/apps/`; o do agendamento é um calendário SVG
-  criado para o projeto.
-- Rodapé com `* Esses links só podem ser acessados pela VPN.` e a versão `V.6.5.4`.
+  `Portal de Gestão Pessoal` e com selo `Novo` em laranja sobre o ícone. Ícones oficiais em
+  `public/apps/`; o do agendamento é um calendário SVG criado para o projeto.
+- Rodapé com `* Esses links só podem ser acessados pela VPN.` e a versão `V.6.5.4`, ancorado no fim
+  da viewport (nota à esquerda, versão à direita).
 - Os links oficiais abrem em nova aba (`target="_blank"` e `rel="noopener noreferrer"`).

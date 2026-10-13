@@ -11,64 +11,59 @@
 .topbar__marca {
   display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
   color: #ffffff;
   font-size: 1.25rem;
   font-weight: 600;
-}
-
-.topbar__texto {
-  padding-right: 1.25rem;
-  border-right: 2px solid #ffffff;
 }
 
 .topbar__simbolo {
   flex: none;
   width: auto;
   height: 23px;
+  margin-right: 0.75rem;
 }
 
-.topbar__menu {
-  flex: 1;
+.topbar__texto {
+  margin-right: 0.75rem;
+  padding-right: 0.75rem;
+  border-right: 2px solid #ffffff;
 }
 
-.topbar__item {
+.topbar__acoes {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.125rem;
+  gap: 1rem;
+  margin-left: auto;
   color: #ffffff;
-  font-size: 0.75rem;
-  font-weight: 700;
 }
 
-.topbar__item:hover {
-  color: var(--orange-400);
+.topbar__sino {
+  position: relative;
+  display: inline-flex;
 }
 
-.topbar__item--ativo {
-  border-bottom: 2px solid var(--orange);
-  color: var(--orange);
-}
-
-.topbar__icone {
-  flex: none;
-}
-
-.topbar__selo {
-  padding: 0.125rem 0.5rem;
+.topbar__badge {
+  position: absolute;
+  top: -0.375rem;
+  right: -0.375rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.25rem;
   border-radius: 999px;
   background: var(--orange);
   color: #ffffff;
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 700;
+  line-height: 1;
 }
 
 .topbar__usuario {
   display: inline-flex;
   align-items: center;
   gap: 0.625rem;
-  margin-left: auto;
   color: #ffffff;
   font-size: 0.875rem;
   font-weight: 600;
@@ -86,23 +81,33 @@
   color: var(--navy);
   font-size: 0.875rem;
   font-weight: 600;
+  cursor: default;
 }
 
-@media (max-width: 900px) {
-  .topbar__texto {
-    display: none;
-  }
+.topbar__sair {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid #6b6b85;
+  border-radius: 6px;
+  background: transparent;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.topbar__sair:hover {
+  border-color: #ffffff;
 }
 
 @media (max-width: 700px) {
   .topbar {
-    flex-wrap: wrap;
     gap: 0.75rem;
     padding: 0 1rem;
   }
 
-  .topbar__nome {
-    display: none;
+  .topbar__acoes {
+    gap: 0.625rem;
   }
 }
 
@@ -113,37 +118,29 @@
   }
 
   .topbar__marca {
-    gap: 0.5rem;
     font-size: 1.125rem;
   }
 
-  .topbar__item {
-    gap: 0.375rem;
-    padding: 0.375rem 0.5rem;
-    font-size: 0.8125rem;
-    white-space: nowrap;
+  .topbar__cch {
+    display: none;
   }
 
-  .topbar__selo {
-    padding: 0.125rem 0.4375rem;
-    font-size: 0.625rem;
+  .topbar__simbolo {
+    margin-right: 0.5rem;
+  }
+
+  .topbar__texto {
+    margin-right: 0.5rem;
+    padding-right: 0.5rem;
   }
 }
 
 @media (max-width: 400px) {
-  .topbar {
-    padding: 0.75rem 0.5rem;
-  }
-
-  .topbar__icone {
+  .topbar__relogio {
     display: none;
   }
 
   .topbar__marca {
     font-size: 1rem;
-  }
-
-  .topbar__item {
-    font-size: 0.75rem;
   }
 }

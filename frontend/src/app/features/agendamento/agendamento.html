@@ -9,31 +9,78 @@
     <p class="campo__erro agendamento__aviso" role="alert">{{ falha }}</p>
   }
 
-  <div class="agendamento__corpo">
-    <app-mapa-salas
-      [salas]="salas()"
-      [data]="data()"
-      [horaInicio]="horaInicio()"
-      [carregando]="carregando()"
-      [erro]="erroApi()"
-      [selecionada]="selecionada()"
-      (selecionar)="selecionar($event)"
-      (tentarNovamente)="buscar()"
-    />
+  @if (reserva(); as confirmada) {
+    <div class="agendamento__sucesso cartao" role="status">
+      <span class="agendamento__sucessoMarca" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </span>
+      <h2 class="agendamento__sucessoTitulo">Reserva confirmada</h2>
+      <p class="agendamento__sucessoSala">{{ confirmada.sala.nome }}</p>
+      <p class="agendamento__sucessoDetalhe">
+        {{ data() }} - das {{ confirmada.inicio }} às {{ confirmada.fim }} - {{ pessoas() }}
+        {{ pessoas() === 1 ? 'pessoa' : 'pessoas' }}
+      </p>
+      <button class="botao" type="button" (click)="novaReserva()">Nova reserva</button>
+    </div>
+  } @else if (erroConfirmacao(); as falha) {
+    <div class="agendamento__falha cartao" role="alert">
+      <span class="agendamento__falhaMarca" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="28"
+          height="28"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+      </span>
+      <h2 class="agendamento__falhaTitulo">Reserva não confirmada</h2>
+      <p class="agendamento__falhaMotivo">{{ falha }}</p>
+      <p class="agendamento__falhaDetalhe">
+        A sala pode ter sido ocupada por outra pessoa. Revise o horário e tente novamente.
+      </p>
+      <div class="agendamento__falhaAcoes">
+        <button class="botao" type="button" (click)="tentarNovamente()">Tentar novamente</button>
+        <a class="botao botao--contorno" routerLink="/meus-agendamentos">Ver meus agendamentos</a>
+      </div>
+    </div>
+  } @else {
+    <div class="agendamento__corpo">
+      <app-mapa-salas
+        [salas]="salas()"
+        [data]="data()"
+        [horaInicio]="horaInicio()"
+        [carregando]="carregando()"
+        [erro]="erroApi()"
+        [selecionada]="selecionada()"
+        (selecionar)="selecionar($event)"
+        (tentarNovamente)="buscar()"
+      />
 
-    <app-painel-reserva
-      [sala]="salaEscolhida()"
-      [data]="data()"
-      [horaInicio]="horaInicio()"
-      [duracao]="duracao()"
-      [pessoas]="pessoas()"
-      [duracoes]="duracoes"
-      [equipamentos]="equipamentos()"
-      (dataAlterada)="atualizarData($event)"
-      (horaAlterada)="atualizarHora($event)"
-      (duracaoAlterada)="atualizarDuracao($event)"
-      (pessoasAlterada)="atualizarPessoas($event)"
-      (equipamentosAlterada)="equipamentos.set($event)"
-    />
-  </div>
+      <app-painel-reserva
+        [sala]="salaEscolhida()"
+        [data]="data()"
+        [horaInicio]="horaInicio()"
+        [duracao]="duracao()"
+        [pessoas]="pessoas()"
+        [duracoes]="duracoes"
+        [equipamentos]="equipamentos()"
+        [logado]="logado()"
+        [ocupado]="ocupado()"
+        [erroLogin]="erroLogin()"
+        (dataAlterada)="atualizarData($event)"
+        (horaAlterada)="atualizarHora($event)"
+        (duracaoAlterada)="atualizarDuracao($event)"
+        (pessoasAlterada)="atualizarPessoas($event)"
+        (equipamentosAlterada)="equipamentos.set($event)"
+        (confirmar)="confirmar()"
+        (entrar)="entrar($event)"
+      />
+    </div>
+  }
 </section>

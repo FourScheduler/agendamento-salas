@@ -1,14 +1,14 @@
 import { Component, computed, input, output } from '@angular/core';
 import { SalaPlanta } from '../../core/data/mapa-mock';
 import { dataExtenso as formatarData, diaSemana as formatarDia } from '../../core/util/formatos';
-import { Carregando } from '../../shared/estados/carregando';
 import { Erro } from '../../shared/estados/erro';
 import { Vazio } from '../../shared/estados/vazio';
+import { Skeleton } from '../../shared/skeleton/skeleton';
 import { ListaSalas } from './lista-salas';
 
 @Component({
   selector: 'app-mapa-salas',
-  imports: [Carregando, Erro, ListaSalas, Vazio],
+  imports: [Erro, ListaSalas, Skeleton, Vazio],
   templateUrl: './mapa-salas.html',
   styleUrl: './mapa-salas.css',
 })

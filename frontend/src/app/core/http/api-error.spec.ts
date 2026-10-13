@@ -15,6 +15,19 @@ describe('api-error', () => {
     });
   });
 
+  it('should parse a JSON error body sent as text', () => {
+    const httpErro = new HttpErrorResponse({
+      error: '{"status":401,"message":"Usuário inexistente ou senha inválida."}',
+      status: 401,
+      statusText: 'Unauthorized',
+    });
+
+    expect(paraApiError(httpErro)).toEqual({
+      status: 401,
+      message: 'Usuário inexistente ou senha inválida.',
+    });
+  });
+
   it('should fallback when the body has no error payload', () => {
     const httpErro = new HttpErrorResponse({
       status: 500,
