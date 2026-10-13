@@ -111,28 +111,28 @@ VALUES
         1,
         'Administrador Principal',
         'admin@teste.com',
-        '$2a$10$.wMJyG8HSbanSlEUK5pqL.b4MWcXpl5xBS6POz9kNlWa3hOiPKgbi',
+        '$2a$10$fKio.kNawuO0OqiJqT9UEueguc01EHs8CHMJasO5phgql0jw8XuHG',
         'ADMIN'
     ),
     (
         2,
         'Administradora Secundaria',
         'admin2@teste.com',
-        '$2a$10$.wMJyG8HSbanSlEUK5pqL.b4MWcXpl5xBS6POz9kNlWa3hOiPKgbi',
+        '$2a$10$fKio.kNawuO0OqiJqT9UEueguc01EHs8CHMJasO5phgql0jw8XuHG',
         'ADMIN'
     ),
     (
         3,
         'Usuario Teste Um',
         'usuario@teste.com',
-        '$2a$10$TF/yrPmx4C3gy66NdbPTauhyx8dKhyoBo4G2RlwJI1h5tmElSVeMi',
+        '$2a$10$fKio.kNawuO0OqiJqT9UEueguc01EHs8CHMJasO5phgql0jw8XuHG',
         'USER'
     ),
     (
         4,
         'Usuario Teste Dois',
         'usuario2@teste.com',
-        '$2a$10$TF/yrPmx4C3gy66NdbPTauhyx8dKhyoBo4G2RlwJI1h5tmElSVeMi',
+        '$2a$10$fKio.kNawuO0OqiJqT9UEueguc01EHs8CHMJasO5phgql0jw8XuHG',
         'USER'
     );
 
