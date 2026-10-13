@@ -1,6 +1,8 @@
 import { Component, computed, input, output, signal } from '@angular/core';
 import { SalaPlanta } from '../../core/data/mapa-mock';
+import { CredenciaisLogin } from '../../core/models/api.models';
 import { dataCurta, paraHora, paraMinutos } from '../../core/util/formatos';
+import { LoginCartao } from '../../shared/login-cartao/login-cartao';
 
 type CampoAberto = 'data' | 'horario' | 'duracao' | null;
 
@@ -8,6 +10,7 @@ const FIM_DO_DIA = 24 * 60;
 
 @Component({
   selector: 'app-painel-reserva',
+  imports: [LoginCartao],
   templateUrl: './painel-reserva.html',
   styleUrl: './painel-reserva.css',
 })
@@ -19,12 +22,17 @@ export class PainelReserva {
   readonly pessoas = input<number>(1);
   readonly duracoes = input<number[]>([30, 60, 90, 120]);
   readonly equipamentos = input<boolean>(false);
+  readonly logado = input(false);
+  readonly ocupado = input(false);
+  readonly erroLogin = input<string | null>(null);
 
   readonly dataAlterada = output<string>();
   readonly horaAlterada = output<string>();
   readonly duracaoAlterada = output<number>();
   readonly pessoasAlterada = output<number>();
   readonly equipamentosAlterada = output<boolean>();
+  readonly confirmar = output<void>();
+  readonly entrar = output<CredenciaisLogin>();
 
   readonly campoAberto = signal<CampoAberto>(null);
 
@@ -70,6 +78,16 @@ export class PainelReserva {
 
   valorNumerico(evento: Event): number {
     return Number(this.valorDoCampo(evento));
+  }
+
+  get podeConfirmar(): boolean {
+    return this.logado() && this.sala() !== null && !this.ocupado();
+  }
+
+  confirmarReserva(): void {
+    if (this.podeConfirmar) {
+      this.confirmar.emit();
+    }
   }
 
   rotuloDuracao(minutos: number): string {

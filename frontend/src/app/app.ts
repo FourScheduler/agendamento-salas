@@ -1,8 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 import { Topbar } from './shared/topbar/topbar';
-import { USUARIO_MOCK } from './core/data/usuario-mock';
+import { AuthService } from './core/auth/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -11,5 +11,11 @@ import { USUARIO_MOCK } from './core/data/usuario-mock';
   styleUrl: './app.css',
 })
 export class App {
-  readonly usuario = USUARIO_MOCK;
+  private readonly auth = inject(AuthService);
+
+  readonly usuario = this.auth.usuario;
+
+  sair(): void {
+    this.auth.logout();
+  }
 }

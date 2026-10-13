@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { PainelReserva } from './painel-reserva';
+import { LoginCartao } from '../../shared/login-cartao/login-cartao';
 import { resolverEstados } from '../../core/data/mapa-mock';
 
 describe('PainelReserva', () => {
@@ -45,14 +47,60 @@ describe('PainelReserva', () => {
     expect(compiled.textContent).toContain('18 jun, quinta-feira');
   });
 
-  it('should keep the confirm action disabled', async () => {
+  it('should show the login card when logged out', async () => {
     const fixture = montar();
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('app-login-cartao')).toBeTruthy();
+    expect(compiled.textContent).toContain('Entre para confirmar');
+    expect(compiled.textContent).toContain('Use a conta mock para demonstração.');
+    expect(compiled.querySelector('.resumo__confirmar')).toBeNull();
+  });
+
+  it('should forward the credentials emitted by the login card', async () => {
+    const fixture = montar();
+    await fixture.whenStable();
+
+    let credenciais: { email: string; senha: string } | null = null;
+    fixture.componentInstance.entrar.subscribe((valor) => (credenciais = valor));
+
+    const filho = fixture.debugElement.query(
+      By.directive(LoginCartao),
+    ).componentInstance as LoginCartao;
+    filho.entrar.emit({ email: 'mock@fourscheduler.local', senha: 'mock123' });
+
+    expect(credenciais).toEqual({ email: 'mock@fourscheduler.local', senha: 'mock123' });
+  });
+
+  it('should enable the confirm button when logged in with a room', async () => {
+    const fixture = montar();
+    fixture.componentRef.setInput('logado', true);
+    fixture.detectChanges();
     await fixture.whenStable();
 
     const botao = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
       '.resumo__confirmar',
     );
-    expect(botao?.disabled).toBe(true);
+    expect(botao?.disabled).toBe(false);
+    expect(botao?.textContent).toContain('Confirmar reserva');
+  });
+
+  it('should emit confirm when the logged user clicks the button', async () => {
+    const fixture = montar();
+    fixture.componentRef.setInput('logado', true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    let confirmado = false;
+    fixture.componentInstance.confirmar.subscribe(() => (confirmado = true));
+
+    const botao = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      '.resumo__confirmar',
+    );
+    botao?.click();
+
+    expect(confirmado).toBe(true);
   });
 
   it('should emit the new number of people', async () => {

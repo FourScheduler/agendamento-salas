@@ -1,0 +1,125 @@
+.meus-agendamentos__cabecalho {
+  max-width: 40rem;
+}
+
+.meus-agendamentos__login {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 26rem;
+  margin-top: 1.75rem;
+  padding: 1.75rem;
+}
+
+.meus-agendamentos__loginTitulo {
+  color: var(--navy);
+  font-size: 1.0625rem;
+}
+
+.meus-agendamentos__lista {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meus-agendamentos__item {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.125rem 1.5rem;
+}
+
+.meus-agendamentos__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.meus-agendamentos__sala {
+  color: var(--navy);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.meus-agendamentos__meta {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.meus-agendamentos__reserva {
+  margin-top: 0.25rem;
+  color: var(--orange-dark);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.meus-agendamentos__quando {
+  display: grid;
+  gap: 0.125rem;
+  text-align: right;
+}
+
+.meus-agendamentos__data {
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.meus-agendamentos__horario {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.meus-agendamentos__pessoas {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.meus-agendamentos__status {
+  flex: none;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--green-line);
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--green-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.meus-agendamentos__status--erro {
+  border-color: var(--red-line);
+  background: var(--red-soft);
+  color: #dc2626;
+}
+
+.meus-agendamentos__status--outro {
+  border-color: var(--orange-400);
+  background: var(--orange-soft);
+  color: var(--orange-dark);
+}
+
+.esqueletoColuna {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.meus-agendamentos__quando.esqueletoColuna {
+  justify-items: end;
+}
+
+@media (max-width: 640px) {
+  .meus-agendamentos__item {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .meus-agendamentos__quando {
+    text-align: left;
+  }
+
+  .meus-agendamentos__quando.esqueletoColuna {
+    justify-items: start;
+  }
+}

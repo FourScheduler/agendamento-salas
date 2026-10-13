@@ -1,0 +1,32 @@
+<form class="login" (submit)="enviar($event)">
+  <label class="campo__rotulo" for="login-email">E-mail corporativo</label>
+  <input
+    id="login-email"
+    class="login__campo"
+    type="email"
+    autocomplete="username"
+    [value]="email()"
+    (input)="definirEmail($event)"
+  />
+
+  <label class="campo__rotulo" for="login-senha">Senha</label>
+  <input
+    id="login-senha"
+    class="login__campo"
+    type="password"
+    autocomplete="current-password"
+    [value]="senha()"
+    (input)="definirSenha($event)"
+  />
+
+  @if (erro(); as falha) {
+    <p class="campo__erro" role="alert">{{ falha }}</p>
+  }
+
+  <button class="botao login__entrar" type="submit" [disabled]="!podeEntrar">
+    {{ ocupado() ? 'Entrando...' : rotulo() }}
+    <span aria-hidden="true">→</span>
+  </button>
+
+  <p class="login__nota">Use a conta mock para demonstração.</p>
+</form>
