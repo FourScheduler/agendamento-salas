@@ -102,6 +102,10 @@
   color: var(--orange);
 }
 
+.topbar__menuIcone {
+  flex: none;
+}
+
 .topbar__icone {
   flex: none;
 }

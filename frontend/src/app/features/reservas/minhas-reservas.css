@@ -1,0 +1,133 @@
+.minhas-reservas__cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.minhas-reservas__filtros {
+  display: inline-flex;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: #ffffff;
+}
+
+.minhas-reservas__filtro {
+  min-height: 2.25rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.minhas-reservas__filtro--ativo {
+  background: var(--orange-soft);
+  color: var(--orange);
+}
+
+.minhas-reservas__lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.minhas-reservas__cartao {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 1.25rem;
+}
+
+.minhas-reservas__cartaoTopo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.minhas-reservas__sala {
+  color: var(--navy);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.minhas-reservas__local {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.minhas-reservas__status {
+  flex: none;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.minhas-reservas__status--confirmada {
+  background: var(--green-soft);
+  color: var(--green-text);
+}
+
+.minhas-reservas__status--cancelada {
+  background: var(--red-soft);
+  color: #dc2626;
+}
+
+.minhas-reservas__status--pendente {
+  background: var(--orange-soft);
+  color: var(--orange);
+}
+
+.minhas-reservas__tituloReserva {
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.minhas-reservas__dados {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.minhas-reservas__dado dt {
+  color: var(--muted-soft);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.minhas-reservas__dado dd {
+  margin: 0.125rem 0 0;
+  color: var(--navy);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .minhas-reservas__cabecalho {
+    flex-direction: column;
+  }
+
+  .minhas-reservas__filtros {
+    display: flex;
+  }
+}
