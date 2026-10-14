@@ -5,35 +5,62 @@
   </a>
 
   <nav class="topbar__menu" aria-label="Navegação principal">
-    <a class="topbar__item" routerLink="/agendamento" routerLinkActive="topbar__item--ativo">
-      <svg class="topbar__icone" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-        <rect
-          x="1"
-          y="2.5"
-          width="14"
-          height="12.5"
-          rx="2"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.4"
-        />
-        <path d="M1 6.5h14" fill="none" stroke="currentColor" stroke-width="1.4" />
-        <path
-          d="M4.5 0.5v3M11.5 0.5v3"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.4"
-          stroke-linecap="round"
-        />
-      </svg>
-      <span>Agendamento de Salas</span>
-      <span class="topbar__selo">Novo</span>
+    <a class="topbar__item">
+      <span>CCH</span>
     </a>
   </nav>
 
-  @if (autenticado()) {
+  <div class="topbar__acoes">
+    <!-- Sino de notificações -->
+    <button
+      class="topbar__botao-icone topbar__notificacoes"
+      type="button"
+      aria-label="Notificações"
+    >
+      <svg
+        class="topbar__icone"
+        viewBox="0 0 24 24"
+        width="24"
+        height="24"
+        fill="#ffffff"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+        <path d="M10 21h4" />
+      </svg>
+
+      <span class="topbar__contador">13</span>
+    </button>
+
+    <!-- Relógio -->
+    <button class="topbar__botao-icone" type="button" aria-label="Horário">
+      <svg
+        class="topbar__icone topbar__icone--relogio"
+        viewBox="0 0 24 24"
+        width="24"
+        height="24"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="10" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2" />
+
+        <path
+          d="M12 6v6l4 2"
+          fill="none"
+          stroke="#222238"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+  </div>
+
+  @if (usuario()) {
     <div class="topbar__usuario">
-      <span class="topbar__nome">{{ usuario() }}</span>
       <span class="topbar__avatar" aria-hidden="true">{{ iniciais() }}</span>
       <button class="topbar__sair" type="button" (click)="sair()">Sair</button>
     </div>

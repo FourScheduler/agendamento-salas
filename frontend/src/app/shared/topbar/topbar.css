@@ -32,6 +32,57 @@
   flex: 1;
 }
 
+.topbar__acoes {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.topbar__botao-icone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.topbar__botao-icone:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.topbar__icone {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.topbar__contador {
+  position: absolute;
+  top: -5px;
+  right: -3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 3px;
+  border-radius: 50%;
+  background: #ff5722;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .topbar__item {
   display: inline-flex;
   align-items: center;
