@@ -87,6 +87,18 @@ describe('MinhasReservas', () => {
     expect(compilado.textContent).toContain('Confirmada');
   });
 
+  it('should show a reservation when the API uses sala instead of salaId', async () => {
+    const fixture = criarFixture();
+    await fixture.whenStable();
+
+    const { salaId, ...reservaSemSalaId } = reservaFutura;
+    httpMock.expectOne(urlBusca).flush([{ ...reservaSemSalaId, sala: salaId }]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Sala Focus');
+  });
+
   it('should not ask the user to log in', async () => {
     const fixture = criarFixture();
     await fixture.whenStable();

@@ -35,7 +35,7 @@ export interface CriaAgendamentoRequest {
 
 export interface ConfirmacaoAgendamento {
   id: number;
-  sala: { id: number; nome: string };
+  sala?: { id: number; nome: string };
   inicio: string;
   fim: string;
   status: string;
@@ -68,6 +68,8 @@ export interface ReservaSala {
 
 export interface Reserva {
   salaId: ReservaSala;
+  /** Compatibilidade temporária com respostas que usam `sala` em vez de `salaId`. */
+  sala?: ReservaSala;
   dataAgendamento: string;
   dataCriacao: string;
   horaInicio: string;

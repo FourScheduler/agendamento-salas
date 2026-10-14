@@ -149,7 +149,10 @@ export class Agendamento implements OnInit {
         }),
       );
 
-      const texto = `Reserva confirmada para ${reserva.sala.nome} em ${this.data()}, das ${this.horaInicio()} às ${horaFim}.`;
+      // A sala já foi validada antes da chamada. Ela também é usada como fallback para
+      // respostas de versões anteriores da API que não retornem o objeto `sala`.
+      const nomeSala = reserva.sala?.nome ?? sala.nome;
+      const texto = `Reserva confirmada para ${nomeSala} em ${this.data()}, das ${this.horaInicio()} às ${horaFim}.`;
       this.confirmacao.set(texto);
       this.buscar();
       return texto;

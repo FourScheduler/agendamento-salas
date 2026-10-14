@@ -72,7 +72,11 @@ export class MinhasReservas implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (reservas) => {
-          this.reservas.set(reservas.filter((reserva) => this.umaReservaValida(reserva)));
+          this.reservas.set(
+            reservas
+              .map((reserva) => this.normalizarReserva(reserva))
+              .filter((reserva) => this.umaReservaValida(reserva)),
+          );
           this.carregando.set(false);
         },
         error: (erro: unknown) => {
@@ -127,6 +131,13 @@ export class MinhasReservas implements OnInit {
         typeof reserva.horaInicio === 'string' &&
         typeof reserva.horaFim === 'string',
     );
+  }
+
+  private normalizarReserva(reserva: Reserva): Reserva {
+    return {
+      ...reserva,
+      salaId: reserva.salaId ?? reserva.sala,
+    };
   }
 
   private ehFutura(reserva: Reserva): boolean {

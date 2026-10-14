@@ -159,6 +159,32 @@ describe('Agendamento', () => {
     expect(fixture.componentInstance.selecionada()).toBeNull();
   });
 
+  it('should confirm using the selected room when the response has no room details', async () => {
+    const fixture = iniciar();
+    responder([{ id: 2, nome: 'Sala 02' }]);
+    await fixture.whenStable();
+
+    fixture.componentInstance.selecionar('Sala 02');
+
+    const login = TestBed.inject(AuthService).entrar('Kevin Miranda');
+    httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('token-jwt-123');
+    await login;
+
+    const promessa = fixture.componentInstance.confirmarReserva();
+    httpMock.expectOne(`${environment.apiUrl}/api/agendamento`).flush({
+      id: 1,
+      inicio: `${fixture.componentInstance.horaInicio()}:00`,
+      fim: '15:00:00',
+      status: 'CONFIRMADO',
+      solicitante: null,
+    });
+
+    expect(await promessa).toContain('Reserva confirmada para Sala 02');
+
+    responder([]);
+    await fixture.whenStable();
+  });
+
   it('should reserve through the assistant action when signed in', async () => {
     const fixture = iniciar();
     responder([{ id: 2, nome: 'Sala 02' }]);
