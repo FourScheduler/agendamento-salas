@@ -9,13 +9,15 @@ describe('PainelReserva', () => {
     }).compileComponents();
   });
 
-  function montar(pessoas = 4) {
+  function montar(pessoas = 4, opcoes: { autenticado?: boolean; confirmacao?: string } = {}) {
     const fixture = TestBed.createComponent(PainelReserva);
     fixture.componentRef.setInput('sala', resolverEstados(['Sala 01'])[5]);
     fixture.componentRef.setInput('data', '2026-06-18');
     fixture.componentRef.setInput('horaInicio', '14:00');
     fixture.componentRef.setInput('duracao', 60);
     fixture.componentRef.setInput('pessoas', pessoas);
+    fixture.componentRef.setInput('autenticado', opcoes.autenticado ?? false);
+    fixture.componentRef.setInput('confirmacao', opcoes.confirmacao ?? null);
     fixture.detectChanges();
     return fixture;
   }
@@ -45,14 +47,45 @@ describe('PainelReserva', () => {
     expect(compiled.textContent).toContain('18 jun, quinta-feira');
   });
 
-  it('should keep the confirm action disabled', async () => {
+  it('should keep the confirm action disabled while unauthenticated', async () => {
     const fixture = montar();
     await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const botao = compiled.querySelector<HTMLButtonElement>('.resumo__confirmar');
+    expect(botao?.disabled).toBe(true);
+    expect(compiled.textContent).toContain('Faça login para confirmar a reserva.');
+  });
+
+  it('should enable the confirm action and emit when authenticated', async () => {
+    const fixture = montar(4, { autenticado: true });
+    await fixture.whenStable();
+
+    let confirmado = false;
+    fixture.componentInstance.confirmar.subscribe(() => (confirmado = true));
 
     const botao = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
       '.resumo__confirmar',
     );
-    expect(botao?.disabled).toBe(true);
+    expect(botao?.disabled).toBe(false);
+
+    botao?.click();
+
+    expect(confirmado).toBe(true);
+  });
+
+  it('should show the confirmation message when provided', async () => {
+    const fixture = montar(4, {
+      autenticado: true,
+      confirmacao: 'Reserva confirmada para Sala 01 (demonstração).',
+    });
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.resumo__sucesso')?.textContent).toContain(
+      'Reserva confirmada para Sala 01',
+    );
+    expect(compiled.querySelector('.resumo__nota')).toBeNull();
   });
 
   it('should emit the new number of people', async () => {

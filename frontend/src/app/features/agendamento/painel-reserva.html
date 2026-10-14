@@ -263,11 +263,20 @@
       <strong>{{ horaInicio() }} - {{ horaFim() }}</strong>
     </p>
 
-    <button class="botao resumo__confirmar" type="button" disabled>
-      Confirmar reserva
+    <button
+      class="botao resumo__confirmar"
+      type="button"
+      [disabled]="!podeConfirmar()"
+      (click)="confirmar.emit()"
+    >
+      {{ confirmando() ? 'Confirmando...' : 'Confirmar reserva' }}
       <span aria-hidden="true">→</span>
     </button>
 
-    <p class="resumo__nota">Confirmação disponível após o login.</p>
+    @if (confirmacao(); as texto) {
+      <p class="resumo__sucesso" role="status">{{ texto }}</p>
+    } @else {
+      <p class="resumo__nota">{{ notaConfirmacao() }}</p>
+    }
   </div>
 </aside>

@@ -9,6 +9,10 @@
     <p class="campo__erro agendamento__aviso" role="alert">{{ falha }}</p>
   }
 
+  @if (erroConfirmacao(); as falha) {
+    <p class="campo__erro agendamento__aviso" role="alert">{{ falha }}</p>
+  }
+
   <div class="agendamento__corpo">
     <app-mapa-salas
       [salas]="salas()"
@@ -29,11 +33,15 @@
       [pessoas]="pessoas()"
       [duracoes]="duracoes"
       [equipamentos]="equipamentos()"
+      [autenticado]="autenticado()"
+      [confirmando]="confirmando()"
+      [confirmacao]="confirmacao()"
       (dataAlterada)="atualizarData($event)"
       (horaAlterada)="atualizarHora($event)"
       (duracaoAlterada)="atualizarDuracao($event)"
       (pessoasAlterada)="atualizarPessoas($event)"
       (equipamentosAlterada)="equipamentos.set($event)"
+      (confirmar)="confirmarPainel()"
     />
   </div>
 

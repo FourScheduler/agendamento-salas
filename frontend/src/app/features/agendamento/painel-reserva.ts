@@ -19,12 +19,16 @@ export class PainelReserva {
   readonly pessoas = input<number>(1);
   readonly duracoes = input<number[]>([30, 60, 90, 120]);
   readonly equipamentos = input<boolean>(false);
+  readonly autenticado = input<boolean>(false);
+  readonly confirmando = input<boolean>(false);
+  readonly confirmacao = input<string | null>(null);
 
   readonly dataAlterada = output<string>();
   readonly horaAlterada = output<string>();
   readonly duracaoAlterada = output<number>();
   readonly pessoasAlterada = output<number>();
   readonly equipamentosAlterada = output<boolean>();
+  readonly confirmar = output<void>();
 
   readonly campoAberto = signal<CampoAberto>(null);
 
@@ -35,6 +39,22 @@ export class PainelReserva {
   readonly naCapacidade = computed(() => {
     const limite = this.maximo();
     return limite !== null && this.pessoas() >= limite;
+  });
+
+  readonly podeConfirmar = computed(
+    () => this.autenticado() && this.sala() !== null && !this.confirmando(),
+  );
+
+  readonly notaConfirmacao = computed(() => {
+    if (!this.autenticado()) {
+      return 'Faça login para confirmar a reserva.';
+    }
+
+    if (!this.sala()) {
+      return 'Selecione uma sala no mapa para continuar.';
+    }
+
+    return 'Reserva de demonstração; nada é enviado ao Outlook.';
   });
 
   readonly horaFim = computed(() => {

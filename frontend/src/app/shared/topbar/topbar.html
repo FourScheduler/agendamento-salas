@@ -31,10 +31,53 @@
     </a>
   </nav>
 
-  @if (usuario(); as nome) {
+  @if (autenticado()) {
     <div class="topbar__usuario">
-      <span class="topbar__nome">{{ nome }}</span>
+      <span class="topbar__nome">{{ usuario() }}</span>
       <span class="topbar__avatar" aria-hidden="true">{{ iniciais() }}</span>
+      <button class="topbar__sair" type="button" (click)="sair()">Sair</button>
     </div>
+  } @else {
+    <button class="topbar__entrar" type="button" (click)="abrirModal()">Entrar</button>
   }
 </header>
+
+@if (modalAberto()) {
+  <div class="login-overlay" (click)="fecharModal()" (keydown.escape)="fecharModal()">
+    <div
+      class="login-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="login-titulo"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 class="login-modal__titulo" id="login-titulo">Entrar no Portal</h2>
+      <p class="login-modal__ajuda">
+        Use seu nome para a demonstração. O login real virá pelo SSO do portal.
+      </p>
+
+      <form class="login-modal__form" (submit)="$event.preventDefault(); entrar()">
+        <label class="login-modal__campo" for="login-nome">
+          <span class="campo__rotulo">Nome</span>
+          <input
+            #campoNome
+            id="login-nome"
+            name="nome"
+            class="login-modal__entrada"
+            type="text"
+            autocomplete="name"
+            [value]="nomeDigitado()"
+            (input)="nomeDigitado.set(campoNome.value)"
+          />
+        </label>
+
+        <div class="login-modal__acoes">
+          <button class="login-modal__cancelar" type="button" (click)="fecharModal()">
+            Cancelar
+          </button>
+          <button class="botao login-modal__entrar" type="submit">Entrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

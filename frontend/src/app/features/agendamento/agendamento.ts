@@ -1,8 +1,11 @@
 import { DestroyRef, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { firstValueFrom } from 'rxjs';
 import { BuscaSalasRequest } from '../../core/models/api.models';
 import { mensagemDeErro } from '../../core/http/api-error';
+import { AuthService } from '../../core/auth/auth.service';
 import { SalasService } from '../../core/services/salas.service';
+import { ReservasService } from '../../core/services/reservas.service';
 import { SalaPlanta, resolverEstados } from '../../core/data/mapa-mock';
 import {
   fimDeJornada,
@@ -24,6 +27,8 @@ import { AssistenteIa, RespostaAssistente } from '../../shared/assistente-ia/ass
 })
 export class Agendamento implements OnInit {
   private readonly salasService = inject(SalasService);
+  private readonly reservasService = inject(ReservasService);
+  private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly duracoes = [30, 60, 90, 120];
@@ -40,6 +45,10 @@ export class Agendamento implements OnInit {
   readonly carregando = signal(false);
   readonly erroApi = signal<string | null>(null);
   readonly erroValidacao = signal<string | null>(null);
+  readonly autenticado = this.auth.autenticado;
+  readonly confirmando = signal(false);
+  readonly confirmacao = signal<string | null>(null);
+  readonly erroConfirmacao = signal<string | null>(null);
 
   readonly salaEscolhida = computed(() => {
     const nome = this.selecionada();
@@ -57,6 +66,7 @@ export class Agendamento implements OnInit {
   selecionar(nome: string): void {
     const sala = this.salas().find((item) => item.nome === nome);
     this.selecionada.set(nome);
+    this.limparResultadoConfirmacao();
 
     if (sala && this.pessoas() > sala.capacidade) {
       this.pessoas.set(sala.capacidade);
@@ -66,21 +76,25 @@ export class Agendamento implements OnInit {
 
   atualizarData(valor: string): void {
     this.data.set(valor);
+    this.limparResultadoConfirmacao();
     this.buscar();
   }
 
   atualizarHora(valor: string): void {
     this.horaInicio.set(valor);
+    this.limparResultadoConfirmacao();
     this.buscar();
   }
 
   atualizarDuracao(valor: number): void {
     this.duracao.set(valor);
+    this.limparResultadoConfirmacao();
     this.buscar();
   }
 
   atualizarPessoas(valor: number): void {
     this.pessoas.set(valor);
+    this.limparResultadoConfirmacao();
     this.buscar();
   }
 
@@ -93,11 +107,61 @@ export class Agendamento implements OnInit {
         {
           rotulo: 'Reservar',
           primaria: true,
-          aoClicar: async () => 'Pronto, sala reservada! (demonstração)',
+          aoClicar: () => this.confirmarReserva(),
         },
         { rotulo: 'Ajustar', voltarEdicao: true },
       ],
     };
+  }
+
+  async confirmarPainel(): Promise<void> {
+    await this.confirmarReserva();
+  }
+
+  /** Fluxo único de confirmação: painel de resumo e ação Reservar do chat. */
+  async confirmarReserva(): Promise<string> {
+    if (!this.auth.autenticado()) {
+      return 'Faça login para reservar a sala.';
+    }
+
+    const sala = this.salaEscolhida();
+    if (!sala) {
+      return 'Escolha uma sala no mapa para reservar.';
+    }
+
+    if (this.confirmando()) {
+      return 'Aguarde, estou confirmando a reserva.';
+    }
+
+    const horaFim = horaFinal(this.horaInicio(), this.duracao());
+    this.confirmando.set(true);
+    this.limparResultadoConfirmacao();
+
+    try {
+      const reserva = await firstValueFrom(
+        this.reservasService.confirmar({
+          salaId: sala.id,
+          sala: sala.nome,
+          data: this.data(),
+          horaInicio: this.horaInicio(),
+          horaFim,
+          quantidadePessoas: this.pessoas(),
+          solicitante: this.auth.usuario() ?? 'Visitante',
+          titulo: `Reunião - ${sala.nome}`,
+        }),
+      );
+
+      const texto = `Reserva confirmada para ${reserva.sala} em ${this.data()}, das ${this.horaInicio()} às ${horaFim} (demonstração).`;
+      this.confirmacao.set(texto);
+      this.buscar();
+      return texto;
+    } catch (erro: unknown) {
+      const falha = mensagemDeErro(erro);
+      this.erroConfirmacao.set(falha);
+      return `Não consegui confirmar a reserva: ${falha}`;
+    } finally {
+      this.confirmando.set(false);
+    }
   }
 
   buscar(): void {
@@ -135,6 +199,11 @@ export class Agendamento implements OnInit {
           this.erroApi.set(mensagemDeErro(erro));
         },
       });
+  }
+
+  private limparResultadoConfirmacao(): void {
+    this.confirmacao.set(null);
+    this.erroConfirmacao.set(null);
   }
 
   private atualizarSelecao(livres: string[]): void {

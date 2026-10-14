@@ -23,3 +23,23 @@ export interface BuscaSalasRequest {
   horaFim: string;
   qntdPessoas: number;
 }
+
+export interface CriaReservaRequest {
+  salaId: number;
+  sala: string;
+  data: string;
+  horaInicio: string;
+  horaFim: string;
+  quantidadePessoas: number;
+  solicitante: string;
+  titulo: string;
+}
+
+export interface Reserva {
+  id: number;
+  sala: string;
+  inicio: string;
+  fim: string;
+  status: 'CONFIRMADA';
+  solicitante: string;
+}
