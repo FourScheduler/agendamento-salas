@@ -5,7 +5,7 @@ import { provideRouter } from '@angular/router';
 import { MinhasReservas } from './minhas-reservas';
 import { BuscaReservasRequest, Reserva } from '../../core/models/api.models';
 import { apiErrorInterceptor } from '../../core/http/api-error';
-import { authInterceptor } from '../../core/http/auth.interceptor';
+import { authInterceptor } from '../../core/http/auth-interceptor';
 import { environment } from '../../../environments/environment';
 
 describe('MinhasReservas', () => {
@@ -156,12 +156,13 @@ describe('MinhasReservas', () => {
   it('should show the error state when the backend fails', async () => {
     const fixture = criarFixture();
     await fixture.whenStable();
-    httpMock
-      .expectOne(urlBusca)
-      .flush({ status: 500, message: 'Erro interno inesperado. Tente novamente.' }, {
+    httpMock.expectOne(urlBusca).flush(
+      { status: 500, message: 'Erro interno inesperado. Tente novamente.' },
+      {
         status: 500,
         statusText: 'Server Error',
-      });
+      },
+    );
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -173,12 +174,13 @@ describe('MinhasReservas', () => {
   it('should show a friendly message when the session is not authenticated', async () => {
     const fixture = criarFixture();
     await fixture.whenStable();
-    httpMock
-      .expectOne(urlBusca)
-      .flush({ status: 401, message: 'Faça login para continuar.' }, {
+    httpMock.expectOne(urlBusca).flush(
+      { status: 401, message: 'Faça login para continuar.' },
+      {
         status: 401,
         statusText: 'Unauthorized',
-      });
+      },
+    );
     await fixture.whenStable();
     fixture.detectChanges();
 

@@ -8,51 +8,86 @@ describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
 
-  const url = `${environment.apiUrl}/auth/login`;
-
   beforeEach(() => {
-    localStorage.clear();
-
+    window.localStorage.clear();
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
-
     service = TestBed.inject(AuthService);
     httpMock = TestBed.inject(HttpTestingController);
   });
 
   afterEach(() => {
     httpMock.verify();
-    localStorage.clear();
+    window.localStorage.clear();
   });
 
-  it('should be created', () => {
-    expect(service).toBeTruthy();
+  it('should start unauthenticated when there is no saved session', () => {
+    expect(service.autenticado()).toBe(false);
+    expect(service.usuario()).toBeNull();
+    expect(service.token()).toBeNull();
   });
 
-  it('should start unauthenticated when there is no stored token', () => {
+  it('should authenticate through the demo endpoint and persist session', async () => {
+    const promessa = service.entrar('  Kevin Miranda  ');
+
+    const chamada = httpMock.expectOne(`${environment.apiUrl}/auth/demo`);
+    expect(chamada.request.method).toBe('POST');
+    chamada.flush('token-jwt-123');
+
+    await promessa;
+
+    expect(service.autenticado()).toBe(true);
+    expect(service.usuario()).toBe('Kevin Miranda');
+    expect(service.token()).toBe('token-jwt-123');
+    expect(window.localStorage.getItem('fourscheduler.usuario')).toBe('Kevin Miranda');
+    expect(window.localStorage.getItem('fourscheduler.token')).toBe('token-jwt-123');
+  });
+
+  it('should not authenticate when the demo endpoint fails', async () => {
+    const promessa = service.entrar('Kevin Miranda');
+
+    httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('erro', {
+      status: 404,
+      statusText: 'Not Found',
+    });
+
+    await expect(promessa).rejects.toThrow();
+
+    expect(service.autenticado()).toBe(false);
+    expect(window.localStorage.getItem('fourscheduler.token')).toBeNull();
+  });
+
+  it('should ignore blank names', async () => {
+    await service.entrar('   ');
+
     expect(service.autenticado()).toBe(false);
   });
 
-  it('should store the token returned by the backend', () => {
-    service.entrar('usuario@teste.com', 'senha').subscribe();
+  it('should sign out and clear storage', async () => {
+    const promessa = service.entrar('Kevin Miranda');
+    httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('token-jwt-123');
+    await promessa;
 
-    const chamada = httpMock.expectOne(url);
-    expect(chamada.request.method).toBe('POST');
-    chamada.flush('token-abc');
+    service.sair();
 
-    expect(service.token()).toBe('token-abc');
-    expect(service.autenticado()).toBe(true);
-    expect(localStorage.getItem('foursys.token')).toBe('token-abc');
+    expect(service.autenticado()).toBe(false);
+    expect(window.localStorage.getItem('fourscheduler.usuario')).toBeNull();
+    expect(window.localStorage.getItem('fourscheduler.token')).toBeNull();
   });
 
-  it('should remove the token on logout', () => {
-    localStorage.setItem('foursys.token', 'token-antigo');
-    const serviceComToken = TestBed.inject(AuthService);
+  it('should restore the saved session from storage', () => {
+    window.localStorage.setItem('fourscheduler.usuario', 'Ana');
+    window.localStorage.setItem('fourscheduler.token', 'token-antigo');
 
-    serviceComToken.sair();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const novaSessao = TestBed.inject(AuthService);
 
-    expect(serviceComToken.token()).toBeNull();
-    expect(localStorage.getItem('foursys.token')).toBeNull();
+    expect(novaSessao.usuario()).toBe('Ana');
+    expect(novaSessao.token()).toBe('token-antigo');
+    expect(novaSessao.autenticado()).toBe(true);
   });
 });

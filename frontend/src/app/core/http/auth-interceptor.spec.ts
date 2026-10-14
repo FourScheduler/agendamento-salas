@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AuthService } from '../services/auth.service';
-import { authInterceptor } from './auth.interceptor';
+import { authInterceptor } from './auth-interceptor';
 import { environment } from '../../../environments/environment';
 
 describe('authInterceptor', () => {
@@ -31,7 +31,7 @@ describe('authInterceptor', () => {
   });
 
   it('should send the Bearer token when there is a stored token', () => {
-    localStorage.setItem('foursys.token', 'token-abc');
+    localStorage.setItem('fourscheduler.token', 'token-abc');
 
     http.get(url).subscribe();
 

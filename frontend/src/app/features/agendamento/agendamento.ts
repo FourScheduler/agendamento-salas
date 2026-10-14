@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { BuscaSalasRequest } from '../../core/models/api.models';
 import { mensagemDeErro } from '../../core/http/api-error';
-import { AuthService } from '../../core/auth/auth.service';
+import { AuthService } from '../../core/services/auth.service';
 import { SalasService } from '../../core/services/salas.service';
 import { ReservasService } from '../../core/services/reservas.service';
 import { SalaPlanta, resolverEstados } from '../../core/data/mapa-mock';

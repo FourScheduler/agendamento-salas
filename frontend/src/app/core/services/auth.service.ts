@@ -1,43 +1,67 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, map, tap } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { LoginRequest } from '../models/api.models';
 
-const CHAVE_TOKEN = 'foursys.token';
+const CHAVE_USUARIO = 'fourscheduler.usuario';
+const CHAVE_TOKEN = 'fourscheduler.token';
 
+/**
+ * Sessão da aplicação. Enquanto o login for mockado, o token vem do endpoint
+ * de demonstração do backend (/auth/demo). No futuro, o SSO do portal fornece
+ * a sessão; os consumidores não mudam.
+ */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = environment.apiUrl;
 
-  readonly token = signal<string | null>(lerToken());
+  private readonly usuarioInterno = signal<string | null>(lerValor(CHAVE_USUARIO));
+  private readonly tokenInterno = signal<string | null>(lerValor(CHAVE_TOKEN));
 
-  readonly autenticado = computed(() => this.token() !== null);
+  readonly usuario = this.usuarioInterno.asReadonly();
+  readonly token = this.tokenInterno.asReadonly();
+  readonly autenticado = computed(() => this.tokenInterno() !== null);
 
-  entrar(email: string, senha: string): Observable<void> {
-    const requisicao: LoginRequest = { email, password: senha };
+  async entrar(nome: string): Promise<void> {
+    const limpo = nome.trim();
+    if (!limpo) {
+      return;
+    }
 
-    return this.http
-      .request('POST', `${this.baseUrl}/auth/login`, {
-        body: requisicao,
-        responseType: 'text',
-      })
-      .pipe(
-        tap((token) => {
-          localStorage.setItem(CHAVE_TOKEN, token);
-          this.token.set(token);
-        }),
-        map(() => undefined),
-      );
+    const token = await firstValueFrom(
+      this.http.post(`${environment.apiUrl}/auth/demo`, {}, { responseType: 'text' }),
+    );
+
+    this.usuarioInterno.set(limpo);
+    this.tokenInterno.set(token);
+    salvarValor(CHAVE_USUARIO, limpo);
+    salvarValor(CHAVE_TOKEN, token);
   }
 
   sair(): void {
-    this.token.set(null);
-    localStorage.removeItem(CHAVE_TOKEN);
+    this.usuarioInterno.set(null);
+    this.tokenInterno.set(null);
+    salvarValor(CHAVE_USUARIO, null);
+    salvarValor(CHAVE_TOKEN, null);
   }
 }
 
-function lerToken(): string | null {
-  return localStorage.getItem(CHAVE_TOKEN);
+function lerValor(chave: string): string | null {
+  try {
+    return window.localStorage.getItem(chave);
+  } catch {
+    return null;
+  }
+}
+
+function salvarValor(chave: string, valor: string | null): void {
+  try {
+    if (valor === null) {
+      window.localStorage.removeItem(chave);
+    } else {
+      window.localStorage.setItem(chave, valor);
+    }
+  } catch {
+    // localStorage indisponível: a sessão vale só na memória.
+  }
 }
