@@ -61,6 +61,7 @@
 
   @if (usuario()) {
     <div class="topbar__usuario">
+      <span class="topbar__nome">{{ usuario() }}</span>
       <span class="topbar__avatar" aria-hidden="true">{{ iniciais() }}</span>
       <button class="topbar__sair" type="button" (click)="sair()">Sair</button>
     </div>
