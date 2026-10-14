@@ -45,6 +45,39 @@ Resposta `200`:
 
 Salas com capacidade inferior a `pessoas` são filtradas; a resposta pode ser uma lista vazia.
 
+### GET /api/agendamento/busca/filtro — implementado
+
+Lista agendamentos com filtros opcionais. Exige header `Authorization: Bearer <token>` (obtido em `POST /auth/login`); sem token a resposta é `401`.
+
+| Campo do body | Obrigatório | Observação |
+|---|---|---|
+| `dataInicio` | não | data ISO (`yyyy-MM-dd`); reserva com `dataAgendamento >= dataInicio` |
+| `dataFinal` | não | data ISO; reserva com `dataAgendamento <= dataFinal` |
+| `statusAgendamento` | não | um valor do enum, ex.: `CONFIRMADO` |
+| `todosUsuarios` | sim | `false` lista **somente as reservas do usuário do token**; `true` lista de todos (somente `ADMIN`) |
+
+Mesmo sendo `GET`, o corpo vai no `body` da requisição (padrão já usado em `GET /api/salas/disponiveis`). Campos nulos são ignorados no filtro.
+
+Consumido pela página `/minhas-reservas` do frontend, sempre com `todosUsuarios: false`.
+
+Resposta `200` (lista pode ser vazia):
+
+```json
+[
+  {
+    "salaId": { "id": 1, "nome": "Sala Focus", "capacidade": 2, "localizacao": "Tamboré", "disponivel": true },
+    "dataAgendamento": "2026-10-20",
+    "dataCriacao": "2026-10-14T10:15:00",
+    "horaInicio": "09:00:00",
+    "horaFim": "10:00:00",
+    "qntdPessoas": 2,
+    "titulo": "Reunião de alinhamento",
+    "usuarioIdSolicitante": null,
+    "status": "CONFIRMADO"
+  }
+]
+```
+
 ### POST /api/reservas - previsto (#15)
 
 Request:

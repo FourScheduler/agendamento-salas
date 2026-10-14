@@ -1,0 +1,91 @@
+<section class="pagina minhas-reservas">
+  <header class="minhas-reservas__cabecalho">
+    <div>
+      <p class="eyebrow">Tamboré</p>
+      <h1 class="titulo">Minhas reservas</h1>
+      <p class="subtitulo">Acompanhe as salas reservadas por você.</p>
+    </div>
+  </header>
+
+  <div class="minhas-reservas__filtros" role="group" aria-label="Filtrar reservas por período">
+    <button
+      class="minhas-reservas__filtro"
+      type="button"
+      [class.minhas-reservas__filtro--ativo]="filtro() === 'futuras'"
+      [attr.aria-pressed]="filtro() === 'futuras'"
+      (click)="trocarFiltro('futuras')"
+    >
+      Futuras
+    </button>
+    <button
+      class="minhas-reservas__filtro"
+      type="button"
+      [class.minhas-reservas__filtro--ativo]="filtro() === 'passadas'"
+      [attr.aria-pressed]="filtro() === 'passadas'"
+      (click)="trocarFiltro('passadas')"
+    >
+      Passadas
+    </button>
+  </div>
+
+  @if (carregando()) {
+    <app-carregando texto="Buscando suas reservas..." />
+  } @else if (erroApi(); as mensagem) {
+    <app-erro
+      titulo="Não foi possível carregar suas reservas"
+      [mensagem]="mensagem"
+      (tentarNovamente)="buscar()"
+    />
+  } @else if (visiveis().length === 0) {
+    <app-vazio
+      [titulo]="tituloVazio"
+      [mensagem]="mensagemVazio"
+      acao="Agendar uma sala"
+      (acaoClicada)="agendar()"
+    />
+  } @else {
+    <ul class="minhas-reservas__lista">
+      @for (reserva of visiveis(); track chave(reserva)) {
+        <li class="cartao minhas-reservas__cartao">
+          <div class="minhas-reservas__cartaoTopo">
+            <div>
+              <p class="minhas-reservas__sala">{{ reserva.salaId.nome }}</p>
+              <p class="minhas-reservas__local">{{ reserva.salaId.localizacao }}</p>
+            </div>
+            <span
+              class="minhas-reservas__status"
+              [class.minhas-reservas__status--confirmada]="reserva.status === 'CONFIRMADO'"
+              [class.minhas-reservas__status--cancelada]="ehCancelada(reserva.status)"
+              [class.minhas-reservas__status--pendente]="ehPendente(reserva.status)"
+            >
+              {{ rotuloStatus(reserva.status) }}
+            </span>
+          </div>
+
+          @if (reserva.titulo; as titulo) {
+            <p class="minhas-reservas__tituloReserva">{{ titulo }}</p>
+          }
+
+          <dl class="minhas-reservas__dados">
+            <div class="minhas-reservas__dado">
+              <dt>Data</dt>
+              <dd>{{ formatarData(reserva.dataAgendamento) }}</dd>
+            </div>
+            <div class="minhas-reservas__dado">
+              <dt>Horário</dt>
+              <dd>{{ formatarHora(reserva.horaInicio) }} às {{ formatarHora(reserva.horaFim) }}</dd>
+            </div>
+            <div class="minhas-reservas__dado">
+              <dt>Pessoas</dt>
+              <dd>{{ reserva.qntdPessoas }}</dd>
+            </div>
+            <div class="minhas-reservas__dado">
+              <dt>Local</dt>
+              <dd>{{ reserva.salaId.localizacao }}</dd>
+            </div>
+          </dl>
+        </li>
+      }
+    </ul>
+  }
+</section>
