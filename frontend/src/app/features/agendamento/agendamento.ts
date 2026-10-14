@@ -14,10 +14,11 @@ import {
 } from '../../core/util/formatos';
 import { MapaSalas } from './mapa-salas';
 import { PainelReserva } from './painel-reserva';
+import { AssistenteIa, RespostaAssistente } from '../../shared/assistente-ia/assistente-ia';
 
 @Component({
   selector: 'app-agendamento',
-  imports: [MapaSalas, PainelReserva],
+  imports: [MapaSalas, PainelReserva, AssistenteIa],
   templateUrl: './agendamento.html',
   styleUrl: './agendamento.css',
 })
@@ -81,6 +82,22 @@ export class Agendamento implements OnInit {
   atualizarPessoas(valor: number): void {
     this.pessoas.set(valor);
     this.buscar();
+  }
+
+  /** Mock da interpretação do pedido. Trocar por endpoint da API quando existir. */
+  async processarMensagemAssistente(texto: string): Promise<RespostaAssistente> {
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    return {
+      texto: `Entendi assim:\n"${texto}"\nPosso reservar?`,
+      acoes: [
+        {
+          rotulo: 'Reservar',
+          primaria: true,
+          aoClicar: async () => 'Pronto, sala reservada! (demonstração)',
+        },
+        { rotulo: 'Ajustar', voltarEdicao: true },
+      ],
+    };
   }
 
   buscar(): void {

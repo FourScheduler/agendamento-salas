@@ -1,0 +1,338 @@
+/* ── Tokens: cores do portal (cabeçalho #222239, laranja #ff5315) ── */
+.ai-assistant {
+  --ai-brand: #ff5315;          /* laranja principal: botão enviar, foco, brilho */
+  --ai-glow: #ff6a33;           /* laranja do brilho (olhos, núcleo, propulsor) */
+  --ai-navy: #222239;           /* azul-marinho: viseira, juntas, braços */
+
+  --ai-surface: #ffffff;        /* fundo do balão / campo / cartão */
+  --ai-text: #222239;
+  --ai-placeholder: #7c7c93;
+  --ai-line: rgba(34, 34, 57, .14);
+  --ai-shadow: 0 14px 34px -12px rgba(34, 34, 57, .38), 0 2px 8px rgba(34, 34, 57, .08);
+
+  --ai-shell-hi: #ffffff;       /* casca do robô */
+  --ai-shell-lo: #d6dbe8;
+  --ai-shell-line: #c3cad9;
+
+  --ai-edge: 24px;              /* distância das bordas da tela */
+  --ai-gap: 10px;               /* espaço entre balão e mascote */
+  --ai-mascot-size: 112px;
+  --ai-chat-max: 360px;         /* largura máxima do campo no desktop */
+  --ai-z: 9999;
+}
+@media (prefers-color-scheme: dark) {
+  .ai-assistant:not([data-theme="light"]) {
+    --ai-surface: #2a2a45;
+    --ai-text: #f1f1f8;
+    --ai-placeholder: #9d9dba;
+    --ai-line: rgba(255, 255, 255, .16);
+    --ai-shadow: 0 14px 34px -12px rgba(0, 0, 0, .7), 0 2px 8px rgba(0, 0, 0, .3);
+  }
+}
+.ai-assistant[data-theme="dark"] {
+  --ai-surface: #2a2a45;
+  --ai-text: #f1f1f8;
+  --ai-placeholder: #9d9dba;
+  --ai-line: rgba(255, 255, 255, .16);
+  --ai-shadow: 0 14px 34px -12px rgba(0, 0, 0, .7), 0 2px 8px rgba(0, 0, 0, .3);
+}
+
+/* ── Contêiner fixo ── */
+.ai-assistant {
+  --ai-chat-w: min(var(--ai-chat-max), calc(100vw - 2 * var(--ai-edge) - var(--ai-mascot-size) - var(--ai-gap)));
+  position: fixed;
+  right: calc(var(--ai-edge) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--ai-edge) + env(safe-area-inset-bottom, 0px));
+  z-index: var(--ai-z);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ai-gap);
+  font-family: inherit;
+}
+.ai-assistant, .ai-assistant *, .ai-assistant *::before, .ai-assistant *::after { box-sizing: border-box; }
+
+/* Estados: hidden → intro → greeting → chat (controlados pelo JS) */
+.ai-assistant[data-state="hidden"] .ai-mascot,
+.ai-assistant[data-state="hidden"] .ai-bubble,
+.ai-assistant[data-state="intro"] .ai-bubble { visibility: hidden; }
+
+/* ── Balão / campo de chat ── */
+.ai-bubble {
+  position: relative;
+  isolation: isolate;
+  flex: none;
+  max-width: calc(100vw - 2 * var(--ai-edge) - var(--ai-mascot-size) - var(--ai-gap));
+  margin-bottom: 18px;                 /* a setinha mira o rosto, não os pés */
+  background: var(--ai-surface);
+  border: 1px solid var(--ai-line);
+  border-radius: 18px;
+  box-shadow: var(--ai-shadow);
+  color: var(--ai-text);
+  transform-origin: 100% 50%;
+  transition: border-color .2s, box-shadow .2s;
+}
+/* setinha apontando para o mascote */
+.ai-bubble::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: calc(50% - 7px);
+  right: -7px;
+  width: 14px;
+  height: 14px;
+  background: var(--ai-surface);
+  border-top: 1px solid var(--ai-line);
+  border-right: 1px solid var(--ai-line);
+  border-top-right-radius: 4px;
+  transform: rotate(45deg);
+  transition: border-color .2s;
+}
+.ai-bubble:focus-within {
+  border-color: var(--ai-brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ai-brand) 28%, transparent), var(--ai-shadow);
+}
+.ai-bubble:focus-within::before { border-color: var(--ai-brand); }
+.ai-assistant[data-state="chat"] .ai-bubble { width: var(--ai-chat-w); border-radius: 26px; }
+
+.ai-bubble__inner { position: relative; height: 100%; overflow: hidden; border-radius: inherit; }
+
+.ai-bubble__greeting {
+  margin: 0;
+  padding: 12px 18px;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+.ai-bubble__form {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 18px;
+  opacity: 0;
+  visibility: hidden;
+}
+.ai-assistant[data-state="chat"] .ai-bubble__greeting {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+.ai-assistant[data-state="chat"] .ai-bubble__form {
+  position: relative;
+  inset: auto;
+  opacity: 1;
+  visibility: visible;
+}
+
+.ai-bubble__input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ai-text);
+  font-family: inherit;
+  font-size: 16px;               /* 16px evita o zoom automático no iOS */
+  font-weight: 500;
+}
+.ai-bubble__input::placeholder { color: var(--ai-placeholder); opacity: 1; }
+
+.ai-bubble__send {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ai-brand);
+  color: #fff;
+  cursor: pointer;
+  transition: transform .15s, opacity .2s;
+}
+.ai-bubble__send svg { width: 20px; height: 20px; }
+.ai-bubble__send:disabled { opacity: .35; cursor: default; }
+.ai-bubble__send:not(:disabled):hover { transform: scale(1.07); }
+.ai-bubble__send:not(:disabled):active { transform: scale(.93); }
+.ai-bubble__send:focus-visible { outline: 2px solid var(--ai-navy); outline-offset: 2px; }
+
+/* ── Cartão de ajuda / "pensando" / resposta (fica acima do mascote) ── */
+.ai-card {
+  position: absolute;
+  isolation: isolate;
+  right: 0;
+  bottom: calc(100% + 12px);
+  width: max-content;
+  max-width: min(340px, calc(100vw - 2 * var(--ai-edge)));
+  padding: 13px 38px 13px 16px;
+  background: var(--ai-surface);
+  border: 1px solid var(--ai-line);
+  border-radius: 18px;
+  box-shadow: var(--ai-shadow);
+  color: var(--ai-text);
+  font-size: 14px;
+  line-height: 1.45;
+  transform-origin: 85% 100%;
+}
+.ai-card::after {                      /* setinha apontando para a cabeça do mascote */
+  content: "";
+  position: absolute;
+  z-index: -1;
+  bottom: -7px;
+  right: calc(var(--ai-mascot-size) / 2 - 8px);
+  width: 14px;
+  height: 14px;
+  background: var(--ai-surface);
+  border-right: 1px solid var(--ai-line);
+  border-bottom: 1px solid var(--ai-line);
+  border-bottom-right-radius: 4px;
+  transform: rotate(45deg);
+}
+.ai-card__close {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ai-placeholder);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ai-card__close:hover { background: var(--ai-line); }
+.ai-card__text { margin: 0; white-space: pre-line; font-weight: 600; }
+.ai-chips, .ai-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.ai-chip, .ai-btn {
+  padding: 7px 12px;
+  border: 1px solid var(--ai-line);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.ai-chip:hover, .ai-btn:hover:not(:disabled) {
+  border-color: var(--ai-brand);
+  background: color-mix(in srgb, var(--ai-brand) 9%, transparent);
+}
+.ai-btn { font-weight: 800; padding: 7px 15px; }
+.ai-btn--primary { background: var(--ai-brand); border-color: var(--ai-brand); color: var(--ai-navy); }
+.ai-btn--primary:hover:not(:disabled) { background: var(--ai-glow); border-color: var(--ai-glow); }
+.ai-btn:disabled { opacity: .5; cursor: default; }
+.ai-card__close:focus-visible, .ai-chip:focus-visible, .ai-btn:focus-visible { outline: 2px solid var(--ai-brand); outline-offset: 2px; }
+
+.ai-dots { display: inline-flex; gap: 4px; margin-right: 9px; vertical-align: middle; }
+.ai-dots i {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--ai-brand);
+  animation: ai-dot 1s infinite ease-in-out both;
+}
+.ai-dots i:nth-child(2) { animation-delay: .15s; }
+.ai-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes ai-dot { 0%, 80%, 100% { transform: scale(.55); opacity: .5; } 40% { transform: scale(1); opacity: 1; } }
+
+/* ── Mascote ── */
+.ai-mascot {
+  position: relative;
+  flex: none;
+  width: var(--ai-mascot-size);
+  aspect-ratio: 120 / 140;
+  transform-origin: 50% 92%;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.ai-mascot__jump, .ai-mascot__float { width: 100%; height: 100%; transform-origin: 50% 100%; }
+.ai-mascot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 4px 5px rgba(34, 34, 57, .22));   /* destaca a casca branca em fundo branco */
+}
+/* reflexo do propulsor no chão */
+.ai-mascot__shadow {
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  bottom: 3%;
+  height: 7%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ai-glow) 55%, transparent), transparent);
+}
+
+/* partes do SVG (os grupos aninhados com translate() servem de "pivô" das rotações) */
+.ai-assistant [data-part="sway"],
+.ai-assistant [data-part="arm"],
+.ai-assistant [data-part="arm2"],
+.ai-assistant [data-part="blink"],
+.ai-assistant [data-part="thrust"],
+.ai-assistant [data-part="sparkle"] { transform-box: view-box; transform-origin: 0 0; }
+
+.m-shell  { fill: url(#ai-shell-grad); stroke: var(--ai-shell-line); stroke-width: 1.4; }
+.m-band   { fill: none; stroke: var(--ai-shell-line); stroke-width: 5; stroke-linecap: round; }
+.m-visor  { fill: url(#ai-visor-grad); }
+.m-gloss  { fill: #fff; opacity: .16; }
+.m-glow   { fill: var(--ai-glow); }
+.m-halo   { fill: var(--ai-glow); opacity: .85; }
+.m-blush  { fill: var(--ai-glow); opacity: .5; transition: opacity .2s; }
+.m-glint  { fill: #fff; opacity: .95; }
+.m-joint  { fill: var(--ai-navy); }
+.m-limb   { stroke: var(--ai-navy); stroke-width: 8.5; stroke-linecap: round; }
+.m-hand   { fill: url(#ai-shell-grad); stroke: var(--ai-shell-line); stroke-width: 1.4; }
+.m-core   { fill: var(--ai-navy); stroke: var(--ai-glow); stroke-width: 1.6; }
+.m-thrust { fill: url(#ai-thrust-grad); }
+.m-spark  { fill: var(--ai-glow); }
+.m-stroke { fill: none; stroke: var(--ai-glow); stroke-width: 2.3; stroke-linecap: round; }
+.m-happy  { fill: none; stroke: var(--ai-glow); stroke-width: 3.6; stroke-linecap: round; }
+.m-happy-halo { fill: none; stroke: var(--ai-glow); stroke-width: 5; stroke-linecap: round; opacity: .85; }
+[data-part="sparkle"] { opacity: 0; }
+
+/* expressões: normal, feliz (olhos ^ ^ e boca aberta) e pensando (boca "o") */
+.m-eyes-happy, .m-mouth-open, .m-mouth-o { opacity: 0; }
+.m-eyes-open, .m-eyes-happy, .m-mouth-smile, .m-mouth-open, .m-mouth-o { transition: opacity .12s; }
+.ai-assistant[data-mood="happy"] .m-eyes-open  { opacity: 0; }
+.ai-assistant[data-mood="happy"] .m-eyes-happy { opacity: 1; }
+.ai-assistant[data-mood="happy"] .m-mouth-smile { opacity: 0; }
+.ai-assistant[data-mood="happy"] .m-mouth-open  { opacity: 1; }
+.ai-assistant[data-mood="happy"] .m-blush { opacity: .95; }
+.ai-assistant[data-mood="think"] .m-mouth-smile { opacity: 0; }
+.ai-assistant[data-mood="think"] .m-mouth-o     { opacity: 1; }
+
+/* olhar: o JS define --look-x / --look-y (acompanha o mouse, o campo de texto, etc.) */
+.ai-assistant [data-part="look"] { transform: translate(var(--look-x, 0px), var(--look-y, 0px)); }
+.ai-assistant [data-part="face"] { transform: translate(calc(var(--look-x, 0px) * .5), calc(var(--look-y, 0px) * .5)); }
+.ai-assistant [data-part="look"],
+.ai-assistant [data-part="face"],
+.ai-assistant [data-part="sway"] { transition: transform .32s cubic-bezier(.3, .7, .3, 1); }
+.ai-assistant[data-look="input"] [data-part="sway"] { transform: rotate(-3deg); }
+
+/* ── Mobile: o campo ocupa a largura da tela (menos margens e mascote) ── */
+@media (max-width: 600px) {
+  .ai-assistant { --ai-edge: 16px; --ai-mascot-size: 88px; --ai-chat-max: 100vw; }
+  .ai-assistant { left: calc(var(--ai-edge) + env(safe-area-inset-left, 0px)); }
+  .ai-bubble__greeting { font-size: 14px; }
+}
+
+/* ── prefers-reduced-motion: sem transições nem pontinhos animados (o JS cuida do resto: só fade) ── */
+@media (prefers-reduced-motion: reduce) {
+  .ai-assistant *, .ai-assistant *::before, .ai-assistant *::after { transition: none !important; }
+  .ai-dots i { animation: none; opacity: .75; }
+}

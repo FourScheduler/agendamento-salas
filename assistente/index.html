@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Assistente - pre-visualizacao</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assistente.css">
+<style>
+  /* pagina de teste minima (nao faz parte do widget) */
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #f7f8fa;
+    color: #222239;
+    font: 400 1rem/1.6 "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 720px; margin: 0 auto; padding: 3rem 1.25rem; }
+  h1 { margin: 0 0 .5rem; font-size: 1.5rem; }
+  p { margin: 0 0 .75rem; color: #5a5a72; }
+</style>
+</head>
+
+<body>
+<main>
+  <h1>Pre-visualizacao do assistente</h1>
+  <p>Pagina de teste minima. O widget fica fixo no canto inferior direito.</p>
+  <p>Passe o mouse perto do robô, clique nele e envie uma mensagem para ver as reacoes.</p>
+</main>
+
+<!-- ASSISTENTE: espelho de assistente.html. Se alterar o fragmento, atualize aqui tambem. -->
+<div class="ai-assistant" id="ai-assistant" data-state="hidden" role="complementary" aria-label="Assistente de IA">
+
+  <div class="ai-bubble" data-part="bubble">
+    <div class="ai-bubble__inner">
+      <p class="ai-bubble__greeting" data-part="greeting" role="status">Olá! Posso te ajudar a reservar uma sala?</p>
+
+      <div class="ai-bubble__form" data-part="form" role="group" aria-label="Enviar pedido">
+        <input class="ai-bubble__input" data-part="input" type="text"
+               placeholder="Ex.: sala para 6, amanhã às 14h" aria-label="Descreva a reserva que você precisa"
+               autocomplete="off" enterkeyhint="send" maxlength="2000">
+        <button class="ai-bubble__send" data-part="send" type="button" aria-label="Enviar" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 19V5M5 12l7-7 7 7"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- cartão de ajuda / pensando / resposta (o JS preenche) -->
+  <div class="ai-card" data-part="card" role="status" aria-live="polite" hidden>
+    <button class="ai-card__close" data-part="card-close" type="button" aria-label="Fechar">×</button>
+    <div data-part="card-body"></div>
+  </div>
+
+  <div class="ai-mascot" data-part="mascot">
+    <div class="ai-mascot__shadow" data-part="shadow"></div>
+    <div class="ai-mascot__jump" data-part="jump">
+      <div class="ai-mascot__float" data-part="float">
+        <svg viewBox="0 0 120 140" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="ai-shell-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" style="stop-color: var(--ai-shell-hi)"/>
+              <stop offset="1" style="stop-color: var(--ai-shell-lo)"/>
+            </linearGradient>
+            <linearGradient id="ai-visor-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#363660"/>
+              <stop offset="1" stop-color="#14142a"/>
+            </linearGradient>
+            <radialGradient id="ai-thrust-grad">
+              <stop offset="0" style="stop-color: var(--ai-glow); stop-opacity: .95"/>
+              <stop offset="1" style="stop-color: var(--ai-glow); stop-opacity: 0"/>
+            </radialGradient>
+            <filter id="ai-blur" x="-60%" y="-60%" width="220%" height="220%">
+              <feGaussianBlur stdDeviation="2.6"/>
+            </filter>
+          </defs>
+
+          <!-- brilhinhos de alegria (fora do balanço do corpo) -->
+          <g transform="translate(105 18)"><g data-part="sparkle"><path class="m-spark" d="M0-6 1.7-1.7 6 0 1.7 1.7 0 6-1.7 1.7-6 0-1.7-1.7Z"/></g></g>
+          <g transform="translate(13 12) scale(.75)"><g data-part="sparkle"><path class="m-spark" d="M0-6 1.7-1.7 6 0 1.7 1.7 0 6-1.7 1.7-6 0-1.7-1.7Z"/></g></g>
+          <g transform="translate(114 46) scale(.6)"><g data-part="sparkle"><path class="m-spark" d="M0-6 1.7-1.7 6 0 1.7 1.7 0 6-1.7 1.7-6 0-1.7-1.7Z"/></g></g>
+
+          <!-- tudo que balança fica dentro de "sway" (pivô no propulsor: 60,120) -->
+          <g transform="translate(60 120)">
+            <g data-part="sway">
+              <g transform="translate(-60 -120)">
+
+                <!-- propulsor: o robô flutua (a chama pulsa) -->
+                <g transform="translate(60 113)">
+                  <g data-part="thrust">
+                    <ellipse class="m-thrust" cx="0" cy="8" rx="21" ry="8"/>
+                    <ellipse class="m-glow" cx="0" cy="5.5" rx="6" ry="2.2"/>
+                  </g>
+                </g>
+                <path class="m-joint" d="M50 112 H70 L67 117 H53 Z"/>
+
+                <!-- braço direito (parado, balança de leve) -->
+                <g transform="translate(78 90)">
+                  <g data-part="arm2">
+                    <line class="m-limb" x1="0" y1="0" x2="9" y2="27"/>
+                    <circle class="m-hand" cx="9" cy="27" r="6.5"/>
+                  </g>
+                </g>
+
+                <!-- braço esquerdo (o que acena; pivô no ombro: 42,90) -->
+                <g transform="translate(42 90)">
+                  <g data-part="arm">
+                    <line class="m-limb" x1="0" y1="0" x2="-9" y2="27"/>
+                    <circle class="m-hand" cx="-9" cy="27" r="6.5"/>
+                  </g>
+                </g>
+
+                <!-- pescoço e tronco -->
+                <rect class="m-joint" x="53" y="76" width="14" height="9" rx="3"/>
+                <rect class="m-shell" x="40" y="82" width="40" height="30" rx="15"/>
+
+                <!-- núcleo de energia no peito -->
+                <circle class="m-halo" cx="60" cy="97" r="4" filter="url(#ai-blur)"/>
+                <circle class="m-core" cx="60" cy="97" r="6.5"/>
+                <circle class="m-glow m-pulse" cx="60" cy="97" r="3"/>
+
+                <!-- arco do headphone (atrás da cabeça) e gema no topo -->
+                <path class="m-band" d="M12 40 C12 -1 108 -1 108 40"/>
+                <circle class="m-halo" cx="60" cy="9.5" r="3.6" filter="url(#ai-blur)"/>
+                <circle class="m-glow m-pulse" cx="60" cy="9.5" r="2.8"/>
+
+                <!-- cabeça grande e redonda + viseira -->
+                <rect class="m-shell" x="17" y="14" width="86" height="64" rx="32"/>
+                <rect class="m-visor" x="24" y="22" width="72" height="48" rx="23"/>
+                <ellipse class="m-gloss" cx="40" cy="30" rx="10" ry="3.2" transform="rotate(-22 40 30)"/>
+
+                <!-- rosto -->
+                <g data-part="face">
+                  <ellipse class="m-blush" cx="35" cy="59" rx="5.2" ry="3"/>
+                  <ellipse class="m-blush" cx="85" cy="59" rx="5.2" ry="3"/>
+                  <g data-part="look">
+
+                    <!-- olhos abertos, grandes e brilhantes (piscam; pivô em 60,45) -->
+                    <g class="m-eyes-open" transform="translate(60 45)">
+                      <g data-part="blink">
+                        <g transform="translate(-60 -45)">
+                          <rect class="m-halo" x="40.5" y="36.5" width="11" height="17" rx="5.5" filter="url(#ai-blur)"/>
+                          <rect class="m-halo" x="68.5" y="36.5" width="11" height="17" rx="5.5" filter="url(#ai-blur)"/>
+                          <rect class="m-glow" x="40.5" y="36.5" width="11" height="17" rx="5.5"/>
+                          <rect class="m-glow" x="68.5" y="36.5" width="11" height="17" rx="5.5"/>
+                          <circle class="m-glint" cx="44.4" cy="41.2" r="2.3"/>
+                          <circle class="m-glint" cx="72.4" cy="41.2" r="2.3"/>
+                        </g>
+                      </g>
+                    </g>
+
+                    <!-- olhos felizes ^ ^ -->
+                    <g class="m-eyes-happy">
+                      <path class="m-happy-halo" d="M41 51 Q46 39.5 51 51" filter="url(#ai-blur)"/>
+                      <path class="m-happy-halo" d="M69 51 Q74 39.5 79 51" filter="url(#ai-blur)"/>
+                      <path class="m-happy" d="M41 51 Q46 39.5 51 51"/>
+                      <path class="m-happy" d="M69 51 Q74 39.5 79 51"/>
+                    </g>
+
+                    <!-- bocas: sorrisinho "ω", boca aberta (feliz) e "o" (pensando) -->
+                    <path class="m-stroke m-mouth-smile" d="M54.5 59 Q57.25 63 60 59 Q62.75 63 65.5 59"/>
+                    <path class="m-glow m-mouth-open" d="M54.5 57.5 Q60 68 65.5 57.5 Z"/>
+                    <circle class="m-stroke m-mouth-o" cx="60" cy="61" r="2.6"/>
+                  </g>
+                </g>
+
+                <!-- fones de ouvido com anel luminoso -->
+                <rect class="m-shell" x="6" y="33" width="16" height="30" rx="8"/>
+                <rect class="m-glow m-pulse" x="10.5" y="38" width="7" height="20" rx="3.5"/>
+                <rect class="m-shell" x="98" y="33" width="16" height="30" rx="8"/>
+                <rect class="m-glow m-pulse" x="102.5" y="38" width="7" height="20" rx="3.5"/>
+
+              </g>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assistente.js"></script>
+<script>
+  // Mock da IA so para a pre-visualizacao. Na pagina real, defina window.aiAssistant.onSend.
+  window.aiAssistant.onSend = async (texto) => {
+    await new Promise((r) => setTimeout(r, 900));
+    return {
+      text: `Entendi assim:\n"${texto}"\nPosso reservar?`,
+      actions: [
+        { label: 'Reservar', primary: true, onClick: async () => 'Pronto, sala reservada! (demonstracao)' },
+        { label: 'Ajustar', onClick: () => { window.aiAssistant.edit(texto); } },
+      ],
+    };
+  };
+</script>
+</body>
+</html>

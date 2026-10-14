@@ -58,6 +58,16 @@ describe('Agendamento', () => {
     expect(compiled.querySelector('h1')?.textContent).toContain('Escolha uma sala');
   });
 
+  it('should render the floating assistant', async () => {
+    const fixture = iniciar();
+    responder([]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('app-assistente-ia .ai-assistant')).toBeTruthy();
+  });
+
   it('should render one button per room', async () => {
     const fixture = iniciar();
     responder([{ id: 3, nome: 'Sala Comp 02' }]);
