@@ -140,18 +140,16 @@ export class Agendamento implements OnInit {
     try {
       const reserva = await firstValueFrom(
         this.reservasService.confirmar({
-          salaId: sala.id,
-          sala: sala.nome,
+          salaId: { id: sala.id },
           data: this.data(),
           horaInicio: this.horaInicio(),
           horaFim,
-          quantidadePessoas: this.pessoas(),
-          solicitante: this.auth.usuario() ?? 'Visitante',
+          qntdPessoas: this.pessoas(),
           titulo: `Reunião - ${sala.nome}`,
         }),
       );
 
-      const texto = `Reserva confirmada para ${reserva.sala} em ${this.data()}, das ${this.horaInicio()} às ${horaFim} (demonstração).`;
+      const texto = `Reserva confirmada para ${reserva.sala.nome} em ${this.data()}, das ${this.horaInicio()} às ${horaFim}.`;
       this.confirmacao.set(texto);
       this.buscar();
       return texto;
@@ -189,7 +187,7 @@ export class Agendamento implements OnInit {
         next: (respostas) => {
           const livres = respostas.map((sala) => sala.nome);
           this.atualizarSelecao(livres);
-          this.salas.set(resolverEstados(livres));
+          this.salas.set(resolverEstados(respostas));
           this.carregando.set(false);
         },
         error: (erro: unknown) => {

@@ -1,6 +1,7 @@
 package br.com.foursys.agendamento_salas.domain;
 
 import br.com.foursys.agendamento_salas.enums.PerfilUsuario;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,6 +18,7 @@ public class Usuario {
     private Long id;
     private String email;
     private String nome;
+    @JsonIgnore
     private String password;
     @Enumerated(EnumType.STRING)
     private PerfilUsuario perfilUsuario;

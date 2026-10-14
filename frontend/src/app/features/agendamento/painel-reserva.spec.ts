@@ -11,7 +11,7 @@ describe('PainelReserva', () => {
 
   function montar(pessoas = 4, opcoes: { autenticado?: boolean; confirmacao?: string } = {}) {
     const fixture = TestBed.createComponent(PainelReserva);
-    fixture.componentRef.setInput('sala', resolverEstados(['Sala 01'])[5]);
+    fixture.componentRef.setInput('sala', resolverEstados([{ id: 1 }])[0]);
     fixture.componentRef.setInput('data', '2026-06-18');
     fixture.componentRef.setInput('horaInicio', '14:00');
     fixture.componentRef.setInput('duracao', 60);

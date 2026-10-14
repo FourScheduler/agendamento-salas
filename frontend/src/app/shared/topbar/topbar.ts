@@ -28,6 +28,8 @@ export class Topbar {
 
   readonly modalAberto = signal(false);
   readonly nomeDigitado = signal(USUARIO_MOCK);
+  readonly entrando = signal(false);
+  readonly erroLogin = signal<string | null>(null);
 
   private readonly campoNome = viewChild.required<ElementRef<HTMLInputElement>>('campoNome');
 
@@ -49,6 +51,7 @@ export class Topbar {
 
   abrirModal(): void {
     this.nomeDigitado.set(this.usuario() ?? this.nomePadrao);
+    this.erroLogin.set(null);
     this.modalAberto.set(true);
     afterNextRender(
       () => {
@@ -62,16 +65,26 @@ export class Topbar {
 
   fecharModal(): void {
     this.modalAberto.set(false);
+    this.erroLogin.set(null);
   }
 
-  entrar(): void {
+  async entrar(): Promise<void> {
     const nome = this.nomeDigitado().trim();
-    if (!nome) {
+    if (!nome || this.entrando()) {
       return;
     }
 
-    this.auth.entrar(nome);
-    this.fecharModal();
+    this.entrando.set(true);
+    this.erroLogin.set(null);
+
+    try {
+      await this.auth.entrar(nome);
+      this.fecharModal();
+    } catch {
+      this.erroLogin.set('Não foi possível entrar agora. Tente novamente.');
+    } finally {
+      this.entrando.set(false);
+    }
   }
 
   sair(): void {

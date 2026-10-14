@@ -9,7 +9,7 @@ describe('MapaSalas', () => {
     }).compileComponents();
   });
 
-  function montar(disponiveis: string[], selecionada: string | null = null) {
+  function montar(disponiveis: Array<{ id: number }>, selecionada: string | null = null) {
     const fixture = TestBed.createComponent(MapaSalas);
     fixture.componentRef.setInput('salas', resolverEstados(disponiveis));
     fixture.componentRef.setInput('data', '2026-06-18');
@@ -25,7 +25,7 @@ describe('MapaSalas', () => {
   });
 
   it('should render the eight rooms and the legend', () => {
-    const fixture = montar(['Sala Comp 02']);
+    const fixture = montar([{ id: 6 }]);
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.querySelectorAll('button.sala').length).toBe(8);
@@ -36,17 +36,16 @@ describe('MapaSalas', () => {
     expect(compiled.textContent).toContain('Time do suporte');
   });
 
-  it('should disable occupied and unavailable rooms', () => {
-    const fixture = montar(['Sala Comp 02']);
+  it('should disable occupied rooms', () => {
+    const fixture = montar([{ id: 6 }]);
     const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.querySelectorAll('.sala--ocupada').length).toBe(5);
-    expect(compiled.querySelectorAll('.sala--indisponivel').length).toBe(2);
+    expect(compiled.querySelectorAll('.sala--ocupada').length).toBe(7);
     expect(compiled.querySelectorAll('.sala:disabled').length).toBe(7);
   });
 
   it('should emit the selected room', () => {
-    const fixture = montar(['Sala Comp 02']);
+    const fixture = montar([{ id: 6 }]);
     let escolhida = '';
 
     fixture.componentInstance.selecionar.subscribe((nome) => (escolhida = nome));
@@ -58,11 +57,11 @@ describe('MapaSalas', () => {
 
     disponivel[0].click();
 
-    expect(escolhida).toBe('Sala Comp 02');
+    expect(escolhida).toBe('Componivel 02');
   });
 
   it('should render the floor plan areas of the reference drawing', () => {
-    const fixture = montar(['Sala Comp 02']);
+    const fixture = montar([{ id: 6 }]);
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.querySelector('.faixa--margem')).toBeTruthy();
@@ -75,7 +74,7 @@ describe('MapaSalas', () => {
   });
 
   it('should keep the auditorium restricted with capacity and booking tooltip', () => {
-    const fixture = montar(['Sala Comp 02']);
+    const fixture = montar([{ id: 6 }]);
     const compiled = fixture.nativeElement as HTMLElement;
     const auditorio = compiled.querySelector('.sala--restrita');
 

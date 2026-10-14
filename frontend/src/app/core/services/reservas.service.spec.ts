@@ -21,41 +21,39 @@ describe('ReservasService', () => {
     httpMock.verify();
   });
 
-  it('should post the reservation to the mock endpoint', () => {
+  it('should post the booking to the real agendamento endpoint', () => {
     const requisicao = {
-      salaId: 7,
-      sala: 'Sala 02',
+      salaId: { id: 2 },
       data: '2026-10-20',
       horaInicio: '14:00',
       horaFim: '15:00',
-      quantidadePessoas: 4,
-      solicitante: 'Kevin Miranda',
+      qntdPessoas: 4,
       titulo: 'Reunião de planejamento',
     };
 
     let resposta: unknown;
     service.confirmar(requisicao).subscribe((valor) => (resposta = valor));
 
-    const chamada = httpMock.expectOne(`${environment.apiUrl}/api/reservas`);
+    const chamada = httpMock.expectOne(`${environment.apiUrl}/api/agendamento`);
     expect(chamada.request.method).toBe('POST');
     expect(chamada.request.body).toEqual(requisicao);
 
     chamada.flush({
       id: 1,
-      sala: 'Sala 02',
-      inicio: '2026-10-20T14:00:00',
-      fim: '2026-10-20T15:00:00',
-      status: 'CONFIRMADA',
-      solicitante: 'Kevin Miranda',
+      sala: { id: 2, nome: 'Sala 02' },
+      inicio: '14:00:00',
+      fim: '15:00:00',
+      status: 'CONFIRMADO',
+      solicitante: { id: 3, nome: 'Usuario Teste Um', email: 'usuario@teste.com' },
     });
 
     expect(resposta).toEqual({
       id: 1,
-      sala: 'Sala 02',
-      inicio: '2026-10-20T14:00:00',
-      fim: '2026-10-20T15:00:00',
-      status: 'CONFIRMADA',
-      solicitante: 'Kevin Miranda',
+      sala: { id: 2, nome: 'Sala 02' },
+      inicio: '14:00:00',
+      fim: '15:00:00',
+      status: 'CONFIRMADO',
+      solicitante: { id: 3, nome: 'Usuario Teste Um', email: 'usuario@teste.com' },
     });
   });
 });

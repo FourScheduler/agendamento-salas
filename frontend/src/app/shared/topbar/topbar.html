@@ -75,8 +75,14 @@
           <button class="login-modal__cancelar" type="button" (click)="fecharModal()">
             Cancelar
           </button>
-          <button class="botao login-modal__entrar" type="submit">Entrar</button>
+          <button class="botao login-modal__entrar" type="submit" [disabled]="entrando()">
+            {{ entrando() ? 'Entrando...' : 'Entrar' }}
+          </button>
         </div>
+
+        @if (erroLogin(); as falha) {
+          <p class="login-modal__erro campo__erro" role="alert">{{ falha }}</p>
+        }
       </form>
     </div>
   </div>

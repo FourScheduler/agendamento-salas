@@ -74,7 +74,7 @@ describe('Agendamento', () => {
 
   it('should render one button per room', async () => {
     const fixture = iniciar();
-    responder([{ id: 3, nome: 'Sala Comp 02' }]);
+    responder([{ id: 6, nome: 'Componivel 02' }]);
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -110,45 +110,49 @@ describe('Agendamento', () => {
 
   it('should ask for login when confirming the reservation while unauthenticated', async () => {
     const fixture = iniciar();
-    responder([{ id: 7, nome: 'Sala 02' }]);
+    responder([{ id: 2, nome: 'Sala 02' }]);
     await fixture.whenStable();
 
     fixture.componentInstance.selecionar('Sala 02');
     const texto = await fixture.componentInstance.confirmarReserva();
 
     expect(texto).toContain('Faça login');
-    expect(httpMock.match(`${environment.apiUrl}/api/reservas`).length).toBe(0);
+    expect(httpMock.match(`${environment.apiUrl}/api/agendamento`).length).toBe(0);
   });
 
   it('should create the reservation when authenticated and refresh the map', async () => {
     const fixture = iniciar();
-    responder([{ id: 7, nome: 'Sala 02' }]);
+    responder([{ id: 2, nome: 'Sala 02' }]);
     await fixture.whenStable();
 
     fixture.componentInstance.selecionar('Sala 02');
-    TestBed.inject(AuthService).entrar('Kevin Miranda');
+
+    const login = TestBed.inject(AuthService).entrar('Kevin Miranda');
+    httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('token-jwt-123');
+    await login;
+
     const promessa = fixture.componentInstance.confirmarReserva();
 
-    const chamada = httpMock.expectOne(`${environment.apiUrl}/api/reservas`);
+    const chamada = httpMock.expectOne(`${environment.apiUrl}/api/agendamento`);
     expect(chamada.request.method).toBe('POST');
     expect(chamada.request.body).toMatchObject({
-      salaId: 7,
-      sala: 'Sala 02',
-      solicitante: 'Kevin Miranda',
+      salaId: { id: 2 },
+      qntdPessoas: 1,
+      titulo: 'Reunião - Sala 02',
     });
 
     chamada.flush({
       id: 1,
-      sala: 'Sala 02',
-      inicio: `${fixture.componentInstance.data()}T${fixture.componentInstance.horaInicio()}:00`,
-      fim: `${fixture.componentInstance.data()}T15:00:00`,
-      status: 'CONFIRMADA',
-      solicitante: 'Kevin Miranda',
+      sala: { id: 2, nome: 'Sala 02' },
+      inicio: `${fixture.componentInstance.horaInicio()}:00`,
+      fim: '15:00:00',
+      status: 'CONFIRMADO',
+      solicitante: { id: 3, nome: 'Usuario Teste Um', email: 'usuario@teste.com' },
     });
 
     const texto = await promessa;
     expect(texto).toContain('Reserva confirmada para Sala 02');
-    expect(fixture.componentInstance.confirmacao()).toContain('demonstração');
+    expect(fixture.componentInstance.confirmacao()).toContain('Reserva confirmada');
 
     responder([]);
     await fixture.whenStable();
@@ -157,11 +161,14 @@ describe('Agendamento', () => {
 
   it('should reserve through the assistant action when signed in', async () => {
     const fixture = iniciar();
-    responder([{ id: 7, nome: 'Sala 02' }]);
+    responder([{ id: 2, nome: 'Sala 02' }]);
     await fixture.whenStable();
 
     fixture.componentInstance.selecionar('Sala 02');
-    TestBed.inject(AuthService).entrar('Kevin Miranda');
+
+    const login = TestBed.inject(AuthService).entrar('Kevin Miranda');
+    httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('token-jwt-123');
+    await login;
 
     const resposta =
       await fixture.componentInstance.processarMensagemAssistente('sala para 4 pessoas');
@@ -169,14 +176,14 @@ describe('Agendamento', () => {
     expect(acao).toBeTruthy();
 
     const promessa = acao?.aoClicar?.() as Promise<string>;
-    const chamada = httpMock.expectOne(`${environment.apiUrl}/api/reservas`);
+    const chamada = httpMock.expectOne(`${environment.apiUrl}/api/agendamento`);
     chamada.flush({
       id: 2,
-      sala: 'Sala 02',
-      inicio: `${fixture.componentInstance.data()}T${fixture.componentInstance.horaInicio()}:00`,
-      fim: `${fixture.componentInstance.data()}T15:00:00`,
-      status: 'CONFIRMADA',
-      solicitante: 'Kevin Miranda',
+      sala: { id: 2, nome: 'Sala 02' },
+      inicio: `${fixture.componentInstance.horaInicio()}:00`,
+      fim: '15:00:00',
+      status: 'CONFIRMADO',
+      solicitante: { id: 3, nome: 'Usuario Teste Um', email: 'usuario@teste.com' },
     });
 
     expect(await promessa).toContain('Reserva confirmada');

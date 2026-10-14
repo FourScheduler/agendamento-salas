@@ -9,7 +9,7 @@ describe('ListaSalas', () => {
     }).compileComponents();
   });
 
-  function montar(disponiveis: string[], selecionada: string | null = null) {
+  function montar(disponiveis: Array<{ id: number }>, selecionada: string | null = null) {
     const fixture = TestBed.createComponent(ListaSalas);
     fixture.componentRef.setInput('salas', resolverEstados(disponiveis));
     fixture.componentRef.setInput('selecionada', selecionada);
@@ -37,40 +37,39 @@ describe('ListaSalas', () => {
   });
 
   it('should allow selecting only the available rooms', () => {
-    const fixture = montar(['Sala Comp 02']);
+    const fixture = montar([{ id: 6 }]);
     const itens = habilitadas(fixture);
 
     expect(itens.length).toBe(1);
-    expect(itens[0].textContent).toContain('Sala Comp 02');
+    expect(itens[0].textContent).toContain('Componivel 02');
   });
 
   it('should show the state of each room', () => {
-    const fixture = montar(['Sala Comp 02']);
+    const fixture = montar([{ id: 6 }]);
     const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
 
     expect(texto).toContain('Livre');
     expect(texto).toContain('Ocupada');
-    expect(texto).toContain('Indisponível');
   });
 
   it('should emit the selected room', () => {
-    const fixture = montar(['Sala Comp 02']);
+    const fixture = montar([{ id: 6 }]);
     let escolhida = '';
 
     fixture.componentInstance.selecionar.subscribe((nome) => (escolhida = nome));
 
     habilitadas(fixture)[0].click();
 
-    expect(escolhida).toBe('Sala Comp 02');
+    expect(escolhida).toBe('Componivel 02');
   });
 
   it('should mark the selected room', () => {
-    const fixture = montar(['Sala Comp 02'], 'Sala Comp 02');
+    const fixture = montar([{ id: 6 }], 'Componivel 02');
     const marcada = (fixture.nativeElement as HTMLElement).querySelector(
       '.lista__item--selecionada',
     );
 
-    expect(marcada?.textContent).toContain('Sala Comp 02');
+    expect(marcada?.textContent).toContain('Componivel 02');
     expect(marcada?.getAttribute('aria-pressed')).toBe('true');
   });
 });
