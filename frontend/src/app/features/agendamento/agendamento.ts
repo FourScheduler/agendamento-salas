@@ -19,6 +19,7 @@ import {
 import { MapaSalas } from './mapa-salas';
 import { PainelReserva } from './painel-reserva';
 import { AssistenteIa, RespostaAssistente } from '../../shared/assistente-ia/assistente-ia';
+import { ToastService } from '../../shared/toast/toast';
 
 @Component({
   selector: 'app-agendamento',
@@ -32,6 +33,7 @@ export class Agendamento implements OnInit {
   private readonly conversasService = inject(ConversasService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly toast = inject(ToastService);
 
   /** Conversa aberta com o assistente; nula quando não há em andamento. */
   private conversaId: number | null = null;
@@ -190,6 +192,7 @@ export class Agendamento implements OnInit {
       this.conversaId = null;
       this.limparResultadoConfirmacao();
       this.buscar();
+      this.toast.sucesso('Reserva confirmada', resposta.mensagem);
       return { texto: resposta.mensagem };
     } catch (erro: unknown) {
       return { texto: mensagemDeErro(erro) };
@@ -277,6 +280,7 @@ export class Agendamento implements OnInit {
           : '';
       const texto = `Reserva confirmada para ${nomeSala} em ${this.data()}, das ${this.horaInicio()} às ${horaFim}${detalhes}.`;
       this.confirmacao.set(texto);
+      this.toast.sucesso('Reserva confirmada', texto);
       this.buscar();
       return texto;
     } catch (erro: unknown) {
