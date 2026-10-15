@@ -175,6 +175,7 @@ describe('Agendamento', () => {
 
     const texto = await promessa;
     expect(texto).toContain('Reserva confirmada para Sala 02');
+    expect(texto).toContain('nº 1 · CONFIRMADO');
     expect(fixture.componentInstance.confirmacao()).toContain('Reserva confirmada');
 
     responder([]);

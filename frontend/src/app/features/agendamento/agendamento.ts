@@ -51,6 +51,7 @@ export class Agendamento implements OnInit {
   readonly erroApi = signal<string | null>(null);
   readonly erroValidacao = signal<string | null>(null);
   readonly autenticado = this.auth.autenticado;
+  readonly usuario = this.auth.usuario;
   readonly confirmando = signal(false);
   readonly confirmacao = signal<string | null>(null);
   readonly erroConfirmacao = signal<string | null>(null);
@@ -270,7 +271,11 @@ export class Agendamento implements OnInit {
       // A sala já foi validada antes da chamada. Ela também é usada como fallback para
       // respostas de versões anteriores da API que não retornem o objeto `sala`.
       const nomeSala = reserva.sala?.nome ?? sala.nome;
-      const texto = `Reserva confirmada para ${nomeSala} em ${this.data()}, das ${this.horaInicio()} às ${horaFim}.`;
+      const detalhes =
+        reserva.id != null
+          ? ` (nº ${reserva.id}${reserva.status ? ` · ${reserva.status}` : ''})`
+          : '';
+      const texto = `Reserva confirmada para ${nomeSala} em ${this.data()}, das ${this.horaInicio()} às ${horaFim}${detalhes}.`;
       this.confirmacao.set(texto);
       this.buscar();
       return texto;

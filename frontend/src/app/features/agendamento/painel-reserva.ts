@@ -20,6 +20,7 @@ export class PainelReserva {
   readonly duracoes = input<number[]>([30, 60, 90, 120]);
   readonly equipamentos = input<boolean>(false);
   readonly autenticado = input<boolean>(false);
+  readonly solicitante = input<string | null>(null);
   readonly confirmando = input<boolean>(false);
   readonly confirmacao = input<string | null>(null);
 

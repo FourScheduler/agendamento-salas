@@ -9,7 +9,10 @@ describe('PainelReserva', () => {
     }).compileComponents();
   });
 
-  function montar(pessoas = 4, opcoes: { autenticado?: boolean; confirmacao?: string } = {}) {
+  function montar(
+    pessoas = 4,
+    opcoes: { autenticado?: boolean; confirmacao?: string; solicitante?: string } = {},
+  ) {
     const fixture = TestBed.createComponent(PainelReserva);
     fixture.componentRef.setInput('sala', resolverEstados([{ id: 1 }])[0]);
     fixture.componentRef.setInput('data', '2026-06-18');
@@ -17,6 +20,7 @@ describe('PainelReserva', () => {
     fixture.componentRef.setInput('duracao', 60);
     fixture.componentRef.setInput('pessoas', pessoas);
     fixture.componentRef.setInput('autenticado', opcoes.autenticado ?? false);
+    fixture.componentRef.setInput('solicitante', opcoes.solicitante ?? null);
     fixture.componentRef.setInput('confirmacao', opcoes.confirmacao ?? null);
     fixture.detectChanges();
     return fixture;
@@ -86,6 +90,23 @@ describe('PainelReserva', () => {
       'Reserva confirmada para Sala 01',
     );
     expect(compiled.querySelector('.resumo__nota')).toBeNull();
+  });
+
+  it('should show the requester of the reservation', async () => {
+    const fixture = montar(4, { autenticado: true, solicitante: 'Usuario Teste Um' });
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Solicitante');
+    expect(compiled.textContent).toContain('Usuario Teste Um');
+  });
+
+  it('should hide the requester row when there is no session', async () => {
+    const fixture = montar();
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).not.toContain('Solicitante');
   });
 
   it('should emit the new number of people', async () => {
