@@ -41,7 +41,7 @@ export type ResultadoEnvio = string | RespostaAssistente | void;
 export type ProcessarMensagem = (texto: string) => ResultadoEnvio | Promise<ResultadoEnvio>;
 
 const TEXTOS = {
-  saudacao: 'Olá! Posso te ajudar a reservar uma sala?',
+  saudacao: 'Posso te ajudar a reservar uma sala?',
   placeholder: 'Ex: Quero uma sala para 4 pessoas amanhã das 14h às 15h',
   placeholderCurto: 'Ex.: Sala para 4 amanhã às 14h as 15h',
   ajuda: 'É só escrever do seu jeito que eu entendo. Por exemplo:',
@@ -373,6 +373,15 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
       return;
     }
     this.risadinha();
+    if (estado === 'greeting') {
+      // Primeira abertura: avança para o painel de chat
+      this.estado.set('chat');
+      this.minimizado.set(false);
+      this.mostrarAjuda();
+      this.pular();
+      this.reagir();
+      return;
+    }
     this.reagir();
     if (estado === 'chat') {
       if (this.minimizado()) {
@@ -836,19 +845,17 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
       await pausa(TIMELINE.holdBeforeChat);
       this.iniciarRespiracao();
       this.iniciarVida();
-
-      await ir(
-        this.bubbleEl,
-        [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.7)' }],
-        { duration: TIMELINE.morphDuration * 0.5, easing: EASE.morph },
-      );
-      this.estado.set('chat');
-      await pausa(TIMELINE.morphDuration * 0.5);
-
-      await pausa(TIMELINE.helpDelay);
-      this.mostrarAjuda();
-      this.pular();
-      this.reagir();
+      // Fecha o balão sozinho após 5s se o usuário não interagiu (timer independente da timeline)
+      this.agendarDepois(() => {
+        if (this.estado() === 'greeting') {
+          this.bubbleEl.animate(
+            [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.75)' }],
+            { duration: 380, easing: EASE.morph, fill: 'forwards' },
+          );
+        }
+      }, 5000);
+      // Permanece no estado 'greeting' aguardando o clique do usuário no mascote.
+      // A transição para 'chat' é feita em tocarNoMascote().
     } catch (erro) {
       if (!(erro instanceof Cancelado) && (erro as Error)?.name !== 'AbortError') {
         throw erro;
@@ -876,12 +883,17 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
     });
 
     await pausa(TIMELINE.holdBeforeChat);
-    await ir(this.bubbleEl, [{ opacity: 1 }, { opacity: 0 }], {
-      duration: TIMELINE.fadeDuration / 2,
-      fill: 'forwards',
-    });
-    this.estado.set('chat');
-    this.mostrarAjuda();
+    // Fecha o balão sozinho após 5s se o usuário não interagiu
+    this.agendarDepois(() => {
+      if (this.estado() === 'greeting') {
+        this.bubbleEl.animate(
+          [{ opacity: 1 }, { opacity: 0 }],
+          { duration: TIMELINE.fadeDuration / 2, fill: 'forwards' },
+        );
+      }
+    }, 5000);
+    // Permanece no estado 'greeting' aguardando o clique do usuário no mascote.
+    // A transição para 'chat' é feita em tocarNoMascote().
   }
 }
 

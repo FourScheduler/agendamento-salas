@@ -82,9 +82,13 @@
   pointer-events: auto;
   transition: opacity .3s var(--ai-ease), visibility 0s;
 }
-/* no desktop o painel não escurece a página: o mapa continua visível ao lado */
+/* no desktop o backdrop fica transparente (sem visual) mas captura cliques fora do painel */
 @media (min-width: 601px) {
-  .ai-backdrop { display: none; }
+  .ai-backdrop {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 /* com o painel aberto o mascote sai de cena (voltar = botão minimizar/fechar) */
@@ -103,7 +107,8 @@
   flex: none;
   pointer-events: auto;
   max-width: calc(100vw - 2 * var(--ai-edge) - var(--ai-mascot-size) - var(--ai-gap));
-  margin-bottom: 18px;                 /* a setinha mira o rosto, não os pés */
+  align-self: flex-end;               /* alinha pelo rodapé do mascote */
+  margin-bottom: 6px;                  /* pequena folga do fundo */
   background:
     linear-gradient(var(--ai-surface), var(--ai-surface)) padding-box,
     var(--ai-iridescente) border-box;
@@ -174,11 +179,15 @@
   width: min(480px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
-  background: linear-gradient(rgba(255, 255, 255, .86), rgba(255, 255, 255, .86));
-  backdrop-filter: var(--ai-glass-blur);
-  -webkit-backdrop-filter: var(--ai-glass-blur);
-  border-left: 1px solid rgba(255, 255, 255, .9);
-  box-shadow: var(--ai-shadow), var(--ai-halo);
+  /* vidro real: fundo quase transparente para o mapa aparecer por baixo */
+  background: rgba(240, 244, 255, 0.08);
+  backdrop-filter: blur(40px) saturate(2.4) brightness(1.04);
+  -webkit-backdrop-filter: blur(40px) saturate(2.4) brightness(1.04);
+  border-left: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow:
+    var(--ai-halo),
+    -4px 0 60px -12px rgba(34, 34, 57, 0.14),
+    inset -1px 0 0 rgba(255, 255, 255, 0.6);
   color: var(--ai-text);
   transform: translateX(calc(100% + 40px));
   opacity: 0;
@@ -191,13 +200,17 @@
   visibility: visible;
   transition: transform .42s var(--ai-ease), opacity .3s var(--ai-ease), visibility 0s;
 }
-/* brilho de topo do vidro */
+/* brilho de topo sutil — não pode ser branco demais para não esconder o vidro */
 .ai-panel::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: var(--ai-brilho-topo);
   pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, 0) 18%),
+    linear-gradient(90deg, rgba(151, 214, 255, .06) 0%, rgba(255, 174, 214, .04) 100%);
+  border-radius: inherit;
 }
 
 .ai-panel__header {
@@ -208,7 +221,10 @@
   align-items: center;
   gap: 10px;
   padding: 14px 12px 12px 18px;
-  border-bottom: 1px solid var(--ai-line);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
 }
 .ai-panel__logo {
   flex: none;
@@ -236,28 +252,30 @@
   font-weight: 600;
   color: var(--ai-placeholder);
 }
-.ai-panel__controles { display: flex; gap: 2px; }
+.ai-panel__controles { display: flex; gap: 10px; }
 .ai-panel__ctl {
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, .8);
+  border: 1px solid rgba(255, 255, 255, .7);
   border-radius: 50%;
-  background: rgba(255, 255, 255, .55);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9);
+  background: rgba(255, 255, 255, .35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85), 0 2px 6px rgba(34, 34, 57, .08);
   color: var(--ai-placeholder);
   cursor: pointer;
   transition: background .15s, color .15s, transform .15s;
 }
 .ai-panel__ctl svg { width: 16px; height: 16px; }
 .ai-panel__ctl:hover {
-  background: rgba(34, 34, 57, .08);
+  background: rgba(255, 255, 255, .55);
   color: var(--ai-text);
   transform: translateY(-1px);
 }
-.ai-panel__ctl--close:hover { background: rgba(255, 83, 21, .14); color: var(--ai-brand); }
+.ai-panel__ctl--close:hover { background: rgba(255, 83, 21, .18); color: var(--ai-brand); }
 .ai-panel__ctl:active { transform: translateY(0) scale(.94); }
 .ai-panel__ctl:focus-visible { outline: 2px solid var(--ai-brand); outline-offset: 1px; }
 
@@ -297,9 +315,11 @@
   margin: 0;
   padding: 10px 14px;
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .96), rgba(255, 255, 255, .72));
-  border: 1px solid rgba(255, 255, 255, .95);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), 0 2px 8px rgba(34, 34, 57, .08);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 10px rgba(34, 34, 57, 0.08);
   font-size: 14px;
   line-height: 1.45;
   font-weight: 600;
@@ -330,14 +350,12 @@
   gap: 8px;
   margin: 0 14px 14px;
   padding: 5px 5px 5px 16px;
-  background:
-    linear-gradient(rgba(255, 255, 255, .75), rgba(255, 255, 255, .75)) padding-box,
-    var(--ai-iridescente) border-box;
-  backdrop-filter: var(--ai-glass-blur);
-  -webkit-backdrop-filter: var(--ai-glass-blur);
-  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(20px) saturate(2);
+  -webkit-backdrop-filter: blur(20px) saturate(2);
+  border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 999px;
-  box-shadow: var(--ai-shadow);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 4px 20px rgba(34, 34, 57, 0.1);
   transition: box-shadow .2s;
 }
 .ai-panel__form:focus-within {

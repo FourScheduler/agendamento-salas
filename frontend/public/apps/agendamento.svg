@@ -2,6 +2,6 @@
   <rect x="4" y="7.5" width="28" height="24.5" rx="4" stroke="#222239" stroke-width="2.4" />
   <path d="M4 14.5h28" stroke="#222239" stroke-width="2.4" />
   <path d="M11.5 4v6.5M24.5 4v6.5" stroke="#222239" stroke-width="2.4" stroke-linecap="round" />
-  <rect x="9" y="19" width="7" height="6.5" rx="1.6" fill="#ff5315" />
-  <rect x="20" y="19" width="7" height="6.5" rx="1.6" fill="#ff892e" />
+  <rect x="9" y="19" width="7" height="6.5" rx="1.6" fill="#222239" />
+  <rect x="20" y="19" width="7" height="6.5" rx="1.6" fill="#222239" />
 </svg>
