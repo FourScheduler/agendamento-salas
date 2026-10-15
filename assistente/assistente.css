@@ -16,7 +16,7 @@
 
     --ai-edge: 24px;              /* distância das bordas da tela */
     --ai-gap: 10px;               /* espaço entre balão e mascote */
-    --ai-mascot-size: 112px;
+    --ai-mascot-size: 100px;
     --ai-chat-max: 360px;         /* largura máxima do campo no desktop */
     --ai-z: 9999;
   }
@@ -328,7 +328,7 @@
   @media (max-width: 600px) {
     :root { --ai-edge: 16px; --ai-mascot-size: 88px; --ai-chat-max: 100vw; }
     .ai-assistant { left: calc(var(--ai-edge) + env(safe-area-inset-left, 0px)); }
-    .ai-bubble__greeting { font-size: 14px; }
+    .ai-bubble__greeting { font-size: 12px; }
   }
 
   /* ── prefers-reduced-motion: sem transições nem pontinhos animados (o JS cuida do resto: só fade) ── */
