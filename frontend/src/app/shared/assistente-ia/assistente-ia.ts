@@ -42,11 +42,11 @@ export type ProcessarMensagem = (texto: string) => ResultadoEnvio | Promise<Resu
 
 const TEXTOS = {
   saudacao: 'Olá! Posso te ajudar a reservar uma sala?',
-  placeholder: 'Ex.: Quero uma sala para 4 pessoas amanhã das 14h as 15h',
+  placeholder: 'Ex: Quero uma sala para 4 pessoas amanhã das 14h às 15h',
   placeholderCurto: 'Ex.: Sala para 4 amanhã às 14h as 15h',
   ajuda: 'É só escrever do seu jeito que eu entendo. Por exemplo:',
   exemplos: [
-    'Quero uma sala para 4 pessoas amanhã das 14h as 15h',
+    'Quero uma sala para 4 pessoas amanhã das 14h às 15h',
     'Sala para o dia 19/10/2026 para cinco pessoas das 11h as 12h', // Não será possível com o integra
     'Quero agendar uma sala',
   ],
