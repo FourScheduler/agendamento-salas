@@ -5,6 +5,14 @@
   gap: 1rem;
 }
 
+.minhas-reservas__voltar {
+  flex: none;
+  align-self: flex-start;
+  white-space: nowrap;
+  background-color:var(--orange);
+  color: #ffffff;
+}
+
 .minhas-reservas__filtros {
   display: inline-flex;
   gap: 0.5rem;
@@ -62,11 +70,6 @@
   font-weight: 700;
 }
 
-.minhas-reservas__local {
-  color: var(--muted);
-  font-size: 0.75rem;
-}
-
 .minhas-reservas__status {
   flex: none;
   padding: 0.125rem 0.5rem;
@@ -93,33 +96,28 @@
 }
 
 .minhas-reservas__tituloReserva {
-  color: var(--text);
-  font-size: 0.875rem;
+  margin-top: 0.125rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
-.minhas-reservas__dados {
+.minhas-reservas__meta {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin: 0;
+  gap: 0.375rem;
   padding-top: 0.875rem;
   border-top: 1px solid var(--border-soft);
 }
 
-.minhas-reservas__dado dt {
-  color: var(--muted-soft);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.minhas-reservas__dado dd {
-  margin: 0.125rem 0 0;
+.minhas-reservas__quando {
   color: var(--navy);
   font-size: 0.875rem;
   font-weight: 600;
+}
+
+.minhas-reservas__detalhes {
+  color: var(--muted);
+  font-size: 0.8125rem;
 }
 
 @media (max-width: 640px) {

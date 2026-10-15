@@ -31,7 +31,7 @@
 
   --ai-edge: 24px;              /* distância das bordas da tela */
   --ai-gap: 10px;               /* espaço entre balão e mascote */
-  --ai-mascot-size: 112px;
+  --ai-mascot-size: 102px;
   --ai-chat-max: 360px;         /* largura máxima do campo no desktop */
   --ai-z: 9999;
   --ai-ease: cubic-bezier(.3, .7, .3, 1);
@@ -171,7 +171,7 @@
   z-index: 2;
   isolation: isolate;
   pointer-events: auto;
-  width: min(430px, calc(100vw - 32px));
+  width: min(480px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
   background: linear-gradient(rgba(255, 255, 255, .86), rgba(255, 255, 255, .86));

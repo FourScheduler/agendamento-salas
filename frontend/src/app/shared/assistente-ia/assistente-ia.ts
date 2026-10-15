@@ -42,13 +42,13 @@ export type ProcessarMensagem = (texto: string) => ResultadoEnvio | Promise<Resu
 
 const TEXTOS = {
   saudacao: 'Olá! Posso te ajudar a reservar uma sala?',
-  placeholder: 'Ex.: sala para 6, amanhã às 14h',
-  placeholderCurto: 'Ex.: sala amanhã 14h',
+  placeholder: 'Ex.: Quero uma sala para 4 pessoas amanhã das 14h as 15h',
+  placeholderCurto: 'Ex.: Sala para 4 amanhã às 14h as 15h',
   ajuda: 'É só escrever do seu jeito que eu entendo. Por exemplo:',
   exemplos: [
-    'Sala para 6 pessoas amanhã às 14h',
-    'Toda segunda às 9h, por 1 hora', // Não será possível com o integra
-    'Tem alguma sala livre agora?',
+    'Quero uma sala para 4 pessoas amanhã das 14h as 15h',
+    'Sala para o dia 19/10/2026 para cinco pessoas das 11h as 12h', // Não será possível com o integra
+    'Quero agendar uma sala',
   ],
   pensando: 'Entendendo o seu pedido…',
   erro: 'Não consegui processar agora. Pode tentar de novo?',
