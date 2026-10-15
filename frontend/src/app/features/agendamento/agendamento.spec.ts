@@ -1,9 +1,28 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Agendamento } from './agendamento';
 import { AuthService } from '../../core/services/auth.service';
+import { apiErrorInterceptor } from '../../core/http/api-error';
+import { authInterceptor } from '../../core/http/auth-interceptor';
+import { RespostaAssistente } from '../../shared/assistente-ia/assistente-ia';
 import { environment } from '../../../environments/environment';
+
+function aguardarMicrotarefas(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+async function entrarDemo(httpMock: HttpTestingController): Promise<void> {
+  const login = TestBed.inject(AuthService).entrar('Kevin Miranda');
+  httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('token-jwt-123');
+  await aguardarMicrotarefas();
+  httpMock.expectOne(`${environment.apiUrl}/api/usuarios/me`).flush({
+    id: 3,
+    nome: 'Usuario Teste Um',
+    email: 'usuario@teste.com',
+  });
+  await login;
+}
 
 describe('Agendamento', () => {
   let httpMock: HttpTestingController;
@@ -12,7 +31,10 @@ describe('Agendamento', () => {
     window.localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [Agendamento],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(withInterceptors([authInterceptor, apiErrorInterceptor])),
+        provideHttpClientTesting(),
+      ],
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
@@ -25,6 +47,9 @@ describe('Agendamento', () => {
 
   function iniciar() {
     const fixture = TestBed.createComponent(Agendamento);
+    // Fixa um horário válido: proximaHoraCheia() usa o relógio real e, perto do fim do
+    // dia, a validação de fimDeJornada aborta a busca antes de qualquer requisição.
+    fixture.componentInstance.horaInicio.set('09:00');
     fixture.detectChanges();
     return fixture;
   }
@@ -127,9 +152,7 @@ describe('Agendamento', () => {
 
     fixture.componentInstance.selecionar('Sala 02');
 
-    const login = TestBed.inject(AuthService).entrar('Kevin Miranda');
-    httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('token-jwt-123');
-    await login;
+    await entrarDemo(httpMock);
 
     const promessa = fixture.componentInstance.confirmarReserva();
 
@@ -166,9 +189,7 @@ describe('Agendamento', () => {
 
     fixture.componentInstance.selecionar('Sala 02');
 
-    const login = TestBed.inject(AuthService).entrar('Kevin Miranda');
-    httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('token-jwt-123');
-    await login;
+    await entrarDemo(httpMock);
 
     const promessa = fixture.componentInstance.confirmarReserva();
     httpMock.expectOne(`${environment.apiUrl}/api/agendamento`).flush({
@@ -185,36 +206,136 @@ describe('Agendamento', () => {
     await fixture.whenStable();
   });
 
-  it('should reserve through the assistant action when signed in', async () => {
+  it('should ask for login in the assistant when unauthenticated', async () => {
+    const fixture = iniciar();
+    responder([]);
+    await fixture.whenStable();
+
+    const resposta =
+      await fixture.componentInstance.processarMensagemAssistente('sala para 4 pessoas');
+
+    expect(resposta.texto).toContain('Faça login');
+    expect(httpMock.match(`${environment.apiUrl}/api/agendamento/conversas`).length).toBe(0);
+  });
+
+  it('should interpret, suggest rooms and confirm through the conversation', async () => {
     const fixture = iniciar();
     responder([{ id: 2, nome: 'Sala 02' }]);
     await fixture.whenStable();
 
-    fixture.componentInstance.selecionar('Sala 02');
+    await entrarDemo(httpMock);
 
-    const login = TestBed.inject(AuthService).entrar('Kevin Miranda');
-    httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('token-jwt-123');
-    await login;
+    const promessa =
+      fixture.componentInstance.processarMensagemAssistente('sala para 4 pessoas amanhã às 14h');
 
-    const resposta =
-      await fixture.componentInstance.processarMensagemAssistente('sala para 4 pessoas');
-    const acao = resposta.acoes?.find((item) => item.rotulo === 'Reservar');
-    expect(acao).toBeTruthy();
+    httpMock
+      .expectOne(`${environment.apiUrl}/api/agendamento/conversas`)
+      .flush({ conversaId: 7, status: 'RECEBENDO_SOLICITACAO' });
+    await aguardarMicrotarefas();
 
-    const promessa = acao?.aoClicar?.() as Promise<string>;
-    const chamada = httpMock.expectOne(`${environment.apiUrl}/api/agendamento`);
-    chamada.flush({
-      id: 2,
-      sala: { id: 2, nome: 'Sala 02' },
-      inicio: `${fixture.componentInstance.horaInicio()}:00`,
-      fim: '15:00:00',
-      status: 'CONFIRMADO',
-      solicitante: { id: 3, nome: 'Usuario Teste Um', email: 'usuario@teste.com' },
+    const chamadaMensagem = httpMock.expectOne(
+      `${environment.apiUrl}/api/agendamento/conversas/mensagens`,
+    );
+    expect(chamadaMensagem.request.method).toBe('POST');
+    expect(chamadaMensagem.request.body).toEqual({
+      conversaId: 7,
+      mensagem: 'sala para 4 pessoas amanhã às 14h',
+    });
+    chamadaMensagem.flush({
+      conversaId: 7,
+      estado: 'AGUARDANDO_ESCOLHA',
+      mensagem: 'Encontrei algumas salas disponíveis. Qual você prefere?',
+      sugestoes: [{ salaId: 2, nome: 'Sala 02', capacidade: 4, localizacao: 'Tamboré' }],
+      data: '2026-10-20',
+      horaInicio: '14:00:00',
+      horaFim: '15:00:00',
+      qntdPessoas: 4,
+    });
+    await aguardarMicrotarefas();
+
+    const resposta = await promessa;
+    // A interpretação sincroniza o painel e recarrega o mapa.
+    responder([{ id: 2, nome: 'Sala 02' }]);
+
+    expect(fixture.componentInstance.data()).toBe('2026-10-20');
+    expect(fixture.componentInstance.horaInicio()).toBe('14:00');
+    expect(fixture.componentInstance.duracao()).toBe(60);
+    expect(fixture.componentInstance.pessoas()).toBe(4);
+
+    const acaoSala = resposta.acoes?.find((item) => item.rotulo === 'Sala 02 · 4 pessoas');
+    expect(acaoSala).toBeTruthy();
+
+    const promessaSelecao = acaoSala?.aoClicar?.() as Promise<RespostaAssistente>;
+    const chamadaSelecao = httpMock.expectOne(
+      `${environment.apiUrl}/api/agendamento/conversas/7/selecionar`,
+    );
+    expect(chamadaSelecao.request.method).toBe('PATCH');
+    expect(chamadaSelecao.request.body).toEqual({ salaId: 2 });
+    chamadaSelecao.flush({
+      conversaId: 7,
+      estado: 'AGUARDANDO_CONFIRMACAO',
+      mensagem: 'Você escolheu a sala Sala 02. Deseja confirmar o agendamento?',
+      sugestoes: [],
+      data: '2026-10-20',
+      horaInicio: '14:00:00',
+      horaFim: '15:00:00',
+      qntdPessoas: 4,
     });
 
-    expect(await promessa).toContain('Reserva confirmada');
+    const respostaSelecao = await promessaSelecao;
+    expect(fixture.componentInstance.selecionada()).toBe('Sala 02');
 
+    const acaoConfirmar = respostaSelecao.acoes?.find(
+      (item) => item.rotulo === 'Confirmar agendamento',
+    );
+    expect(acaoConfirmar?.primaria).toBe(true);
+
+    const promessaConfirmacao = acaoConfirmar?.aoClicar?.() as Promise<RespostaAssistente>;
+    httpMock
+      .expectOne(`${environment.apiUrl}/api/agendamento/conversas/7/confirmar`)
+      .flush({
+        conversaId: 7,
+        estado: 'CONFIRMADO',
+        mensagem: 'Agendamento realizado com sucesso!',
+        sugestoes: [],
+        data: '2026-10-20',
+        horaInicio: '14:00:00',
+        horaFim: '15:00:00',
+        qntdPessoas: 4,
+      });
+    await aguardarMicrotarefas();
+
+    // A confirmação recarrega o mapa com a sala já ocupada.
+    responder([]);
+    const respostaConfirmacao = await promessaConfirmacao;
+
+    expect(respostaConfirmacao.texto).toContain('sucesso');
+    await fixture.whenStable();
+  });
+
+  it('should show a friendly message when the conversation backend fails', async () => {
+    const fixture = iniciar();
     responder([]);
     await fixture.whenStable();
+
+    await entrarDemo(httpMock);
+
+    const promessa =
+      fixture.componentInstance.processarMensagemAssistente('sala para 4 pessoas');
+
+    httpMock
+      .expectOne(`${environment.apiUrl}/api/agendamento/conversas`)
+      .flush({ conversaId: 7, status: 'RECEBENDO_SOLICITACAO' });
+    await aguardarMicrotarefas();
+
+    httpMock
+      .expectOne(`${environment.apiUrl}/api/agendamento/conversas/mensagens`)
+      .flush(
+        { status: 503, message: 'Não consegui interpretar o pedido agora.' },
+        { status: 503, statusText: 'Service Unavailable' },
+      );
+
+    const resposta = await promessa;
+    expect(resposta.texto).toContain('Não consegui interpretar o pedido agora.');
   });
 });

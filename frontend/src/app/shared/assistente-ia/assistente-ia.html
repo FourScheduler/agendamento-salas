@@ -4,93 +4,166 @@
   [attr.data-state]="estado()"
   [attr.data-mood]="humor()"
   [attr.data-look]="olhar() === 'campo' ? 'input' : null"
+  [attr.data-minimized]="minimizado() ? 'true' : null"
   role="complementary"
   aria-label="Assistente de IA"
-  (keydown.escape)="fecharCartao()"
+  (keydown.escape)="aoTeclarEscape()"
 >
-  <div class="ai-bubble" #balao data-part="bubble" (focusin)="focarNoCampo()" (focusout)="sairDoCampo($event)">
-    <div class="ai-bubble__inner">
-      <p
-        class="ai-bubble__greeting"
-        data-part="greeting"
-        role="status"
-        [attr.aria-hidden]="estado() === 'chat' ? 'true' : null"
-      >
-        {{ textos.saudacao }}
-      </p>
+  <!-- Fundo desfocado da página enquanto o chat está aberto; clicar fora minimiza. -->
+  <div
+    class="ai-backdrop"
+    data-part="backdrop"
+    [class.ai-backdrop--ativo]="chatAberto()"
+    (click)="minimizar()"
+    aria-hidden="true"
+  ></div>
 
-      <div class="ai-bubble__form" data-part="form" role="group" aria-label="Enviar pedido">
-        <input
-          class="ai-bubble__input"
-          #campo
-          data-part="input"
-          type="text"
-          [placeholder]="placeholder()"
-          aria-label="Descreva a reserva que você precisa"
-          autocomplete="off"
-          enterkeyhint="send"
-          maxlength="2000"
-          [value]="texto()"
-          (input)="aoDigitar($event)"
-          (keydown)="aoTeclar($event)"
-        />
+  <div class="ai-bubble" #balao data-part="bubble">
+    <p
+      class="ai-bubble__greeting"
+      data-part="greeting"
+      role="status"
+      [attr.aria-hidden]="estado() === 'chat' ? 'true' : null"
+    >
+      {{ textos.saudacao }}
+    </p>
+  </div>
+
+  <!-- Painel lateral com a conversa completa -->
+  <section
+    class="ai-panel"
+    #painel
+    data-part="panel"
+    [class.ai-panel--aberto]="chatAberto()"
+    role="dialog"
+    aria-label="Assistente de reservas"
+    (focusin)="focarNoCampo()"
+    (focusout)="sairDoCampo($event)"
+  >
+    <header class="ai-panel__header">
+      <span class="ai-panel__logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </span>
+      <div class="ai-panel__titulos">
+        <h2 class="ai-panel__titulo">Assistente de reservas</h2>
+        <p class="ai-panel__sub">Escreva do seu jeito que eu entendo</p>
+      </div>
+      <div class="ai-panel__controles" data-part="controls" role="group" aria-label="Controles do assistente">
         <button
-          class="ai-bubble__send"
-          data-part="send"
+          class="ai-panel__ctl"
           type="button"
-          aria-label="Enviar"
-          [disabled]="!prontoParaEnviar()"
-          (click)="enviar()"
+          aria-label="Minimizar assistente"
+          title="Minimizar"
+          (click)="minimizar()"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 19V5M5 12l7-7 7 7"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" aria-hidden="true">
+            <path d="M6 12h12"/>
+          </svg>
+        </button>
+        <button
+          class="ai-panel__ctl ai-panel__ctl--close"
+          type="button"
+          aria-label="Fechar assistente"
+          title="Fechar"
+          (click)="fecharChat()"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" aria-hidden="true">
+            <path d="M7 7l10 10M17 7L7 17"/>
           </svg>
         </button>
       </div>
-    </div>
-  </div>
+    </header>
 
-  <div class="ai-card" data-part="card" role="status" aria-live="polite" [hidden]="cartao() === 'oculto'">
-    <button class="ai-card__close" data-part="card-close" type="button" aria-label="Fechar" (click)="fecharCartao()">×</button>
-    @switch (cartao()) {
-      @case ('ajuda') {
-        <p class="ai-card__text">{{ textos.ajuda }}</p>
-        <div class="ai-chips">
-          @for (exemplo of textos.exemplos; track exemplo) {
-            <button class="ai-chip" type="button" (click)="editar(exemplo)">{{ exemplo }}</button>
+    <div class="ai-panel__msgs" data-part="msgs" #lista role="log" aria-live="polite" aria-relevant="additions text">
+      @for (mensagem of historico(); track mensagem.id) {
+        <div class="ai-msg" [class.ai-msg--usuario]="mensagem.de === 'usuario'">
+          @if (mensagem.carregando) {
+            <p class="ai-msg__texto ai-msg__texto--pensando">
+              <span class="ai-dots" aria-hidden="true"><i></i><i></i><i></i></span>{{ textos.pensando }}
+            </p>
+          } @else {
+            @if (mensagem.texto; as texto) {
+              <p class="ai-msg__texto">{{ texto }}</p>
+            }
+            @if (mensagem.exemplos; as exemplos) {
+              <div class="ai-chips">
+                @for (exemplo of exemplos; track exemplo) {
+                  <button class="ai-chip" type="button" (click)="editar(exemplo)">{{ exemplo }}</button>
+                }
+              </div>
+            }
+            @if (acoesAtivas(mensagem)) {
+              <div
+                class="ai-actions"
+                [class.ai-actions--salas]="temSugestao(mensagem)"
+                data-part="actions"
+              >
+                @for (acao of mensagem.acoes!; track acao.rotulo) {
+                  <button
+                    class="ai-btn"
+                    [class.ai-btn--primary]="acao.primaria"
+                    [class.ai-btn--sala]="acao.sugestao"
+                    type="button"
+                    [disabled]="ocupado()"
+                    (click)="executarAcao(acao)"
+                  >
+                    <span>{{ acao.rotulo }}</span>
+                    @if (acao.sugestao) {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M9 6l6 6-6 6"/>
+                      </svg>
+                    }
+                  </button>
+                }
+              </div>
+            }
           }
         </div>
+      } @empty {
+        <p class="ai-panel__vazio">Como posso ajudar?</p>
       }
-      @case ('pensando') {
-        <p class="ai-card__text">
-          <span class="ai-dots"><i></i><i></i><i></i></span>{{ textos.pensando }}
-        </p>
-      }
-      @case ('resposta') {
-        @if (textoResposta(); as texto) {
-          <p class="ai-card__text">{{ texto }}</p>
-        }
-        @if (acoesVisiveis().length) {
-          <div class="ai-actions">
-            @for (acao of acoesVisiveis(); track acao.rotulo) {
-              <button
-                class="ai-btn"
-                [class.ai-btn--primary]="acao.primaria"
-                type="button"
-                [disabled]="ocupado()"
-                (click)="executarAcao(acao)"
-              >
-                {{ acao.rotulo }}
-              </button>
-            }
-          </div>
-        }
-      }
-    }
-  </div>
+    </div>
+
+    <form class="ai-panel__form" data-part="form" (submit)="$event.preventDefault(); enviar()">
+      <input
+        class="ai-panel__input"
+        #campo
+        data-part="input"
+        type="text"
+        [placeholder]="placeholder()"
+        aria-label="Descreva a reserva que você precisa"
+        autocomplete="off"
+        enterkeyhint="send"
+        maxlength="2000"
+        [value]="texto()"
+        (input)="aoDigitar($event)"
+        (keydown)="aoTeclar($event)"
+      />
+      <button
+        class="ai-panel__send"
+        data-part="send"
+        type="submit"
+        aria-label="Enviar"
+        [disabled]="!prontoParaEnviar()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 19V5M5 12l7-7 7 7"/>
+        </svg>
+      </button>
+    </form>
+  </section>
 
   <div class="ai-mascot" data-part="mascot" (click)="tocarNoMascote()">
+    @if (minimizado() && naoLido()) {
+      <span class="ai-mascot__badge" title="Nova resposta" aria-hidden="true"></span>
+    }
     <div class="ai-mascot__shadow" data-part="shadow"></div>
     <div class="ai-mascot__jump" data-part="jump">
       <div class="ai-mascot__float" data-part="float">

@@ -13,6 +13,8 @@ import {
 export interface AcaoAssistente {
   rotulo: string;
   primaria?: boolean;
+  /** Renderiza como cartão de sala (sugestões do orquestrador). */
+  sugestao?: boolean;
   /** Devolve o texto enviado de volta ao campo para edição. */
   voltarEdicao?: boolean;
   aoClicar?: () => ResultadoEnvio | Promise<ResultadoEnvio>;
@@ -21,6 +23,17 @@ export interface AcaoAssistente {
 export interface RespostaAssistente {
   texto?: string;
   acoes?: AcaoAssistente[];
+}
+
+/** Uma bolha do histórico exibido no painel lateral. */
+export interface MensagemAssistente {
+  id: number;
+  de: 'usuario' | 'assistente';
+  texto?: string;
+  acoes?: AcaoAssistente[];
+  carregando?: boolean;
+  /** Exemplos clicáveis no primeiro balão de ajuda. */
+  exemplos?: readonly string[];
 }
 
 export type ResultadoEnvio = string | RespostaAssistente | void;
@@ -57,8 +70,6 @@ const TIMELINE = {
   bubbleDuration: 520,
   holdBeforeChat: 3200,
   morphDuration: 720,
-  morphTextOut: 0.3,
-  morphFormIn: 0.4,
   breatheDuration: 3400,
   breatheDistance: 6,
   helpDelay: 450,
@@ -86,7 +97,6 @@ const EASE = {
 
 type EstadoAssistente = 'hidden' | 'intro' | 'greeting' | 'chat';
 type HumorAssistente = 'happy' | 'think';
-type TipoCartao = 'oculto' | 'ajuda' | 'pensando' | 'resposta';
 
 class Cancelado extends Error {}
 
@@ -130,17 +140,20 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
   readonly estado = signal<EstadoAssistente>('hidden');
   readonly humor = signal<HumorAssistente | null>(null);
   readonly olhar = signal<'campo' | null>(null);
-  readonly cartao = signal<TipoCartao>('oculto');
-  readonly resposta = signal<RespostaAssistente | null>(null);
+  readonly historico = signal<MensagemAssistente[]>([]);
   readonly ocupado = signal(false);
   readonly texto = signal('');
   readonly placeholder = signal<string>(TEXTOS.placeholder);
   readonly prontoParaEnviar = computed(() => this.texto().trim().length > 0);
-  readonly textoResposta = computed(() => this.resposta()?.texto ?? '');
-  readonly acoesVisiveis = computed(() => this.resposta()?.acoes ?? []);
+  readonly minimizado = signal(false);
+  /** Houve resposta nova enquanto o chat estava minimizado (mostra o ponto no mascote). */
+  readonly naoLido = signal(false);
+  /** Chat aberto e visível (estado de conversa, sem estar minimizado). */
+  readonly chatAberto = computed(() => this.estado() === 'chat' && !this.minimizado());
 
   private readonly raiz = viewChild.required<ElementRef<HTMLDivElement>>('raiz');
-  private readonly balao = viewChild.required<ElementRef<HTMLDivElement>>('balao');
+  private readonly painel = viewChild.required<ElementRef<HTMLElement>>('painel');
+  private readonly lista = viewChild.required<ElementRef<HTMLDivElement>>('lista');
   private readonly campo = viewChild.required<ElementRef<HTMLInputElement>>('campo');
 
   private readonly animacoesDisponiveis = typeof Element.prototype.animate === 'function';
@@ -158,14 +171,14 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
   private blink!: Element;
   private thrust!: Element;
   private bubbleEl!: Element;
-  private cardEl!: Element;
   private sparkles: Element[] = [];
   private pulses: Element[] = [];
 
   private atualRun = 0;
   private humorTimer = 0;
   private pensamentoTimer = 0;
-  private tokenOcultar = 0;
+  private proximoId = 0;
+  private pensandoId: number | null = null;
   private ocupacaoEnvio = false;
   private ultimoTexto = '';
   private ultimoPonteiroEm = 0;
@@ -188,7 +201,6 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
     this.blink = parte(this.host, 'blink');
     this.thrust = parte(this.host, 'thrust');
     this.bubbleEl = parte(this.host, 'bubble');
-    this.cardEl = parte(this.host, 'card');
     this.sparkles = [...this.host.querySelectorAll('[data-part="sparkle"]')];
     this.pulses = [...this.host.querySelectorAll('.m-pulse')];
 
@@ -237,7 +249,7 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
     this.texto.set('');
     this.pular();
     this.campo().nativeElement.focus();
-    void this.fecharCartao();
+    this.adicionarMensagem({ de: 'usuario', texto });
     this.definirHumor('think');
     this.pensamentoTimer = window.setTimeout(() => this.mostrarPensando(), TIMELINE.thinkingDelay);
     try {
@@ -245,11 +257,7 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
       const resultado: ResultadoEnvio = processar ? await processar(texto) : undefined;
       clearTimeout(this.pensamentoTimer);
       this.definirHumor(null);
-      if (resultado) {
-        this.apresentar(resultado);
-      } else {
-        void this.fecharCartao();
-      }
+      this.apresentar(resultado);
       this.reagir();
     } catch (erro) {
       clearTimeout(this.pensamentoTimer);
@@ -264,34 +272,68 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
 
   editar(texto: string): void {
     this.texto.set(texto);
-    void this.fecharCartao();
     this.campo().nativeElement.focus();
   }
 
-  fecharCartao(): Promise<void> {
-    if (this.cartao() === 'oculto') {
-      return Promise.resolve();
+  /** Recolhe o painel para o mascote. A página volta ao normal. */
+  minimizar(): void {
+    if (!this.chatAberto()) {
+      return;
     }
-    const token = ++this.tokenOcultar;
-    if (!this.animacoesDisponiveis) {
-      this.cartao.set('oculto');
-      return Promise.resolve();
+    this.minimizado.set(true);
+    this.olhar.set(null);
+    this.apontarPara = null;
+    this.atualizarOlhar();
+    if (this.host?.contains(document.activeElement)) {
+      (document.activeElement as HTMLElement | null)?.blur();
     }
-    const fade = this.cardEl.animate([{ opacity: 1 }, { opacity: 0 }], {
-      duration: 160,
-      fill: 'forwards',
-    });
-    return fade.finished
-      .then(() => {
-        if (token === this.tokenOcultar) {
-          this.cartao.set('oculto');
-          fade.cancel();
-        }
-      })
-      .catch(() => undefined);
+  }
+
+  /** Volta do mascote para o painel e devolve o foco ao campo. */
+  restaurar(): void {
+    if (!this.minimizado()) {
+      return;
+    }
+    this.minimizado.set(false);
+    this.naoLido.set(false);
+    this.campo().nativeElement.focus();
+    this.rolarAoFim();
+  }
+
+  /** Fecha o painel: some com a conversa e limpa o que foi digitado. */
+  fecharChat(): void {
+    if (!this.chatAberto()) {
+      return;
+    }
+    this.texto.set('');
+    this.minimizar();
+  }
+
+  /** Esc: fecha o painel se estiver aberto. */
+  aoTeclarEscape(): void {
+    if (this.chatAberto()) {
+      this.minimizar();
+    }
+  }
+
+  /** Ações só ficam clicáveis na última mensagem (evita repetir ações antigas). */
+  acoesAtivas(mensagem: MensagemAssistente): boolean {
+    const historico = this.historico();
+    return (
+      historico.length > 0 &&
+      historico[historico.length - 1].id === mensagem.id &&
+      !!mensagem.acoes?.length
+    );
+  }
+
+  temSugestao(mensagem: MensagemAssistente): boolean {
+    return !!mensagem.acoes?.some((acao) => acao.sugestao);
   }
 
   async executarAcao(acao: AcaoAssistente): Promise<void> {
+    if (this.ocupacaoEnvio) {
+      return;
+    }
     this.ocupado.set(true);
     try {
       if (acao.voltarEdicao) {
@@ -303,7 +345,7 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
         this.apresentar(proximo);
         this.reagir();
       } else {
-        void this.fecharCartao();
+        this.semAcoes();
       }
     } catch (erro) {
       console.error('[AssistenteIa] ação falhou:', erro);
@@ -319,7 +361,7 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
   }
 
   sairDoCampo(evento: FocusEvent): void {
-    if (!this.balao().nativeElement.contains(evento.relatedTarget as Node | null)) {
+    if (!this.painel().nativeElement.contains(evento.relatedTarget as Node | null)) {
       this.olhar.set(null);
       this.atualizarOlhar();
     }
@@ -333,49 +375,84 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
     this.risadinha();
     this.reagir();
     if (estado === 'chat') {
-      this.campo().nativeElement.focus();
+      if (this.minimizado()) {
+        this.restaurar();
+      } else {
+        this.campo().nativeElement.focus();
+      }
     }
   }
 
   private apresentar(resultado: ResultadoEnvio): void {
-    const resumo: RespostaAssistente =
-      typeof resultado === 'string' ? { texto: resultado } : (resultado ?? {});
-    this.abrirCartao('resposta', resumo);
+    const resumo: RespostaAssistente | null =
+      resultado == null ? null : typeof resultado === 'string' ? { texto: resultado } : resultado;
+    if (this.minimizado()) {
+      this.naoLido.set(true);
+    }
+    if (!resumo || (!resumo.texto && !resumo.acoes?.length)) {
+      this.removerPensando();
+      return;
+    }
+    const resposta: Omit<MensagemAssistente, 'id'> = {
+      de: 'assistente',
+      texto: resumo.texto,
+      acoes: resumo.acoes,
+    };
+    const pensando = this.pensandoId;
+    this.pensandoId = null;
+    if (pensando !== null) {
+      this.historico.update((lista) =>
+        lista.map((mensagem) => (mensagem.id === pensando ? { ...resposta, id: pensando } : mensagem)),
+      );
+      this.rolarAoFim();
+    } else {
+      this.adicionarMensagem(resposta);
+    }
   }
 
   private mostrarAjuda(): void {
-    this.abrirCartao('ajuda');
+    this.adicionarMensagem({ de: 'assistente', texto: TEXTOS.ajuda, exemplos: TEXTOS.exemplos });
   }
 
   private mostrarPensando(): void {
-    this.abrirCartao('pensando');
-  }
-
-  private abrirCartao(tipo: Exclude<TipoCartao, 'oculto'>, resumo?: RespostaAssistente): void {
-    this.tokenOcultar++;
-    if (this.animacoesDisponiveis) {
-      this.cardEl.getAnimations().forEach((animacao) => animacao.cancel());
-    }
-    this.resposta.set(resumo ?? null);
-    const estavaAberto = this.cartao() !== 'oculto';
-    this.cartao.set(tipo);
-    if (!this.animacoesDisponiveis) {
+    if (this.pensandoId !== null) {
       return;
     }
-    if (!estavaAberto) {
-      const de = this.reduzirMovimento.matches
-        ? { opacity: 0 }
-        : { opacity: 0, transform: 'translateY(8px) scale(.92)' };
-      const para = this.reduzirMovimento.matches
-        ? { opacity: 1 }
-        : { opacity: 1, transform: 'none' };
-      this.cardEl.animate([de, para], { duration: 320, easing: EASE.bubble, fill: 'backwards' });
-    } else if (!this.reduzirMovimento.matches) {
-      this.cardEl.animate([{ transform: 'scale(.97)' }, { transform: 'none' }], {
-        duration: 240,
-        easing: EASE.pop,
-      });
+    this.pensandoId = this.adicionarMensagem({ de: 'assistente', carregando: true });
+  }
+
+  private removerPensando(): void {
+    if (this.pensandoId === null) {
+      return;
     }
+    const id = this.pensandoId;
+    this.pensandoId = null;
+    this.historico.update((lista) => lista.filter((mensagem) => mensagem.id !== id));
+  }
+
+  private adicionarMensagem(mensagem: Omit<MensagemAssistente, 'id'>): number {
+    const id = ++this.proximoId;
+    this.historico.update((lista) => [...lista, { ...mensagem, id }]);
+    this.rolarAoFim();
+    return id;
+  }
+
+  /** Remove as ações da última mensagem (resposta sem continuação). */
+  private semAcoes(): void {
+    this.historico.update((lista) =>
+      lista.map((mensagem, indice) =>
+        indice === lista.length - 1 ? { ...mensagem, acoes: undefined } : mensagem,
+      ),
+    );
+  }
+
+  private rolarAoFim(): void {
+    window.setTimeout(() => {
+      const lista = this.lista?.()?.nativeElement;
+      if (lista) {
+        lista.scrollTop = lista.scrollHeight;
+      }
+    });
   }
 
   private definirHumor(novo: HumorAssistente | null, ms?: number): void {
@@ -650,9 +727,12 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
     this.apontarPara = null;
     this.olharLateral = null;
     this.atualizarOlhar();
-    this.cartao.set('oculto');
-    this.resposta.set(null);
+    this.historico.set([]);
+    this.pensandoId = null;
+    this.proximoId = 0;
     this.texto.set('');
+    this.minimizado.set(false);
+    this.naoLido.set(false);
     if (this.host.contains(document.activeElement)) {
       (document.activeElement as HTMLElement | null)?.blur();
     }
@@ -757,45 +837,13 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
       this.iniciarRespiracao();
       this.iniciarVida();
 
-      const de = this.bubbleEl.getBoundingClientRect();
-      const raioDe = getComputedStyle(this.bubbleEl).borderTopLeftRadius;
+      await ir(
+        this.bubbleEl,
+        [{ opacity: 1, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.7)' }],
+        { duration: TIMELINE.morphDuration * 0.5, easing: EASE.morph },
+      );
       this.estado.set('chat');
-      const para = this.bubbleEl.getBoundingClientRect();
-      const raioPara = getComputedStyle(this.bubbleEl).borderTopLeftRadius;
-
-      const duracao = TIMELINE.morphDuration;
-      const morphing = this.bubbleEl.animate(
-        [
-          {
-            width: `${de.width}px`,
-            height: `${de.height}px`,
-            borderRadius: raioDe,
-          },
-          {
-            width: `${para.width}px`,
-            height: `${para.height}px`,
-            borderRadius: raioPara,
-          },
-        ],
-        { duration: duracao, easing: EASE.morph },
-      );
-      const textoSaindo = this.bubbleEl.animate([{ opacity: 1 }, { opacity: 0 }], {
-        duration: duracao * TIMELINE.morphTextOut,
-        easing: 'linear',
-      });
-      const formEntrando = parte<HTMLElement>(this.host, 'form').animate(
-        [
-          { opacity: 0, transform: 'translateX(12px)' },
-          { opacity: 1, transform: 'translateX(0)' },
-        ],
-        {
-          duration: duracao * 0.55,
-          delay: duracao * TIMELINE.morphFormIn,
-          easing: EASE.soft,
-          fill: 'backwards',
-        },
-      );
-      await ate(Promise.all([morphing.finished, textoSaindo.finished, formEntrando.finished]));
+      await pausa(TIMELINE.morphDuration * 0.5);
 
       await pausa(TIMELINE.helpDelay);
       this.mostrarAjuda();
@@ -833,11 +881,6 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
       fill: 'forwards',
     });
     this.estado.set('chat');
-    await ir(this.bubbleEl, [{ opacity: 0 }, { opacity: 1 }], {
-      duration: TIMELINE.fadeDuration,
-      easing: 'ease-out',
-      fill: 'forwards',
-    });
     this.mostrarAjuda();
   }
 }

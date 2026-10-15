@@ -11,6 +11,11 @@ describe('ReservasService', () => {
 
   const url = `${environment.apiUrl}/api/agendamento/busca/filtro`;
 
+  /** A busca agora vai com query params; casamos pela URL base. */
+  function esperarBusca() {
+    return httpMock.expectOne((requisicao) => requisicao.url === url);
+  }
+
   const requisicao: BuscaReservasRequest = {
     dataInicio: null,
     dataFinal: null,
@@ -82,17 +87,37 @@ describe('ReservasService', () => {
     });
   });
 
-  it('should search the authenticated user reservations with a GET body', () => {
+  it('should search the authenticated user reservations with query params', () => {
     const esperadas: Reserva[] = [reserva];
 
     service.buscarFiltradas(requisicao).subscribe((respostas) => {
       expect(respostas).toEqual(esperadas);
     });
 
-    const chamada = httpMock.expectOne(url);
+    const chamada = esperarBusca();
     expect(chamada.request.method).toBe('GET');
-    expect(chamada.request.body).toEqual(requisicao);
+    expect(chamada.request.params.get('todosUsuarios')).toBe('false');
+    expect(chamada.request.params.get('dataInicio')).toBeNull();
+    expect(chamada.request.body).toBeNull();
     chamada.flush(esperadas);
+  });
+
+  it('should send every informed filter as a query param', () => {
+    service
+      .buscarFiltradas({
+        dataInicio: '2026-10-01',
+        dataFinal: '2026-10-31',
+        statusAgendamento: 'CONFIRMADO',
+        todosUsuarios: true,
+      })
+      .subscribe();
+
+    const chamada = esperarBusca();
+    expect(chamada.request.params.get('dataInicio')).toBe('2026-10-01');
+    expect(chamada.request.params.get('dataFinal')).toBe('2026-10-31');
+    expect(chamada.request.params.get('statusAgendamento')).toBe('CONFIRMADO');
+    expect(chamada.request.params.get('todosUsuarios')).toBe('true');
+    chamada.flush([]);
   });
 
   it('should propagate backend failures', () => {
@@ -102,7 +127,7 @@ describe('ReservasService', () => {
       error: (erro: unknown) => (erroRecebido = erro),
     });
 
-    const chamada = httpMock.expectOne(url);
+    const chamada = esperarBusca();
     chamada.flush(
       { status: 401, message: 'Faça login para continuar.' },
       { status: 401, statusText: 'Unauthorized' },

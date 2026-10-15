@@ -4,6 +4,10 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
 
+function aguardarMicrotarefas(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
@@ -35,13 +39,35 @@ describe('AuthService', () => {
     expect(chamada.request.method).toBe('POST');
     chamada.flush('token-jwt-123');
 
+    await aguardarMicrotarefas();
+    const perfil = httpMock.expectOne(`${environment.apiUrl}/api/usuarios/me`);
+    perfil.flush({ id: 3, nome: 'Kevin Miranda (backend)', email: 'usuario@teste.com' });
+
+    await promessa;
+
+    expect(service.autenticado()).toBe(true);
+    expect(service.usuario()).toBe('Kevin Miranda (backend)');
+    expect(service.token()).toBe('token-jwt-123');
+    expect(window.localStorage.getItem('fourscheduler.usuario')).toBe('Kevin Miranda (backend)');
+    expect(window.localStorage.getItem('fourscheduler.token')).toBe('token-jwt-123');
+  });
+
+  it('should fall back to the typed name when the profile cannot be loaded', async () => {
+    const promessa = service.entrar(' Kevin Miranda  ');
+
+    httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('token-jwt-123');
+
+    await aguardarMicrotarefas();
+    httpMock.expectOne(`${environment.apiUrl}/api/usuarios/me`).flush('erro', {
+      status: 500,
+      statusText: 'Internal Server Error',
+    });
+
     await promessa;
 
     expect(service.autenticado()).toBe(true);
     expect(service.usuario()).toBe('Kevin Miranda');
     expect(service.token()).toBe('token-jwt-123');
-    expect(window.localStorage.getItem('fourscheduler.usuario')).toBe('Kevin Miranda');
-    expect(window.localStorage.getItem('fourscheduler.token')).toBe('token-jwt-123');
   });
 
   it('should not authenticate when the demo endpoint fails', async () => {
@@ -67,6 +93,12 @@ describe('AuthService', () => {
   it('should sign out and clear storage', async () => {
     const promessa = service.entrar('Kevin Miranda');
     httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('token-jwt-123');
+    await aguardarMicrotarefas();
+    httpMock.expectOne(`${environment.apiUrl}/api/usuarios/me`).flush({
+      id: 3,
+      nome: 'Kevin Miranda',
+      email: 'usuario@teste.com',
+    });
     await promessa;
 
     service.sair();

@@ -1,11 +1,12 @@
 import { DestroyRef, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
-import { BuscaSalasRequest } from '../../core/models/api.models';
+import { BuscaSalasRequest, OrquestradorResposta, SugestaoSala } from '../../core/models/api.models';
 import { mensagemDeErro } from '../../core/http/api-error';
 import { AuthService } from '../../core/services/auth.service';
 import { SalasService } from '../../core/services/salas.service';
 import { ReservasService } from '../../core/services/reservas.service';
+import { ConversasService } from '../../core/services/conversas.service';
 import { SalaPlanta, resolverEstados } from '../../core/data/mapa-mock';
 import {
   fimDeJornada,
@@ -28,8 +29,12 @@ import { AssistenteIa, RespostaAssistente } from '../../shared/assistente-ia/ass
 export class Agendamento implements OnInit {
   private readonly salasService = inject(SalasService);
   private readonly reservasService = inject(ReservasService);
+  private readonly conversasService = inject(ConversasService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
+
+  /** Conversa aberta com o assistente; nula quando não há em andamento. */
+  private conversaId: number | null = null;
 
   readonly duracoes = [30, 60, 90, 120];
   readonly hoje = hojeIso();
@@ -98,20 +103,133 @@ export class Agendamento implements OnInit {
     this.buscar();
   }
 
-  /** Mock da interpretação do pedido. Trocar por endpoint da API quando existir. */
-  async processarMensagemAssistente(texto: string): Promise<RespostaAssistente> {
-    await new Promise((resolve) => setTimeout(resolve, 900));
-    return {
-      texto: `Entendi assim:\n"${texto}"\nPosso reservar?`,
-      acoes: [
-        {
-          rotulo: 'Reservar',
-          primaria: true,
-          aoClicar: () => this.confirmarReserva(),
-        },
-        { rotulo: 'Ajustar', voltarEdicao: true },
-      ],
-    };
+  /**
+   * Envia o pedido ao orquestrador do backend (interpretação com IA + busca de salas).
+   * Propriedade arrow porque o assistente chama a função sem receptor e, nesse caso,
+   * um método comum perde o `this`.
+   */
+  readonly processarMensagemAssistente = async (
+    texto: string,
+  ): Promise<RespostaAssistente> => {
+    if (!this.auth.autenticado()) {
+      return { texto: 'Faça login para usar o assistente de reservas.' };
+    }
+
+    try {
+      await this.garantirConversa();
+      const resposta = await firstValueFrom(
+        this.conversasService.enviarMensagem(this.conversaId!, texto),
+      );
+      this.sincronizarPainel(resposta);
+      return this.montarRespostaAssistente(resposta);
+    } catch (erro: unknown) {
+      return { texto: mensagemDeErro(erro) };
+    }
+  };
+
+  private async garantirConversa(): Promise<void> {
+    if (this.conversaId !== null) {
+      return;
+    }
+    const conversa = await firstValueFrom(this.conversasService.iniciar());
+    this.conversaId = conversa.conversaId;
+  }
+
+  /** Converte a resposta do orquestrador em texto + ações do painel do assistente. */
+  private montarRespostaAssistente(resposta: OrquestradorResposta): RespostaAssistente {
+    if (resposta.estado === 'AGUARDANDO_ESCOLHA' && resposta.sugestoes.length > 0) {
+      return {
+        texto: resposta.mensagem,
+        acoes: resposta.sugestoes.map((sugestao) => ({
+          rotulo: `${sugestao.nome} · ${sugestao.capacidade} pessoas`,
+          sugestao: true,
+          aoClicar: () => this.selecionarSalaNoChat(sugestao),
+        })),
+      };
+    }
+
+    if (resposta.estado === 'AGUARDANDO_CONFIRMACAO') {
+      return {
+        texto: resposta.mensagem,
+        acoes: [
+          {
+            rotulo: 'Confirmar agendamento',
+            primaria: true,
+            aoClicar: () => this.confirmarNoChat(),
+          },
+          { rotulo: 'Ajustar', voltarEdicao: true },
+        ],
+      };
+    }
+
+    return { texto: resposta.mensagem };
+  }
+
+  /** Escolhe a sala no chat e reflete a escolha no mapa e no painel. */
+  private async selecionarSalaNoChat(sugestao: SugestaoSala): Promise<RespostaAssistente> {
+    try {
+      const resposta = await firstValueFrom(
+        this.conversasService.selecionarSala(this.conversaId!, sugestao.salaId),
+      );
+      this.selecionar(sugestao.nome);
+      this.sincronizarPainel(resposta);
+      return this.montarRespostaAssistente(resposta);
+    } catch (erro: unknown) {
+      return { texto: mensagemDeErro(erro) };
+    }
+  }
+
+  /** Confirma a reserva pela conversa e recarrega o mapa. */
+  private async confirmarNoChat(): Promise<RespostaAssistente> {
+    try {
+      const resposta = await firstValueFrom(
+        this.conversasService.confirmar(this.conversaId!),
+      );
+      // A reserva foi criada; a próxima solicitação começa uma conversa nova.
+      this.conversaId = null;
+      this.limparResultadoConfirmacao();
+      this.buscar();
+      return { texto: resposta.mensagem };
+    } catch (erro: unknown) {
+      return { texto: mensagemDeErro(erro) };
+    }
+  }
+
+  /** Aplica no painel/mapa o que a IA interpretou (data, horário, pessoas). */
+  private sincronizarPainel(resposta: OrquestradorResposta): void {
+    let mudou = false;
+
+    if (resposta.data && resposta.data !== this.data()) {
+      this.data.set(resposta.data);
+      mudou = true;
+    }
+
+    if (resposta.horaInicio) {
+      const hora = resposta.horaInicio.slice(0, 5);
+      if (hora !== this.horaInicio()) {
+        this.horaInicio.set(hora);
+        mudou = true;
+      }
+
+      if (resposta.horaFim) {
+        const inicio = paraMinutos(hora) ?? 0;
+        const fim = paraMinutos(resposta.horaFim.slice(0, 5)) ?? 0;
+        const duracao = fim - inicio;
+        if (duracao > 0 && duracao !== this.duracao()) {
+          this.duracao.set(duracao);
+        }
+      }
+    }
+
+    if (resposta.qntdPessoas && resposta.qntdPessoas !== this.pessoas()) {
+      this.pessoas.set(resposta.qntdPessoas);
+      mudou = true;
+    }
+
+    if (mudou) {
+      this.limparResultadoConfirmacao();
+      this.buscar();
+    }
   }
 
   async confirmarPainel(): Promise<void> {

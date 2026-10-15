@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -21,11 +21,21 @@ export class ReservasService {
   /**
    * Lista as reservas do usuário autenticado.
    * Com `todosUsuarios: false` o backend filtra pelo usuário do token (JWT).
+   * Filtros vão na query string: navegadores não enviam corpo em GET.
    */
   buscarFiltradas(filtro: BuscaReservasRequest): Observable<Reserva[]> {
-    return this.http.request<Reserva[]>('GET', `${this.baseUrl}/api/agendamento/busca/filtro`, {
-      body: filtro,
-      responseType: 'json',
-    });
+    let params = new HttpParams().set('todosUsuarios', String(filtro.todosUsuarios ?? false));
+
+    if (filtro.dataInicio) {
+      params = params.set('dataInicio', filtro.dataInicio);
+    }
+    if (filtro.dataFinal) {
+      params = params.set('dataFinal', filtro.dataFinal);
+    }
+    if (filtro.statusAgendamento) {
+      params = params.set('statusAgendamento', filtro.statusAgendamento);
+    }
+
+    return this.http.get<Reserva[]>(`${this.baseUrl}/api/agendamento/busca/filtro`, { params });
   }
 }

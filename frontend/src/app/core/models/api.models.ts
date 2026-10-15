@@ -85,3 +85,28 @@ export interface BuscaReservasRequest {
   statusAgendamento: StatusReserva | null;
   todosUsuarios: boolean;
 }
+
+export interface SugestaoSala {
+  salaId: number;
+  nome: string;
+  capacidade: number;
+  localizacao: string;
+}
+
+export interface IniciarConversa {
+  conversaId: number;
+  status: StatusReserva;
+}
+
+/** Resposta de cada etapa da conversa do assistente (orquestrador do backend). */
+export interface OrquestradorResposta {
+  conversaId: number;
+  estado: StatusReserva;
+  mensagem: string;
+  sugestoes: SugestaoSala[];
+  /** Estado interpretado da conversa; nulo enquanto o valor ainda não foi informado. */
+  data: string | null;
+  horaInicio: string | null;
+  horaFim: string | null;
+  qntdPessoas: number | null;
+}

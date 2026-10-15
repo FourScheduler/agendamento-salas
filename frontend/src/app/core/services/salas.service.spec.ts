@@ -12,6 +12,11 @@ describe('SalasService', () => {
 
   const url = `${environment.apiUrl}/api/salas/disponiveis`;
 
+  /** A busca agora vai com query params; casamos pela URL base. */
+  function esperarBusca() {
+    return httpMock.expectOne((requisicao) => requisicao.url === url);
+  }
+
   const requisicao: BuscaSalasRequest = {
     data: '2026-10-10',
     horaInicio: '09:00',
@@ -36,7 +41,7 @@ describe('SalasService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should search available rooms with a GET body', () => {
+  it('should search available rooms with query params', () => {
     const esperadas: Sala[] = [
       {
         id: 1,
@@ -51,9 +56,13 @@ describe('SalasService', () => {
       expect(respostas).toEqual(esperadas);
     });
 
-    const chamada = httpMock.expectOne(url);
+    const chamada = esperarBusca();
     expect(chamada.request.method).toBe('GET');
-    expect(chamada.request.body).toEqual(requisicao);
+    expect(chamada.request.params.get('data')).toBe('2026-10-10');
+    expect(chamada.request.params.get('horaInicio')).toBe('09:00');
+    expect(chamada.request.params.get('horaFim')).toBe('10:00');
+    expect(chamada.request.params.get('qntdPessoas')).toBe('6');
+    expect(chamada.request.body).toBeNull();
     chamada.flush(esperadas);
   });
 
@@ -64,7 +73,7 @@ describe('SalasService', () => {
       error: (erro: unknown) => (erroRecebido = erro),
     });
 
-    const chamada = httpMock.expectOne(url);
+    const chamada = esperarBusca();
     chamada.flush(
       { status: 400, message: 'A data não pode estar no passado.' },
       { status: 400, statusText: 'Bad Request' },

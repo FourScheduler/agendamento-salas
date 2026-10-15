@@ -3,7 +3,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { MinhasReservas } from './minhas-reservas';
-import { BuscaReservasRequest, Reserva } from '../../core/models/api.models';
+import { Reserva } from '../../core/models/api.models';
 import { apiErrorInterceptor } from '../../core/http/api-error';
 import { authInterceptor } from '../../core/http/auth-interceptor';
 import { environment } from '../../../environments/environment';
@@ -13,12 +13,10 @@ describe('MinhasReservas', () => {
 
   const urlBusca = `${environment.apiUrl}/api/agendamento/busca/filtro`;
 
-  const requisicaoEsperada: BuscaReservasRequest = {
-    dataInicio: null,
-    dataFinal: null,
-    statusAgendamento: null,
-    todosUsuarios: false,
-  };
+  /** A busca agora vai com query params; casamos pela URL base. */
+  function esperarBusca() {
+    return httpMock.expectOne((requisicao) => requisicao.url === urlBusca);
+  }
 
   const reservaFutura: Reserva = {
     salaId: { id: 1, nome: 'Sala Focus', capacidade: 2, localizacao: 'Tamboré' },
@@ -65,7 +63,7 @@ describe('MinhasReservas', () => {
   it('should create', async () => {
     const fixture = criarFixture();
     await fixture.whenStable();
-    httpMock.expectOne(urlBusca).flush([]);
+    esperarBusca().flush([]);
     await fixture.whenStable();
     expect(fixture.componentInstance).toBeTruthy();
   });
@@ -74,9 +72,10 @@ describe('MinhasReservas', () => {
     const fixture = criarFixture();
     await fixture.whenStable();
 
-    const chamada = httpMock.expectOne(urlBusca);
+    const chamada = esperarBusca();
     expect(chamada.request.method).toBe('GET');
-    expect(chamada.request.body).toEqual(requisicaoEsperada);
+    expect(chamada.request.params.get('todosUsuarios')).toBe('false');
+    expect(chamada.request.body).toBeNull();
     chamada.flush([reservaFutura]);
     await fixture.whenStable();
     fixture.detectChanges();
@@ -92,7 +91,7 @@ describe('MinhasReservas', () => {
     await fixture.whenStable();
 
     const { salaId, ...reservaSemSalaId } = reservaFutura;
-    httpMock.expectOne(urlBusca).flush([{ ...reservaSemSalaId, sala: salaId }]);
+    esperarBusca().flush([{ ...reservaSemSalaId, sala: salaId }]);
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -102,7 +101,7 @@ describe('MinhasReservas', () => {
   it('should not ask the user to log in', async () => {
     const fixture = criarFixture();
     await fixture.whenStable();
-    httpMock.expectOne(urlBusca).flush([reservaFutura]);
+    esperarBusca().flush([reservaFutura]);
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -115,7 +114,7 @@ describe('MinhasReservas', () => {
     const fixture = criarFixture();
     const componente = fixture.componentInstance;
     await fixture.whenStable();
-    httpMock.expectOne(urlBusca).flush([reservaFutura, reservaPassada]);
+    esperarBusca().flush([reservaFutura, reservaPassada]);
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -134,8 +133,7 @@ describe('MinhasReservas', () => {
   it('should show the empty state when the API returns items that are not reservations', async () => {
     const fixture = criarFixture();
     await fixture.whenStable();
-    httpMock
-      .expectOne(urlBusca)
+    esperarBusca()
       .flush([{ id: 1, nome: 'Sala Focus', capacidade: 2, localizacao: 'Tamboré' }]);
     await fixture.whenStable();
     fixture.detectChanges();
@@ -149,7 +147,7 @@ describe('MinhasReservas', () => {
     const fixture = criarFixture();
     const componente = fixture.componentInstance;
     await fixture.whenStable();
-    httpMock.expectOne(urlBusca).flush([]);
+    esperarBusca().flush([]);
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -168,7 +166,7 @@ describe('MinhasReservas', () => {
   it('should show the error state when the backend fails', async () => {
     const fixture = criarFixture();
     await fixture.whenStable();
-    httpMock.expectOne(urlBusca).flush(
+    esperarBusca().flush(
       { status: 500, message: 'Erro interno inesperado. Tente novamente.' },
       {
         status: 500,
@@ -186,7 +184,7 @@ describe('MinhasReservas', () => {
   it('should show a friendly message when the session is not authenticated', async () => {
     const fixture = criarFixture();
     await fixture.whenStable();
-    httpMock.expectOne(urlBusca).flush(
+    esperarBusca().flush(
       { status: 401, message: 'Faça login para continuar.' },
       {
         status: 401,

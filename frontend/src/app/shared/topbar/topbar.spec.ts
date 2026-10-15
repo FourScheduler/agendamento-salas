@@ -28,6 +28,18 @@ describe('Topbar', () => {
     httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush(token);
   }
 
+  function aguardarMicrotarefas(): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
+  function responderMe(nome = 'Usuario Teste Um') {
+    httpMock.expectOne(`${environment.apiUrl}/api/usuarios/me`).flush({
+      id: 3,
+      nome,
+      email: 'usuario@teste.com',
+    });
+  }
+
   it('should show the sign in button when unauthenticated', () => {
     const fixture = TestBed.createComponent(Topbar);
     fixture.detectChanges();
@@ -67,7 +79,14 @@ describe('Topbar', () => {
     );
     formulario?.dispatchEvent(new Event('submit'));
     responderDemo();
+    // O perfil falha neste cenário: o nome digitado é quem deve aparecer.
+    await aguardarMicrotarefas();
+    httpMock.expectOne(`${environment.apiUrl}/api/usuarios/me`).flush('erro', {
+      status: 500,
+      statusText: 'Internal Server Error',
+    });
     await fixture.whenStable();
+    await aguardarMicrotarefas();
     fixture.detectChanges();
 
     const auth = TestBed.inject(AuthService);
@@ -127,6 +146,8 @@ describe('Topbar', () => {
     const fixture = TestBed.createComponent(Topbar);
     const login = TestBed.inject(AuthService).entrar('Kevin Miranda');
     responderDemo();
+    await aguardarMicrotarefas();
+    responderMe('Kevin Miranda');
     await login;
     fixture.detectChanges();
 
