@@ -1,12 +1,17 @@
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { MinhasReservas } from './minhas-reservas';
 import { Reserva } from '../../core/models/api.models';
 import { apiErrorInterceptor } from '../../core/http/api-error';
 import { authInterceptor } from '../../core/http/auth-interceptor';
 import { environment } from '../../../environments/environment';
+
+/** Rota usada apenas para o teste do botão de voltar. */
+@Component({ template: '' })
+class TelaAgendamentoStub {}
 
 describe('MinhasReservas', () => {
   let httpMock: HttpTestingController;
@@ -42,7 +47,7 @@ describe('MinhasReservas', () => {
     await TestBed.configureTestingModule({
       imports: [MinhasReservas],
       providers: [
-        provideRouter([]),
+        provideRouter([{ path: 'agendamento', component: TelaAgendamentoStub }]),
         provideHttpClient(withInterceptors([authInterceptor, apiErrorInterceptor])),
         provideHttpClientTesting(),
       ],
@@ -84,6 +89,21 @@ describe('MinhasReservas', () => {
     expect(compilado.textContent).toContain('Sala Focus');
     expect(compilado.textContent).toContain('Tamboré');
     expect(compilado.textContent).toContain('Confirmada');
+  });
+
+  it('should show time, people and location in a single meta line', async () => {
+    const fixture = criarFixture();
+    await fixture.whenStable();
+    esperarBusca().flush([{ ...reservaFutura, qntdPessoas: 1 }]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compilado = fixture.nativeElement as HTMLElement;
+    expect(compilado.textContent).toContain('09:00 às 10:00');
+    expect(compilado.textContent).toContain('1 pessoa · Tamboré');
+
+    // O bloco antigo de dados com rótulos em caixa alta foi removido.
+    expect(compilado.querySelector('.minhas-reservas__dados')).toBeFalsy();
   });
 
   it('should show a reservation when the API uses sala instead of salaId', async () => {
@@ -179,6 +199,23 @@ describe('MinhasReservas', () => {
     const compilado = fixture.nativeElement as HTMLElement;
     expect(compilado.querySelector('app-erro')).toBeTruthy();
     expect(compilado.textContent).toContain('Erro interno inesperado. Tente novamente.');
+  });
+
+  it('should show a button that goes back to the scheduling page', async () => {
+    const fixture = criarFixture();
+    await fixture.whenStable();
+    esperarBusca().flush([]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compilado = fixture.nativeElement as HTMLElement;
+    const botao = compilado.querySelector<HTMLButtonElement>('.minhas-reservas__voltar');
+    expect(botao).toBeTruthy();
+    expect(botao?.textContent).toContain('Voltar');
+
+    botao?.click();
+    await fixture.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/agendamento');
   });
 
   it('should show a friendly message when the session is not authenticated', async () => {

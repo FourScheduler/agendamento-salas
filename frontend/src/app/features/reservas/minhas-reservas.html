@@ -5,6 +5,15 @@
       <h1 class="titulo">Minhas reservas</h1>
       <p class="subtitulo">Acompanhe as salas reservadas por você.</p>
     </div>
+
+    <button
+      class="botao botao--suave minhas-reservas__voltar"
+      type="button"
+      (click)="voltarParaAgendamento()"
+    >
+      <span aria-hidden="true">&#8592;</span>
+      Voltar
+    </button>
   </header>
 
   <div class="minhas-reservas__filtros" role="group" aria-label="Filtrar reservas por período">
@@ -50,7 +59,9 @@
           <div class="minhas-reservas__cartaoTopo">
             <div>
               <p class="minhas-reservas__sala">{{ reserva.salaId.nome }}</p>
-              <p class="minhas-reservas__local">{{ reserva.salaId.localizacao }}</p>
+              @if (reserva.titulo; as titulo) {
+                <p class="minhas-reservas__tituloReserva">{{ titulo }}</p>
+              }
             </div>
             <span
               class="minhas-reservas__status"
@@ -62,28 +73,15 @@
             </span>
           </div>
 
-          @if (reserva.titulo; as titulo) {
-            <p class="minhas-reservas__tituloReserva">{{ titulo }}</p>
-          }
-
-          <dl class="minhas-reservas__dados">
-            <div class="minhas-reservas__dado">
-              <dt>Data</dt>
-              <dd>{{ formatarData(reserva.dataAgendamento) }}</dd>
-            </div>
-            <div class="minhas-reservas__dado">
-              <dt>Horário</dt>
-              <dd>{{ formatarHora(reserva.horaInicio) }} às {{ formatarHora(reserva.horaFim) }}</dd>
-            </div>
-            <div class="minhas-reservas__dado">
-              <dt>Pessoas</dt>
-              <dd>{{ reserva.qntdPessoas }}</dd>
-            </div>
-            <div class="minhas-reservas__dado">
-              <dt>Local</dt>
-              <dd>{{ reserva.salaId.localizacao }}</dd>
-            </div>
-          </dl>
+          <div class="minhas-reservas__meta">
+            <p class="minhas-reservas__quando">
+              {{ formatarData(reserva.dataAgendamento) }} ·
+              {{ formatarHora(reserva.horaInicio) }} às {{ formatarHora(reserva.horaFim) }}
+            </p>
+            <p class="minhas-reservas__detalhes">
+              {{ quantidadePessoas(reserva.qntdPessoas) }} · {{ reserva.salaId.localizacao }}
+            </p>
+          </div>
         </li>
       }
     </ul>

@@ -43,6 +43,17 @@ class CorsTests {
 	}
 
 	@Test
+	void devePermitirPreflightDePatchAoSelecionarSala() throws Exception {
+		mockMvc.perform(options("/api/agendamento/conversas/1/selecionar")
+						.header("Origin", "http://localhost:4200")
+						.header("Access-Control-Request-Method", "PATCH")
+						.header("Access-Control-Request-Headers", "content-type"))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:4200"))
+				.andExpect(header().string("Access-Control-Allow-Methods", containsString("PATCH")));
+	}
+
+	@Test
 	void deveRejeitarPreflightDeOrigemNaoPermitida() throws Exception {
 		mockMvc.perform(options("/api/salas/disponiveis")
 						.header("Origin", "http://evil.example")

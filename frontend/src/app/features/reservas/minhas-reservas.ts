@@ -91,8 +91,13 @@ export class MinhasReservas implements OnInit {
     this.filtro.set(filtro);
   }
 
-  agendar(): void {
+  /** Volta para a tela de agendamento de salas. */
+  voltarParaAgendamento(): void {
     this.router.navigate(['/agendamento']);
+  }
+
+  agendar(): void {
+    this.voltarParaAgendamento();
   }
 
   formatarData(iso: string): string {
@@ -101,6 +106,11 @@ export class MinhasReservas implements OnInit {
 
   formatarHora(hora: string): string {
     return hora.slice(0, 5);
+  }
+
+  /** "1 pessoa" ou "2 pessoas", para a linha de metadados do cartão. */
+  quantidadePessoas(qntdPessoas: number): string {
+    return `${qntdPessoas} ${qntdPessoas === 1 ? 'pessoa' : 'pessoas'}`;
   }
 
   chave(reserva: Reserva): string {

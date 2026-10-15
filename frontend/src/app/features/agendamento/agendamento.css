@@ -1,4 +1,12 @@
+.pagina_agendamento {
+  margin-left: 5rem;
+  justify-content: center;
+  width: 85%;
+
+}
+
 .agendamento__cabecalho {
+  padding-top: 1.5rem;
   max-width: 40rem;
 }
 
