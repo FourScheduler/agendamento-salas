@@ -9,6 +9,8 @@ import br.com.foursys.agendamento_salas.security.SecurityUtils;
 import br.com.foursys.agendamento_salas.service.OrquestradorAgendamentoService;
 import br.com.foursys.agendamento_salas.service.UsuarioService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -17,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/agendamento/conversas")
 public class AgendamentoConversaController {
+
+    private static final Logger log = LoggerFactory.getLogger(AgendamentoConversaController.class);
 
     private final OrquestradorAgendamentoService orquestradorAgendamentoService;
     private final UsuarioService usuarioService;
@@ -84,10 +88,17 @@ public class AgendamentoConversaController {
             @PathVariable Long conversaId
     ){
         Long usuarioId = securityUtils.get().id();
+        log.info("Recebida confirmacao pelo assistente. conversaId={}, usuarioId={}", conversaId, usuarioId);
 
         OrquestradorAgendamentoResponse response = orquestradorAgendamentoService.confirmarAgendamento(
                 conversaId,
                 usuarioId
+        );
+        log.info(
+                "Confirmacao pelo assistente concluida. conversaId={}, usuarioId={}, estado={}",
+                conversaId,
+                usuarioId,
+                response.estado()
         );
 
         return ResponseEntity

@@ -19,6 +19,8 @@ import br.com.foursys.agendamento_salas.port.out.LogRepositoryPort;
 import br.com.foursys.agendamento_salas.port.out.SalaRepositoryPort;
 import br.com.foursys.agendamento_salas.port.out.UsuarioRepositoryPort;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -30,6 +32,8 @@ import java.util.List;
 
 @Service
 public class AgendamentoService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AgendamentoService.class);
 
     private final AgendamentoRepositoryPort agendamentoRepositoryPort;
     private final LogRepositoryPort logRepositoryPort;
@@ -49,6 +53,16 @@ public class AgendamentoService {
 
     @Transactional
     public ConfimacaoAgendamentoResponse criar(CriarAgendamentoRequest agendamentoRequest, Long idUsuario) {
+        logger.info(
+                "Iniciando validacao do agendamento. usuarioId={}, salaId={}, data={}, inicio={}, fim={}, pessoas={}",
+                idUsuario,
+                agendamentoRequest.salaId().id(),
+                agendamentoRequest.data(),
+                agendamentoRequest.horaInicio(),
+                agendamentoRequest.horaFim(),
+                agendamentoRequest.qntdPessoas()
+        );
+
         Usuario usuario = buscarUsuario(idUsuario);
 
         validarDataAgendamento(agendamentoRequest.data());
@@ -59,6 +73,12 @@ public class AgendamentoService {
         // evitando dupla reserva entre o check de conflito e o insert.
         Sala sala = salaRepositoryPort.buscarPorIdComBloqueio(agendamentoRequest.salaId().id())
                 .orElseThrow(SalaInexistenteException::new);
+        logger.info(
+                "Sala carregada para validacao do agendamento. salaId={}, capacidade={}, disponivel={}",
+                sala.getId(),
+                sala.getCapacidade(),
+                sala.getDisponivel()
+        );
 
         validarQuantidadeHorasAgendamento(agendamentoRequest.horaInicio(),
                 agendamentoRequest.horaFim(), usuario.getPerfilUsuario());
@@ -108,6 +128,12 @@ public class AgendamentoService {
                 .build();
 
         logRepositoryPort.salvar(log);
+        logger.info(
+                "Agendamento registrado e log de auditoria salvo. agendamentoId={}, usuarioId={}, salaId={}",
+                agendamento.getId(),
+                idUsuario,
+                sala.getId()
+        );
 
         return ConfimacaoAgendamentoResponse.builder()
                 .id(agendamento.getId())
