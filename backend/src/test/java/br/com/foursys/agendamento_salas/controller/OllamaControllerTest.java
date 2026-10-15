@@ -5,6 +5,8 @@ import br.com.foursys.agendamento_salas.domain.AgendamentoConversa;
 import br.com.foursys.agendamento_salas.dto.response.CampoInterpretado;
 import br.com.foursys.agendamento_salas.dto.response.InterpretarAgendamentoResponse;
 import br.com.foursys.agendamento_salas.security.JwtAuthenticationFilter;
+import br.com.foursys.agendamento_salas.security.AuthenticatedUser;
+import br.com.foursys.agendamento_salas.security.SecurityUtils;
 import br.com.foursys.agendamento_salas.service.OllamaService;
 import br.com.foursys.agendamento_salas.service.OrquestradorAgendamentoService;
 import org.junit.jupiter.api.Test;
@@ -44,6 +46,9 @@ class OllamaControllerTest {
     @MockitoBean
     private OrquestradorAgendamentoService orquestradorAgendamentoService;
 
+    @MockitoBean
+    private SecurityUtils securityUtils;
+
     @Test
     void deveInterpretarAgendamentoComSucesso() throws Exception {
 
@@ -76,6 +81,10 @@ class OllamaControllerTest {
                         new CampoInterpretado<>(
                                 "Tamboré",
                                 true
+                        ),
+                        new CampoInterpretado<>(
+                                null,
+                                false
                         )
                 );
 
@@ -88,7 +97,8 @@ class OllamaControllerTest {
                 .qntdPessoas(null)
                 .build();
 
-        when(orquestradorAgendamentoService.buscarConversa(1L))
+        when(securityUtils.get()).thenReturn(new AuthenticatedUser(1L, "usuario@teste.com"));
+        when(orquestradorAgendamentoService.buscarConversaDoUsuario(1L, 1L))
                 .thenReturn(conversa);
 
 
@@ -124,7 +134,7 @@ class OllamaControllerTest {
                 conversa.getLocalizacao()
         );
 
-        verify(orquestradorAgendamentoService).buscarConversa(1L);
+        verify(orquestradorAgendamentoService).buscarConversaDoUsuario(1L, 1L);
     }
 
     @Test

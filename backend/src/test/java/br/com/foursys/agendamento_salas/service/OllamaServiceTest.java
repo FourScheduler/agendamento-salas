@@ -1,6 +1,7 @@
 
 package br.com.foursys.agendamento_salas.service;
 
+import br.com.foursys.agendamento_salas.exception.InterpretacaoIaException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
@@ -266,6 +267,107 @@ class OllamaServiceTest {
     }
 
     @Test
+    void deveInterpretarDuracaoEmMinutos() {
+
+        String respostaOllama = """
+                {
+                  "data": {
+                    "valor": "2026-10-10",
+                    "informado": true
+                  },
+                  "inicio": {
+                    "valor": "14:00:00",
+                    "informado": true
+                  },
+                  "fim": {
+                    "valor": null,
+                    "informado": false
+                  },
+                  "quantidadePessoas": {
+                    "valor": 6,
+                    "informado": true
+                  },
+                  "localizacao": {
+                    "valor": null,
+                    "informado": false
+                  },
+                  "duracaoMinutos": {
+                    "valor": 60,
+                    "informado": true
+                  }
+                }
+                """;
+
+        doReturn(respostaOllama)
+                .when(ollamaService)
+                .gerarResposta(anyString());
+
+        var resposta = ollamaService.interpretarAgendamento(
+                "sala para 6 pessoas amanhã às 14h por 1h",
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        assertNotNull(resposta);
+
+        assertEquals(
+                LocalTime.of(14, 0),
+                resposta.inicio().valor()
+        );
+        assertTrue(resposta.inicio().informado());
+
+        assertNull(resposta.fim().valor());
+        assertFalse(resposta.fim().informado());
+
+        assertEquals(60, resposta.duracaoMinutos().valor());
+        assertTrue(resposta.duracaoMinutos().informado());
+    }
+
+    @Test
+    void deveManterDuracaoNulaQuandoAusenteNoJson() {
+
+        String respostaOllama = """
+                {
+                  "data": {
+                    "valor": null,
+                    "informado": false
+                  },
+                  "inicio": {
+                    "valor": "14:00:00",
+                    "informado": true
+                  },
+                  "fim": {
+                    "valor": null,
+                    "informado": false
+                  },
+                  "quantidadePessoas": {
+                    "valor": null,
+                    "informado": false
+                  }
+                }
+                """;
+
+        doReturn(respostaOllama)
+                .when(ollamaService)
+                .gerarResposta(anyString());
+
+        var resposta = ollamaService.interpretarAgendamento(
+                "quero uma sala às 14h",
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        assertNotNull(resposta);
+        assertNull(resposta.duracaoMinutos());
+    }
+
+    @Test
     void deveLancarExcecaoQuandoOllamaRetornarJsonInvalido() {
 
         String respostaInvalida = "isso não é um JSON válido";
@@ -274,8 +376,8 @@ class OllamaServiceTest {
                 .when(ollamaService)
                 .gerarResposta(anyString());
 
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
+        InterpretacaoIaException exception = assertThrows(
+                InterpretacaoIaException.class,
                 () -> ollamaService.interpretarAgendamento(
                         "quero uma sala amanhã",
                         null,
@@ -287,7 +389,7 @@ class OllamaServiceTest {
         );
 
         assertEquals(
-                "Erro ao interpretar agendamento com Ollama",
+                "Não foi possível interpretar a solicitação agora. Tente novamente.",
                 exception.getMessage()
         );
     }

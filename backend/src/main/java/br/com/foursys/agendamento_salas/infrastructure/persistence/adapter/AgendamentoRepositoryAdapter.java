@@ -14,10 +14,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
-public class AgendamenRepositorytoAdapter implements AgendamentoRepositoryPort {
+public class AgendamentoRepositoryAdapter implements AgendamentoRepositoryPort {
     private final AgendamentoJpaRepository agendamentoJpaRepository;
 
-    public AgendamenRepositorytoAdapter(AgendamentoJpaRepository agendamentoJpaRepository) {
+    public AgendamentoRepositoryAdapter(AgendamentoJpaRepository agendamentoJpaRepository) {
         this.agendamentoJpaRepository = agendamentoJpaRepository;
     }
 

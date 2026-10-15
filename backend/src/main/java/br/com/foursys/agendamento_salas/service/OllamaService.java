@@ -3,9 +3,12 @@ package br.com.foursys.agendamento_salas.service;
 import br.com.foursys.agendamento_salas.dto.request.OllamaRequest;
 import br.com.foursys.agendamento_salas.dto.response.InterpretarAgendamentoResponse;
 import br.com.foursys.agendamento_salas.dto.response.OllamaResponse;
+import br.com.foursys.agendamento_salas.exception.InterpretacaoIaException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
@@ -25,10 +28,13 @@ public class OllamaService {
     }
 
     public String gerarResposta(String prompt) {
-
         OllamaRequest request = new OllamaRequest(model, prompt, false);
 
-        OllamaResponse response = ollamaRestClient.post().uri("/api/generate").body(request).retrieve().body(OllamaResponse.class);
+        OllamaResponse response = ollamaRestClient.post()
+                .uri("/api/generate")
+                .body(request)
+                .retrieve()
+                .body(OllamaResponse.class);
 
         return response.response();
     }
@@ -106,6 +112,19 @@ public class OllamaService {
                 - Se a mensagem não informar ou corrigir um horário,
                   retorne null e informado false para esse campo.
                 
+                REGRAS PARA DURAÇÃO:
+                - Se a mensagem informar duração ("por 1h", "durante
+                  30 minutos", "1h30", "2 horas"), converta para minutos
+                  e preencha "duracaoMinutos": "30 min" = 30, "1h" = 60,
+                  "1h30" = 90, "2 horas" = 120.
+                - informado deve ser true e o valor deve ser um número
+                  inteiro de minutos.
+                - Nesses casos, NÃO preencha "fim": o sistema calcula o
+                  horário final a partir do horário inicial.
+                - Se a mensagem informar o horário final explicitamente
+                  (ex.: "até 15h"), preencha "fim" e deixe
+                  "duracaoMinutos" com valor null e informado false.
+                
                 REGRAS PARA QUANTIDADE:
                 - Converta quantidades escritas por extenso em números.
                 - Exemplo: "cinco pessoas" corresponde ao número 5.
@@ -149,6 +168,10 @@ public class OllamaService {
                   "localizacao": {
                     "valor": null,
                     "informado": false
+                  },
+                  "duracaoMinutos": {
+                    "valor": null,
+                    "informado": false
                   }
                 }
                 
@@ -175,11 +198,8 @@ public class OllamaService {
                     InterpretarAgendamentoResponse.class
             );
 
-        } catch (Exception e) {
-            throw new RuntimeException(
-                    "Erro ao interpretar agendamento com Ollama",
-                    e
-            );
+        } catch (RestClientException | JacksonException e) {
+            throw new InterpretacaoIaException(e);
         }
     }
 

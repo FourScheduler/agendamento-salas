@@ -1,13 +1,14 @@
 package br.com.foursys.agendamento_salas.controller;
 
-import br.com.foursys.agendamento_salas.domain.AgendamentoConversa;
 import br.com.foursys.agendamento_salas.domain.Usuario;
 import br.com.foursys.agendamento_salas.dto.request.EnviarMensagemRequest;
 import br.com.foursys.agendamento_salas.dto.request.SelecionarSalaRequest;
 import br.com.foursys.agendamento_salas.dto.response.IniciarConversaResponse;
 import br.com.foursys.agendamento_salas.dto.response.OrquestradorAgendamentoResponse;
+import br.com.foursys.agendamento_salas.security.SecurityUtils;
 import br.com.foursys.agendamento_salas.service.OrquestradorAgendamentoService;
 import br.com.foursys.agendamento_salas.service.UsuarioService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,10 +20,16 @@ public class AgendamentoConversaController {
 
     private final OrquestradorAgendamentoService orquestradorAgendamentoService;
     private final UsuarioService usuarioService;
+    private final SecurityUtils securityUtils;
 
-    public AgendamentoConversaController(OrquestradorAgendamentoService orquestradorAgendamentoService, UsuarioService usuarioService) {
+    public AgendamentoConversaController(
+            OrquestradorAgendamentoService orquestradorAgendamentoService,
+            UsuarioService usuarioService,
+            SecurityUtils securityUtils
+    ) {
         this.orquestradorAgendamentoService = orquestradorAgendamentoService;
         this.usuarioService = usuarioService;
+        this.securityUtils = securityUtils;
     }
 
     @PostMapping
@@ -39,11 +46,14 @@ public class AgendamentoConversaController {
 
     @PostMapping("/mensagens")
     public ResponseEntity<OrquestradorAgendamentoResponse> processarMensagem(
-            @RequestBody EnviarMensagemRequest request) {
+            @Valid @RequestBody EnviarMensagemRequest request) {
+
+        Long usuarioId = securityUtils.get().id();
 
         OrquestradorAgendamentoResponse response =  orquestradorAgendamentoService.processarMensagem(
                 request.conversaId(),
-                request.mensagem()
+                request.mensagem(),
+                usuarioId
         );
 
         return ResponseEntity
@@ -54,9 +64,15 @@ public class AgendamentoConversaController {
     @PatchMapping("/{conversaId}/selecionar")
     public ResponseEntity<OrquestradorAgendamentoResponse> selecionarSala(
             @PathVariable Long conversaId,
-            @RequestBody SelecionarSalaRequest request
+            @Valid @RequestBody SelecionarSalaRequest request
             ){
-        OrquestradorAgendamentoResponse response = orquestradorAgendamentoService.selecionarSala(conversaId,request);
+        Long usuarioId = securityUtils.get().id();
+
+        OrquestradorAgendamentoResponse response = orquestradorAgendamentoService.selecionarSala(
+                conversaId,
+                request,
+                usuarioId
+        );
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -67,7 +83,12 @@ public class AgendamentoConversaController {
     public ResponseEntity<OrquestradorAgendamentoResponse> confirmarAgendamento(
             @PathVariable Long conversaId
     ){
-        OrquestradorAgendamentoResponse response = orquestradorAgendamentoService.confirmarAgendamento(conversaId);
+        Long usuarioId = securityUtils.get().id();
+
+        OrquestradorAgendamentoResponse response = orquestradorAgendamentoService.confirmarAgendamento(
+                conversaId,
+                usuarioId
+        );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)

@@ -9,6 +9,8 @@ import br.com.foursys.agendamento_salas.dto.request.SelecionarSalaRequest;
 import br.com.foursys.agendamento_salas.dto.response.*;
 import br.com.foursys.agendamento_salas.enums.StatusAgendamento;
 import br.com.foursys.agendamento_salas.exception.ConversaNaoEncontradaException;
+import br.com.foursys.agendamento_salas.exception.UsuarioSemPermissaoException;
+import br.com.foursys.agendamento_salas.exception.ValidacaoBuscaException;
 import br.com.foursys.agendamento_salas.port.out.AgendamentoConversaRepositoryPort;
 import org.springframework.stereotype.Service;
 
@@ -53,10 +55,11 @@ public class OrquestradorAgendamentoService {
 
     public OrquestradorAgendamentoResponse processarMensagem(
             Long conversaId,
-            String mensagem
+            String mensagem,
+            Long usuarioId
     ) {
 
-        AgendamentoConversa conversa = buscarConversa(conversaId);
+        AgendamentoConversa conversa = buscarConversaDoUsuario(conversaId, usuarioId);
 
         conversa.setStatus(StatusAgendamento.INTERPRETANDO);
         salvarConversa(conversa);
@@ -117,9 +120,10 @@ public class OrquestradorAgendamentoService {
 
     public OrquestradorAgendamentoResponse selecionarSala(
             Long conversaId,
-            SelecionarSalaRequest request
+            SelecionarSalaRequest request,
+            Long usuarioId
     ){
-        AgendamentoConversa conversa = buscarConversa(conversaId);
+        AgendamentoConversa conversa = buscarConversaDoUsuario(conversaId, usuarioId);
 
         Sala sala = salaService.buscarPorId(request.salaId());
 
@@ -137,15 +141,30 @@ public class OrquestradorAgendamentoService {
     }
 
     public OrquestradorAgendamentoResponse confirmarAgendamento(
-            Long conversaId
+            Long conversaId,
+            Long usuarioId
     ){
-        AgendamentoConversa conversa = buscarConversa(conversaId);
-        validarInformacoes(conversa);
+        AgendamentoConversa conversa = buscarConversaDoUsuario(conversaId, usuarioId);
+
+        if (!validarInformacoes(conversa) || conversa.getSalaEscolhida() == null) {
+            salvarConversa(conversa);
+            throw new ValidacaoBuscaException(
+                    "Faltam dados para confirmar o agendamento. Informe data, horários, pessoas e escolha uma sala."
+            );
+        }
 
         conversa.setStatus(StatusAgendamento.RESERVANDO);
         salvarConversa(conversa);
 
-        CriarAgendamentoRequest criarAgendamentoRequest = new CriarAgendamentoRequest(conversa.getSalaEscolhida(),conversa.getDataAgendamento(),conversa.getHoraInicio(), conversa.getHoraFim(),conversa.getQntdPessoas(),null,null);
+        CriarAgendamentoRequest criarAgendamentoRequest = new CriarAgendamentoRequest(
+                new CriarAgendamentoRequest.SalaRef(conversa.getSalaEscolhida().getId()),
+                conversa.getDataAgendamento(),
+                conversa.getHoraInicio(),
+                conversa.getHoraFim(),
+                conversa.getQntdPessoas(),
+                null,
+                null
+        );
 
         ConfimacaoAgendamentoResponse agendamento = agendamentoService.criar(criarAgendamentoRequest,conversa.getUsuarioId().getId());
 
@@ -163,6 +182,18 @@ public class OrquestradorAgendamentoService {
         return agendamentoConversaRepositoryPort
                 .buscarPorId(conversaId)
                 .orElseThrow(ConversaNaoEncontradaException::new);
+    }
+
+    /** Garante que a conversa pertence ao usuário autenticado (evita IDOR). */
+    public AgendamentoConversa buscarConversaDoUsuario(Long conversaId, Long usuarioId) {
+        AgendamentoConversa conversa = buscarConversa(conversaId);
+
+        if (conversa.getUsuarioId() == null
+                || !conversa.getUsuarioId().getId().equals(usuarioId)) {
+            throw new UsuarioSemPermissaoException();
+        }
+
+        return conversa;
     }
 
 
@@ -208,6 +239,28 @@ public class OrquestradorAgendamentoService {
 
             conversa.setLocalizacao(
                     interpretacao.localizacao().valor()
+            );
+        }
+
+        boolean fimInformado =
+                interpretacao.fim() != null
+                        && interpretacao.fim().informado();
+
+        boolean duracaoInformada =
+                interpretacao.duracaoMinutos() != null
+                        && interpretacao.duracaoMinutos().informado()
+                        && interpretacao.duracaoMinutos().valor() != null;
+
+        // Duração ("por 1h") vira horário de término calculado em Java;
+        // horário final explícito ("até 15h") tem prioridade.
+        if (duracaoInformada
+                && !fimInformado
+                && conversa.getHoraInicio() != null) {
+
+            conversa.setHoraFim(
+                    conversa.getHoraInicio().plusMinutes(
+                            interpretacao.duracaoMinutos().valor()
+                    )
             );
         }
     }
@@ -290,7 +343,11 @@ public class OrquestradorAgendamentoService {
                 conversa.getId(),
                 conversa.getStatus(),
                 mensagem,
-                sugestoes
+                sugestoes,
+                conversa.getDataAgendamento(),
+                conversa.getHoraInicio(),
+                conversa.getHoraFim(),
+                conversa.getQntdPessoas()
         );
     }
 

@@ -8,6 +8,7 @@ public record InterpretarAgendamentoResponse(
         CampoInterpretado<LocalTime> inicio,
         CampoInterpretado<LocalTime> fim,
         CampoInterpretado<Integer> quantidadePessoas,
-        CampoInterpretado<String> localizacao
+        CampoInterpretado<String> localizacao,
+        CampoInterpretado<Integer> duracaoMinutos
 ) {
 }

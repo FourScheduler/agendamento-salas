@@ -7,6 +7,7 @@ import br.com.foursys.agendamento_salas.dto.request.CriarSalaRequest;
 import br.com.foursys.agendamento_salas.dto.response.SalaResponse;
 import br.com.foursys.agendamento_salas.exception.SalaInexistenteException;
 import br.com.foursys.agendamento_salas.exception.ValidacaoBuscaException;
+import br.com.foursys.agendamento_salas.mapper.SalaMapper;
 import br.com.foursys.agendamento_salas.security.JwtService;
 import br.com.foursys.agendamento_salas.service.SalaService;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,9 @@ class SalaControllerTests {
 	private SalaService salaService;
 
 	@MockitoBean
+	private SalaMapper salaMapper;
+
+	@MockitoBean
 	private JwtService jwtService;
 
 	@MockitoBean
@@ -53,6 +57,7 @@ class SalaControllerTests {
 
 		mockMvc.perform(
 						post("/api/salas/admin/criar")
+								.with(user("admin").roles("ADMIN"))
 								.contentType("application/json")
 								.content("""
                                 {
@@ -68,6 +73,23 @@ class SalaControllerTests {
 	}
 
 	@Test
+	void deveRejeitarCriacaoDeSalaSemPerfilAdmin() throws Exception {
+		mockMvc.perform(
+						post("/api/salas/admin/criar")
+								.with(user("comum").roles("USER"))
+								.contentType("application/json")
+								.content("""
+                                {
+                                    "nome": "Sala Focus",
+                                    "capacidade": 8,
+                                    "localizacao": "Tamboré"
+                                }
+                                """)
+				)
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
 	void deveBuscarSalaExistentePorId() throws Exception {
 		Sala sala = Sala.builder()
 				.id(12L)
@@ -79,6 +101,8 @@ class SalaControllerTests {
 
 		when(salaService.buscarPorId(12L))
 				.thenReturn(sala);
+		when(salaMapper.entityToResponse(sala))
+				.thenReturn(new SalaResponse(12L, "Sala Focus", true, 8, "Tamboré"));
 
 		mockMvc.perform(get("/api/salas/12"))
 				.andExpect(status().isOk())
@@ -99,18 +123,10 @@ class SalaControllerTests {
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
 								.with(user("teste@email.com"))
-								.contentType("application/json")
-								.content("""
-                                {
-                                    "salaId": null,
-                                    "data": "%s",
-                                    "horaInicio": "14:00",
-                                    "horaFim": "15:00",
-                                    "qntdPessoas": 1,
-                                    "usuarioIdSolicitante": null,
-                                    "titulo": "Teste"
-                                }
-                                """.formatted(LocalDate.now().plusDays(1)))
+								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("horaInicio", "14:00")
+								.param("horaFim", "15:00")
+								.param("qntdPessoas", "1")
 				)
 				.andExpect(status().isOk());
 	}
@@ -127,18 +143,10 @@ class SalaControllerTests {
 
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
-								.contentType("application/json")
-								.content("""
-                                {
-                                    "salaId": null,
-                                    "data": "%s",
-                                    "horaInicio": "14:00",
-                                    "horaFim": "15:00",
-                                    "qntdPessoas": 1,
-                                    "usuarioIdSolicitante": null,
-                                    "titulo": "Teste"
-                                }
-                                """.formatted(LocalDate.now().plusDays(1)))
+								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("horaInicio", "14:00")
+								.param("horaFim", "15:00")
+								.param("qntdPessoas", "1")
 				)
 				.andExpect(status().isOk());
 	}
@@ -160,18 +168,10 @@ class SalaControllerTests {
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
 								.with(user("teste@email.com"))
-								.contentType("application/json")
-								.content("""
-                                {
-                                    "salaId": null,
-                                    "data": "%s",
-                                    "horaInicio": "14:00",
-                                    "horaFim": "15:00",
-                                    "qntdPessoas": 4,
-                                    "usuarioIdSolicitante": null,
-                                    "titulo": "Reunião"
-                                }
-                                """.formatted(LocalDate.now().plusDays(1)))
+								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("horaInicio", "14:00")
+								.param("horaFim", "15:00")
+								.param("qntdPessoas", "4")
 				)
 				.andExpect(status().isOk());
 	}
@@ -191,18 +191,10 @@ class SalaControllerTests {
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
 								.with(user("teste@email.com"))
-								.contentType("application/json")
-								.content("""
-                                {
-                                    "salaId": null,
-                                    "data": "%s",
-                                    "horaInicio": "14:00",
-                                    "horaFim": "15:00",
-                                    "qntdPessoas": 10,
-                                    "usuarioIdSolicitante": null,
-                                    "titulo": "Reunião"
-                                }
-                                """.formatted(LocalDate.now().plusDays(1)))
+								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("horaInicio", "14:00")
+								.param("horaFim", "15:00")
+								.param("qntdPessoas", "10")
 				)
 				.andExpect(status().isOk());
 	}
@@ -224,18 +216,10 @@ class SalaControllerTests {
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
 								.with(user("teste@email.com"))
-								.contentType("application/json")
-								.content("""
-                                {
-                                    "salaId": null,
-                                    "data": "2020-01-01",
-                                    "horaInicio": "14:00",
-                                    "horaFim": "15:00",
-                                    "qntdPessoas": 4,
-                                    "usuarioIdSolicitante": null,
-                                    "titulo": "Teste"
-                                }
-                                """)
+								.param("data", "2020-01-01")
+								.param("horaInicio", "14:00")
+								.param("horaFim", "15:00")
+								.param("qntdPessoas", "4")
 				)
 				.andExpect(status().isBadRequest());
 	}
@@ -259,18 +243,10 @@ class SalaControllerTests {
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
 								.with(user("teste@email.com"))
-								.contentType("application/json")
-								.content("""
-                                {
-                                    "salaId": null,
-                                    "data": "%s",
-                                    "horaInicio": "15:00",
-                                    "horaFim": "14:00",
-                                    "qntdPessoas": 4,
-                                    "usuarioIdSolicitante": null,
-                                    "titulo": "Teste"
-                                }
-                                """.formatted(LocalDate.now().plusDays(1)))
+								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("horaInicio", "15:00")
+								.param("horaFim", "14:00")
+								.param("qntdPessoas", "4")
 				)
 				.andExpect(status().isBadRequest());
 	}
@@ -294,18 +270,10 @@ class SalaControllerTests {
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
 								.with(user("teste@email.com"))
-								.contentType("application/json")
-								.content("""
-                                {
-                                    "salaId": null,
-                                    "data": "%s",
-                                    "horaInicio": "14:00",
-                                    "horaFim": "15:00",
-                                    "qntdPessoas": 0,
-                                    "usuarioIdSolicitante": null,
-                                    "titulo": "Teste"
-                                }
-                                """.formatted(LocalDate.now().plusDays(1)))
+								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("horaInicio", "14:00")
+								.param("horaFim", "15:00")
+								.param("qntdPessoas", "0")
 				)
 				.andExpect(status().isBadRequest());
 	}
@@ -329,18 +297,9 @@ class SalaControllerTests {
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
 								.with(user("teste@email.com"))
-								.contentType("application/json")
-								.content("""
-                                {
-                                    "salaId": null,
-                                    "data": "%s",
-                                    "horaInicio": "14:00",
-                                    "horaFim": null,
-                                    "qntdPessoas": 4,
-                                    "usuarioIdSolicitante": null,
-                                    "titulo": "Teste"
-                                }
-                                """.formatted(LocalDate.now().plusDays(1)))
+								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("horaInicio", "14:00")
+								.param("qntdPessoas", "4")
 				)
 				.andExpect(status().isBadRequest());
 	}

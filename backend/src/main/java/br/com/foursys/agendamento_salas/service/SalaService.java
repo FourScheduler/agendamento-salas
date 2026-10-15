@@ -43,7 +43,7 @@ public class SalaService {
         }
 
         Sala sala = Sala.builder()
-                .nome(request.nome())
+                .nome(nomeNormalizado)
                 .disponivel(true)
                 .capacidade(request.capacidade())
                 .localizacao(request.localizacao())
@@ -176,6 +176,11 @@ public class SalaService {
     }
 
     private PerfilUsuario perfilDoUsuario(String email) {
+        // Busca anônima: aplica o limite de duração do usuário comum sem consultar o banco.
+        if (email == null || email.isBlank()) {
+            return PerfilUsuario.USER;
+        }
+
         Usuario usuario = usuarioRepositoryPort.buscarUsuarioEmail(email)
                 .orElseThrow(UsuarioInexistenteException::new);
 

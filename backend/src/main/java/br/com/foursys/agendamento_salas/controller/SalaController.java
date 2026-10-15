@@ -1,18 +1,18 @@
 package br.com.foursys.agendamento_salas.controller;
 
-import br.com.foursys.agendamento_salas.domain.Sala;
-import br.com.foursys.agendamento_salas.dto.request.CriarAgendamentoRequest;
 import br.com.foursys.agendamento_salas.dto.request.CriarSalaRequest;
 import br.com.foursys.agendamento_salas.dto.response.SalaResponse;
+import br.com.foursys.agendamento_salas.mapper.SalaMapper;
 import br.com.foursys.agendamento_salas.service.SalaService;
-import io.jsonwebtoken.Jwt;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -20,15 +20,16 @@ import java.util.List;
 public class SalaController {
 
     private final SalaService salaService;
+    private final SalaMapper salaMapper;
 
-    public SalaController(SalaService salaService) {
+    public SalaController(SalaService salaService, SalaMapper salaMapper) {
         this.salaService = salaService;
+        this.salaMapper = salaMapper;
     }
 
     @PostMapping("admin/criar")
     public ResponseEntity<SalaResponse> criar(
-            @RequestBody CriarSalaRequest request,
-            @AuthenticationPrincipal Jwt usuarioId
+            @Valid @RequestBody CriarSalaRequest request
     ) {
         SalaResponse response = salaService.criar(request);
 
@@ -38,22 +39,29 @@ public class SalaController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Sala> buscarPorId(
+    public ResponseEntity<SalaResponse> buscarPorId(
             @PathVariable Long id
     ) {
-        return ResponseEntity.ok(salaService.buscarPorId(id));
+        return ResponseEntity.ok(salaMapper.entityToResponse(salaService.buscarPorId(id)));
     }
 
+    /**
+     * Busca em GET com query params: navegadores não enviam corpo em GET,
+     * então os filtros vão na URL.
+     */
     @GetMapping("disponiveis")
     public ResponseEntity<List<SalaResponse>> buscarDisponiveis(
-            @RequestBody CriarAgendamentoRequest request,
+            @RequestParam LocalDate data,
+            @RequestParam LocalTime horaInicio,
+            @RequestParam(required = false) LocalTime horaFim,
+            @RequestParam int qntdPessoas,
             Authentication authentication
     ) {
         return ResponseEntity.ok(
                 salaService.buscarSalasDisponiveis(
-                        request.data(),
-                        request.horaInicio(),
-                        request.horaFim(), request.qntdPessoas(),
+                        data,
+                        horaInicio,
+                        horaFim, qntdPessoas,
                         emailDoUsuario(authentication)
                   )
         );

@@ -1,11 +1,9 @@
 package br.com.foursys.agendamento_salas.controller;
 
-import br.com.foursys.agendamento_salas.domain.Sala;
-import br.com.foursys.agendamento_salas.dto.request.BuscaAgendamentoFiltradaRequest;
-import br.com.foursys.agendamento_salas.dto.request.BuscaAgendamentoRequest;
 import br.com.foursys.agendamento_salas.dto.request.CriarAgendamentoRequest;
 import br.com.foursys.agendamento_salas.dto.response.AgendamentoResponse;
 import br.com.foursys.agendamento_salas.dto.response.ConfimacaoAgendamentoResponse;
+import br.com.foursys.agendamento_salas.dto.response.SalaResponse;
 import br.com.foursys.agendamento_salas.enums.StatusAgendamento;
 import br.com.foursys.agendamento_salas.security.AuthenticatedUser;
 import br.com.foursys.agendamento_salas.security.SecurityUtils;
@@ -44,15 +42,8 @@ class AgendamentoControllerTests {
     void deveCriarAgendamentoRetornandoStatus201EConfirmacaoDoNovoFluxo() {
         when(securityUtils.get()).thenReturn(new AuthenticatedUser(42L, "usuario@email.com"));
 
-        Sala sala = Sala.builder()
-                .id(12L)
-                .nome("Sala Focus")
-                .capacidade(8)
-                .disponivel(true)
-                .build();
-
         CriarAgendamentoRequest request = new CriarAgendamentoRequest(
-                sala,
+                new CriarAgendamentoRequest.SalaRef(12L),
                 LocalDate.now().plusDays(1),
                 LocalTime.of(9, 0),
                 LocalTime.of(10, 0),
@@ -61,9 +52,16 @@ class AgendamentoControllerTests {
                 "Reunião de alinhamento"
         );
 
+        SalaResponse salaResponse = SalaResponse.builder()
+                .id(12L)
+                .nome("Sala Focus")
+                .capacidade(8)
+                .disponivel(true)
+                .build();
+
         ConfimacaoAgendamentoResponse expected = ConfimacaoAgendamentoResponse.builder()
                 .id(99L)
-                .sala(sala)
+                .sala(salaResponse)
                 .inicio(LocalTime.of(9, 0))
                 .fim(LocalTime.of(10, 0))
                 .status(StatusAgendamento.CONFIRMADO)
@@ -83,11 +81,10 @@ class AgendamentoControllerTests {
     @DisplayName("Deve retornar os agendamentos do usuário autenticado")
     void deveRetornarAgendamentosDoUsuarioAutenticado() {
         when(securityUtils.get()).thenReturn(new AuthenticatedUser(42L, "usuario@email.com"));
-        BuscaAgendamentoRequest request = new BuscaAgendamentoRequest(false);
         List<AgendamentoResponse> expected = List.of(agendamentoResponse());
         when(agendamentoService.buscaAgendamentos(42L, false)).thenReturn(expected);
 
-        var response = agendamentoController.buscaAgendamentos(request);
+        var response = agendamentoController.buscaAgendamentos(false);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expected, response.getBody());
@@ -98,11 +95,10 @@ class AgendamentoControllerTests {
     @DisplayName("Deve retornar todos os agendamentos pela consulta administrativa")
     void deveRetornarTodosAgendamentos() {
         when(securityUtils.get()).thenReturn(new AuthenticatedUser(7L, "admin@email.com"));
-        BuscaAgendamentoRequest request = new BuscaAgendamentoRequest(true);
         List<AgendamentoResponse> expected = List.of(agendamentoResponse());
         when(agendamentoService.buscaAgendamentos(7L, true)).thenReturn(expected);
 
-        var response = agendamentoController.buscaAgendamentos(request);
+        var response = agendamentoController.buscaAgendamentos(true);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expected, response.getBody());
@@ -115,15 +111,14 @@ class AgendamentoControllerTests {
         when(securityUtils.get()).thenReturn(new AuthenticatedUser(42L, "usuario@email.com"));
         LocalDate dataInicio = LocalDate.now();
         LocalDate dataFinal = dataInicio.plusDays(7);
-        BuscaAgendamentoFiltradaRequest request = new BuscaAgendamentoFiltradaRequest(
-                dataInicio, dataFinal, StatusAgendamento.CONFIRMADO, false
-        );
         List<AgendamentoResponse> expected = List.of(agendamentoResponse());
         when(agendamentoService.buscaFiltrada(
                 42L, dataInicio, dataFinal, StatusAgendamento.CONFIRMADO, false
         )).thenReturn(expected);
 
-        var response = agendamentoController.buscaFiltrada(request);
+        var response = agendamentoController.buscaFiltrada(
+                dataInicio, dataFinal, StatusAgendamento.CONFIRMADO, false
+        );
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(expected, response.getBody());
@@ -133,7 +128,7 @@ class AgendamentoControllerTests {
     }
 
     private AgendamentoResponse agendamentoResponse() {
-        Sala sala = Sala.builder()
+        SalaResponse sala = SalaResponse.builder()
                 .id(12L)
                 .nome("Sala Focus")
                 .capacidade(8)

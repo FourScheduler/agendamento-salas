@@ -34,6 +34,11 @@ public class SalaRepositoryAdapter implements SalaRepositoryPort {
     }
 
     @Override
+    public Optional<Sala> buscarPorIdComBloqueio(Long id) {
+        return salaJpaRepository.buscarComBloqueio(id);
+    }
+
+    @Override
     public Sala salvar(Sala sala) {
         return salaJpaRepository.save(sala);
     }

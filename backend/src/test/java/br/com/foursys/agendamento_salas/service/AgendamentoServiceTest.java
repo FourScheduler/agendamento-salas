@@ -7,6 +7,8 @@ import br.com.foursys.agendamento_salas.domain.Usuario;
 import br.com.foursys.agendamento_salas.dto.request.CriarAgendamentoRequest;
 import br.com.foursys.agendamento_salas.dto.response.AgendamentoResponse;
 import br.com.foursys.agendamento_salas.dto.response.ConfimacaoAgendamentoResponse;
+import br.com.foursys.agendamento_salas.dto.response.SalaResponse;
+import br.com.foursys.agendamento_salas.dto.response.UsuarioResponse;
 import br.com.foursys.agendamento_salas.enums.PerfilUsuario;
 import br.com.foursys.agendamento_salas.enums.StatusAgendamento;
 import br.com.foursys.agendamento_salas.enums.StatusLog;
@@ -102,7 +104,7 @@ class AgendamentoServiceTest {
             Agendamento salvo = agendamentoCaptor.getValue();
             Log log = logCaptor.getValue();
             assertThat(confirmacao.id()).isEqualTo(99L);
-            assertThat(confirmacao.sala()).isEqualTo(sala);
+            assertThat(confirmacao.sala()).isEqualTo(salaResponse(sala));
             assertThat(confirmacao.inicio()).isEqualTo(request.horaInicio());
             assertThat(confirmacao.fim()).isEqualTo(request.horaFim());
             assertThat(confirmacao.status()).isEqualTo(StatusAgendamento.CONFIRMADO);
@@ -136,7 +138,7 @@ class AgendamentoServiceTest {
             verify(agendamentoRepositoryPort).salvar(agendamentoCaptor.capture());
             verify(logRepositoryPort).salvar(any(Log.class));
             assertThat(agendamentoCaptor.getValue().getUsuarioIdSolicitante()).isEqualTo(solicitante);
-            assertThat(confirmacao.solicitante()).isEqualTo(solicitante);
+            assertThat(confirmacao.solicitante()).isEqualTo(usuarioResponse(solicitante));
         }
 
         @Test
@@ -157,7 +159,7 @@ class AgendamentoServiceTest {
         void deveRejeitarAgendamentoQuandoSalaNaoExiste() {
             when(usuarioRepositoryPort.buscarPorId(7L))
                     .thenReturn(Optional.of(usuario(7L, PerfilUsuario.USER)));
-            when(salaRepositoryPort.buscarPorId(12L)).thenReturn(Optional.empty());
+            when(salaRepositoryPort.buscarPorIdComBloqueio(12L)).thenReturn(Optional.empty());
 
             assertThrows(
                     SalaInexistenteException.class,
@@ -165,6 +167,30 @@ class AgendamentoServiceTest {
             );
 
             verifyNoInteractions(agendamentoRepositoryPort, logRepositoryPort);
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar agendamento com data no passado")
+        void deveRejeitarAgendamentoComDataNoPassado() {
+            CriarAgendamentoRequest request = new CriarAgendamentoRequest(
+                    new CriarAgendamentoRequest.SalaRef(12L),
+                    LocalDate.now().minusDays(1),
+                    LocalTime.of(9, 0),
+                    LocalTime.of(10, 0),
+                    4,
+                    null,
+                    "Alinhamento"
+            );
+            when(usuarioRepositoryPort.buscarPorId(7L))
+                    .thenReturn(Optional.of(usuario(7L, PerfilUsuario.USER)));
+
+            ValidacaoBuscaException exception = assertThrows(
+                    ValidacaoBuscaException.class,
+                    () -> service.criar(request, 7L)
+            );
+
+            assertThat(exception).hasMessage("A data não pode estar no passado.");
+            verifyNoInteractions(salaRepositoryPort, agendamentoRepositoryPort, logRepositoryPort);
         }
 
         @Test
@@ -176,7 +202,7 @@ class AgendamentoServiceTest {
             );
             when(usuarioRepositoryPort.buscarPorId(7L))
                     .thenReturn(Optional.of(usuario(7L, PerfilUsuario.USER)));
-            when(salaRepositoryPort.buscarPorId(sala.getId())).thenReturn(Optional.of(sala));
+            when(salaRepositoryPort.buscarPorIdComBloqueio(sala.getId())).thenReturn(Optional.of(sala));
 
             ValidacaoBuscaException exception = assertThrows(
                     ValidacaoBuscaException.class,
@@ -196,7 +222,7 @@ class AgendamentoServiceTest {
             );
             when(usuarioRepositoryPort.buscarPorId(7L))
                     .thenReturn(Optional.of(usuario(7L, PerfilUsuario.USER)));
-            when(salaRepositoryPort.buscarPorId(sala.getId())).thenReturn(Optional.of(sala));
+            when(salaRepositoryPort.buscarPorIdComBloqueio(sala.getId())).thenReturn(Optional.of(sala));
 
             assertThrows(CapacidadeNaoSuportadaException.class, () -> service.criar(request, 7L));
 
@@ -212,7 +238,7 @@ class AgendamentoServiceTest {
             );
             when(usuarioRepositoryPort.buscarPorId(7L))
                     .thenReturn(Optional.of(usuario(7L, PerfilUsuario.USER)));
-            when(salaRepositoryPort.buscarPorId(sala.getId())).thenReturn(Optional.of(sala));
+            when(salaRepositoryPort.buscarPorIdComBloqueio(sala.getId())).thenReturn(Optional.of(sala));
             when(agendamentoRepositoryPort.existeConflito(
                     sala.getId(), request.data(), request.horaInicio(), request.horaFim()
             )).thenReturn(true);
@@ -247,7 +273,6 @@ class AgendamentoServiceTest {
             );
             when(usuarioRepositoryPort.buscarPorId(7L))
                     .thenReturn(Optional.of(usuario(7L, PerfilUsuario.USER)));
-            when(salaRepositoryPort.buscarPorId(sala.getId())).thenReturn(Optional.of(sala));
 
             assertThrows(HorarioAgendamentoInvalidoException.class, () -> service.criar(request, 7L));
 
@@ -412,7 +437,7 @@ class AgendamentoServiceTest {
 
     private void prepararCriacao(Usuario usuario, Sala sala, CriarAgendamentoRequest request) {
         when(usuarioRepositoryPort.buscarPorId(usuario.getId())).thenReturn(Optional.of(usuario));
-        when(salaRepositoryPort.buscarPorId(sala.getId())).thenReturn(Optional.of(sala));
+        when(salaRepositoryPort.buscarPorIdComBloqueio(sala.getId())).thenReturn(Optional.of(sala));
         when(agendamentoRepositoryPort.existeConflito(
                 sala.getId(), request.data(), request.horaInicio(), request.horaFim()
         )).thenReturn(false);
@@ -455,7 +480,7 @@ class AgendamentoServiceTest {
 
     private AgendamentoResponse agendamentoResponse() {
         return new AgendamentoResponse(
-                sala(12L),
+                salaResponse(sala(12L)),
                 LocalDate.now().plusDays(1),
                 LocalDateTime.now(),
                 LocalTime.of(9, 0),
@@ -484,13 +509,34 @@ class AgendamentoServiceTest {
             int quantidadePessoas
     ) {
         return new CriarAgendamentoRequest(
-                sala,
+                new CriarAgendamentoRequest.SalaRef(sala.getId()),
                 LocalDate.now().plusDays(1),
                 inicio,
                 fim,
                 quantidadePessoas,
-                solicitante,
+                solicitante != null
+                        ? new CriarAgendamentoRequest.UsuarioRef(solicitante.getId())
+                        : null,
                 "Alinhamento"
+        );
+    }
+
+    private SalaResponse salaResponse(Sala sala) {
+        return SalaResponse.builder()
+                .id(sala.getId())
+                .nome(sala.getNome())
+                .disponivel(sala.getDisponivel())
+                .capacidade(sala.getCapacidade())
+                .localizacao(sala.getLocalizacao())
+                .build();
+    }
+
+    private UsuarioResponse usuarioResponse(Usuario usuario) {
+        return new UsuarioResponse(
+                usuario.getId(),
+                usuario.getEmail(),
+                usuario.getNome(),
+                usuario.getPerfilUsuario()
         );
     }
 }

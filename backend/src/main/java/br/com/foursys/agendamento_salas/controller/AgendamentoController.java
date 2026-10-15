@@ -1,16 +1,17 @@
 package br.com.foursys.agendamento_salas.controller;
 
-import br.com.foursys.agendamento_salas.dto.request.BuscaAgendamentoFiltradaRequest;
-import br.com.foursys.agendamento_salas.dto.request.BuscaAgendamentoRequest;
 import br.com.foursys.agendamento_salas.dto.request.CriarAgendamentoRequest;
 import br.com.foursys.agendamento_salas.dto.response.AgendamentoResponse;
 import br.com.foursys.agendamento_salas.dto.response.ConfimacaoAgendamentoResponse;
+import br.com.foursys.agendamento_salas.enums.StatusAgendamento;
 import br.com.foursys.agendamento_salas.security.SecurityUtils;
 import br.com.foursys.agendamento_salas.service.AgendamentoService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -27,7 +28,7 @@ public class AgendamentoController {
 
     @PostMapping
     public ResponseEntity<ConfimacaoAgendamentoResponse> criar(
-            @RequestBody CriarAgendamentoRequest agendamentoRequest
+            @Valid @RequestBody CriarAgendamentoRequest agendamentoRequest
     ) {
 
         Long usuarioAutenticado = securityUtils.get().id();
@@ -50,14 +51,15 @@ public class AgendamentoController {
 //                .body(listaAgendamentos);
 //    }
 
+    /** Busca em GET com query params: navegadores não enviam corpo em GET. */
     @GetMapping("/busca")
     public ResponseEntity<List<AgendamentoResponse>> buscaAgendamentos(
-            @RequestBody BuscaAgendamentoRequest buscaAgendamentoRequest
+            @RequestParam(defaultValue = "false") boolean todosUsuarios
             ) {
         Long usuarioAutenticado = securityUtils.get().id();
 
         List<AgendamentoResponse> listaAgendamentos = agendamentoService
-                .buscaAgendamentos(usuarioAutenticado, buscaAgendamentoRequest.todosUsuarios());
+                .buscaAgendamentos(usuarioAutenticado, todosUsuarios);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -66,14 +68,17 @@ public class AgendamentoController {
 
     @GetMapping("/busca/filtro")
     public ResponseEntity<List<AgendamentoResponse>> buscaFiltrada(
-            @RequestBody BuscaAgendamentoFiltradaRequest buscaFiltradaRequest
+            @RequestParam(required = false) LocalDate dataInicio,
+            @RequestParam(required = false) LocalDate dataFinal,
+            @RequestParam(required = false) StatusAgendamento statusAgendamento,
+            @RequestParam(defaultValue = "false") boolean todosUsuarios
     ) {
         Long usuarioAutenticado = securityUtils.get().id();
 
         List<AgendamentoResponse> listaAgendamentosFiltrado = agendamentoService.buscaFiltrada(
-                usuarioAutenticado, buscaFiltradaRequest.dataInicio(),
-                buscaFiltradaRequest.dataFinal(), buscaFiltradaRequest.statusAgendamento(),
-                buscaFiltradaRequest.todosUsuarios());
+                usuarioAutenticado, dataInicio,
+                dataFinal, statusAgendamento,
+                todosUsuarios);
 
         return ResponseEntity
                 .status(HttpStatus.OK)

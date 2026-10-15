@@ -16,6 +16,9 @@ public interface SalaRepositoryPort {
 
     Optional<Sala> buscarPorId(Long id);
 
+    /** Busca a sala com lock pessimista, para serializar reservas concorrentes da mesma sala. */
+    Optional<Sala> buscarPorIdComBloqueio(Long id);
+
     Sala salvar(Sala sala);
 
     boolean existsByNomeIgnoreCase(String nome);
