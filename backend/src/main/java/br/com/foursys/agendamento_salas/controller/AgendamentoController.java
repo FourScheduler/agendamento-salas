@@ -7,6 +7,8 @@ import br.com.foursys.agendamento_salas.enums.StatusAgendamento;
 import br.com.foursys.agendamento_salas.security.SecurityUtils;
 import br.com.foursys.agendamento_salas.service.AgendamentoService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +19,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/agendamento")
 public class AgendamentoController {
+
+    private static final Logger log = LoggerFactory.getLogger(AgendamentoController.class);
 
     private final AgendamentoService agendamentoService;
     private final SecurityUtils securityUtils;
@@ -32,24 +36,29 @@ public class AgendamentoController {
     ) {
 
         Long usuarioAutenticado = securityUtils.get().id();
+        log.info(
+                "Recebida criacao de agendamento. usuarioId={}, salaId={}, data={}, inicio={}, fim={}, pessoas={}",
+                usuarioAutenticado,
+                agendamentoRequest.salaId().id(),
+                agendamentoRequest.data(),
+                agendamentoRequest.horaInicio(),
+                agendamentoRequest.horaFim(),
+                agendamentoRequest.qntdPessoas()
+        );
 
         ConfimacaoAgendamentoResponse response = agendamentoService.criar(agendamentoRequest, usuarioAutenticado);
+        log.info(
+                "Agendamento criado com sucesso. agendamentoId={}, usuarioId={}, salaId={}, status={}",
+                response.id(),
+                usuarioAutenticado,
+                agendamentoRequest.salaId().id(),
+                response.status()
+        );
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
-
-//    @GetMapping("/meus")
-//    public ResponseEntity<List<AgendamentoResponse>> buscaMeusAgendamentos() {
-//        Long usuarioAutenticado = securityUtils.get().id();
-//
-//        List<AgendamentoResponse> listaAgendamentos = agendamentoService.buscaAgendamentos(usuarioAutenticado);
-//
-//        return ResponseEntity
-//                .status(HttpStatus.OK)
-//                .body(listaAgendamentos);
-//    }
 
     /** Busca em GET com query params: navegadores não enviam corpo em GET. */
     @GetMapping("/busca")

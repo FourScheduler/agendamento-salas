@@ -12,12 +12,16 @@ import br.com.foursys.agendamento_salas.exception.ConversaNaoEncontradaException
 import br.com.foursys.agendamento_salas.exception.UsuarioSemPermissaoException;
 import br.com.foursys.agendamento_salas.exception.ValidacaoBuscaException;
 import br.com.foursys.agendamento_salas.port.out.AgendamentoConversaRepositoryPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 public class OrquestradorAgendamentoService {
+
+    private static final Logger log = LoggerFactory.getLogger(OrquestradorAgendamentoService.class);
 
     private final AgendamentoConversaRepositoryPort agendamentoConversaRepositoryPort;
     private final OllamaService ollamaService;
@@ -37,6 +41,7 @@ public class OrquestradorAgendamentoService {
     }
 
     public IniciarConversaResponse iniciarConversa(Usuario usuario) {
+        log.info("Iniciando conversa de agendamento. usuarioId={}", usuario.getId());
 
         AgendamentoConversa conversa = AgendamentoConversa.builder()
                 .usuarioId(usuario)
@@ -44,6 +49,7 @@ public class OrquestradorAgendamentoService {
                 .build();
 
          agendamentoConversaRepositoryPort.salvar(conversa);
+         log.info("Conversa de agendamento iniciada. conversaId={}, estado={}", conversa.getId(), conversa.getStatus());
 
          return IniciarConversaResponse.builder()
                  .conversaId(conversa.getId())
@@ -59,6 +65,7 @@ public class OrquestradorAgendamentoService {
             Long usuarioId
     ) {
 
+        log.info("Processando mensagem de agendamento. conversaId={}, usuarioId={}", conversaId, usuarioId);
         AgendamentoConversa conversa = buscarConversaDoUsuario(conversaId, usuarioId);
 
         conversa.setStatus(StatusAgendamento.INTERPRETANDO);
@@ -81,6 +88,11 @@ public class OrquestradorAgendamentoService {
             salvarConversa(conversa);
 
             String pergunta = montarPerguntaInformacaoFaltante(conversa);
+            log.info(
+                    "Conversa aguarda informacoes para buscar salas. conversaId={}, estado={}",
+                    conversaId,
+                    conversa.getStatus()
+            );
 
             return montarResposta(
                     conversa,
@@ -96,6 +108,7 @@ public class OrquestradorAgendamentoService {
         if (salasEncontradas.isEmpty()) {
             conversa.setStatus(StatusAgendamento.ERRO);
             salvarConversa(conversa);
+            log.info("Nenhuma sala disponivel para a conversa. conversaId={}", conversaId);
 
             return montarResposta(
                     conversa,
@@ -110,6 +123,11 @@ public class OrquestradorAgendamentoService {
 
         conversa.setStatus(StatusAgendamento.AGUARDANDO_ESCOLHA);
         salvarConversa(conversa);
+        log.info(
+                "Disponibilidade consultada. conversaId={}, quantidadeSugestoes={}",
+                conversaId,
+                sugestoes.size()
+        );
 
         return montarResposta(
                 conversa,
@@ -123,6 +141,12 @@ public class OrquestradorAgendamentoService {
             SelecionarSalaRequest request,
             Long usuarioId
     ){
+        log.info(
+                "Registrando sala escolhida na conversa. conversaId={}, usuarioId={}, salaId={}",
+                conversaId,
+                usuarioId,
+                request.salaId()
+        );
         AgendamentoConversa conversa = buscarConversaDoUsuario(conversaId, usuarioId);
 
         Sala sala = salaService.buscarPorId(request.salaId());
@@ -131,6 +155,7 @@ public class OrquestradorAgendamentoService {
         conversa.setStatus(StatusAgendamento.AGUARDANDO_CONFIRMACAO);
 
         salvarConversa(conversa);
+        log.info("Sala escolhida; aguardando confirmacao. conversaId={}, salaId={}", conversaId, sala.getId());
 
         return montarResposta(
                 conversa,
@@ -144,6 +169,7 @@ public class OrquestradorAgendamentoService {
             Long conversaId,
             Long usuarioId
     ){
+        log.info("Iniciando confirmacao da conversa. conversaId={}, usuarioId={}", conversaId, usuarioId);
         AgendamentoConversa conversa = buscarConversaDoUsuario(conversaId, usuarioId);
 
         if (!validarInformacoes(conversa) || conversa.getSalaEscolhida() == null) {
@@ -166,10 +192,20 @@ public class OrquestradorAgendamentoService {
                 null
         );
 
-        ConfimacaoAgendamentoResponse agendamento = agendamentoService.criar(criarAgendamentoRequest,conversa.getUsuarioId().getId());
+        ConfimacaoAgendamentoResponse agendamento = agendamentoService.criar(
+                criarAgendamentoRequest,
+                conversa.getUsuarioId().getId()
+        );
 
         conversa.setStatus(StatusAgendamento.CONFIRMADO);
         salvarConversa(conversa);
+        log.info(
+                "Agendamento confirmado pela conversa. conversaId={}, agendamentoId={}, usuarioId={}, salaId={}",
+                conversaId,
+                agendamento.id(),
+                usuarioId,
+                conversa.getSalaEscolhida().getId()
+        );
 
         return montarResposta(
                 conversa,
