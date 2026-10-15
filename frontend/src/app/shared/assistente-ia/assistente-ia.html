@@ -41,12 +41,7 @@
     (focusout)="sairDoCampo($event)"
   >
     <header class="ai-panel__header">
-      <span class="ai-panel__logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-      </span>
+      <img class="ai-panel__logo" src="/apps/mascote-flutuante.png" alt="Fourboot" />
       <div class="ai-panel__titulos">
         <h2 class="ai-panel__titulo">Assistente de reservas</h2>
         <p class="ai-panel__sub">Escreva do seu jeito que eu entendo</p>
@@ -219,9 +214,11 @@
                 <rect class="m-joint" x="53" y="76" width="14" height="9" rx="3"/>
                 <rect class="m-shell" x="40" y="82" width="40" height="30" rx="15"/>
 
-                <circle class="m-halo" cx="60" cy="97" r="4" filter="url(#ai-blur)"/>
-                <circle class="m-core" cx="60" cy="97" r="6.5"/>
-                <circle class="m-glow m-pulse" cx="60" cy="97" r="3"/>
+                <!-- logo do portal no peito -->
+                <circle class="m-halo" cx="60" cy="97" r="8" filter="url(#ai-blur)"/>
+                <image class="m-chest-logo" href="/logo-portal.png"
+                       x="45" y="88.5" width="30" height="16.9"
+                       preserveAspectRatio="xMidYMid meet"/>
 
                 <path class="m-band" d="M12 40 C12 -1 108 -1 108 40"/>
                 <circle class="m-halo" cx="60" cy="9.5" r="3.6" filter="url(#ai-blur)"/>
