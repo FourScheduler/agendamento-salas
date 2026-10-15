@@ -4,36 +4,62 @@ Este documento define os contratos da issue #9: a API REST do MVP e as interface
 
 ## Modelo de erro padrão
 
-Toda resposta de erro da API usa o mesmo formato, definido por `dto/ErroResposta` e aplicado por `exception/GlobalExceptionHandler`:
+Toda resposta de erro da API usa o mesmo formato, definido por `dto/response/ErrorResponse` e aplicado por `exception/GlobalExceptionHandler` (inclusive nos handlers de segurança):
 
 ```json
 {
   "status": 400,
-  "mensagem": "A data não pode estar no passado."
+  "message": "A data não pode estar no passado.",
+  "timestamp": "2026-10-14T22:30:00"
 }
 ```
 
 | Status | Quando ocorre |
 |---|---|
-| 400 | Validação de negócio ou parâmetro da requisição inválido |
+| 400 | Validação de negócio ou Bean Validation reprovada |
+| 401 | Token ausente ou inválido (inclui tentativa de acesso sem sessão) |
+| 403 | Usuário autenticado sem permissão (perfil ou dono do recurso) |
 | 404 | Recurso ou rota inexistente |
+| 409 | Conflito de negócio (ex.: e-mail já cadastrado, horário ocupado) |
 | 500 | Erro interno inesperado (mensagem genérica, sem detalhes técnicos) |
+| 503 | Serviço de interpretação de IA indisponível |
+
+## Autenticação e perfil
+
+### POST /auth/login — implementado
+
+Body `{ "email": "...", "password": "..." }`. Resposta `200` com o token JWT como texto puro (`text/plain`).
+
+### POST /auth/demo — implementado (MVP apenas)
+
+Emite token do usuário de teste (`usuario@teste.com`) sem senha, quando `app.auth.demo-enabled=true`. Resposta `200` com o token como texto puro; se desabilitado, `404`. Será removido quando o SSO do portal entrar.
+
+### GET /api/usuarios/me — implementado
+
+Exige `Authorization: Bearer <token>`. Devolve o perfil do próprio usuário autenticado (o dono vem do token, não do corpo):
+
+```json
+{ "id": 3, "email": "usuario@teste.com", "nome": "Usuario Teste", "perfilUsuario": "USER" }
+```
+
+Consumido pelo frontend logo após o login de demonstração para exibir o nome real; em caso de falha o login segue com o nome digitado.
 
 ## Endpoints
 
 ### GET /api/salas/disponiveis — implementado
 
-Busca salas mockadas compatíveis com a necessidade.
+Busca salas mockadas compatíveis com a necessidade. Os filtros vão na **query string** (navegadores não enviam corpo em GET):
 
 | Parâmetro | Obrigatório | Formato |
 |---|---|---|
 | `data` | sim | data ISO (`yyyy-MM-dd`), não pode estar no passado |
-| `inicio` | sim | horário ISO (`HH:mm`) |
-| `fim` | sim* | horário ISO, posterior ao inicial |
-| `duracao` | sim* | minutos (`Integer >= 1`), alternativa a `fim` |
-| `pessoas` | sim | `Integer >= 1` |
+| `horaInicio` | sim | horário ISO (`HH:mm`) |
+| `horaFim` | não* | horário ISO, posterior ao inicial |
+| `qntdPessoas` | sim | `Integer >= 1` |
 
-\* Ao menos um entre `fim` e `duracao` deve ser informado.
+\* `horaFim` é obrigatório na prática: sem ele o backend responde `400` pedindo o horário final.
+
+Exemplo: `GET /api/salas/disponiveis?data=2026-10-20&horaInicio=14:00&horaFim=15:00&qntdPessoas=4`
 
 Resposta `200`:
 
@@ -47,16 +73,18 @@ Salas com capacidade inferior a `pessoas` são filtradas; a resposta pode ser um
 
 ### GET /api/agendamento/busca/filtro — implementado
 
-Lista agendamentos com filtros opcionais. Exige header `Authorization: Bearer <token>` (obtido em `POST /auth/login`); sem token a resposta é `401`.
+Lista agendamentos com filtros opcionais na **query string** (navegadores não enviam corpo em GET). Exige header `Authorization: Bearer <token>` (obtido em `POST /auth/login`); sem token a resposta é `401`.
 
-| Campo do body | Obrigatório | Observação |
+| Parâmetro | Obrigatório | Observação |
 |---|---|---|
 | `dataInicio` | não | data ISO (`yyyy-MM-dd`); reserva com `dataAgendamento >= dataInicio` |
 | `dataFinal` | não | data ISO; reserva com `dataAgendamento <= dataFinal` |
 | `statusAgendamento` | não | um valor do enum, ex.: `CONFIRMADO` |
-| `todosUsuarios` | sim | `false` lista **somente as reservas do usuário do token**; `true` lista de todos (somente `ADMIN`) |
+| `todosUsuarios` | não (padrão `false`) | `false` lista **somente as reservas do usuário do token**; `true` lista de todos (somente `ADMIN`) |
 
-Mesmo sendo `GET`, o corpo vai no `body` da requisição (padrão já usado em `GET /api/salas/disponiveis`). Campos nulos são ignorados no filtro.
+Exemplo: `GET /api/agendamento/busca/filtro?todosUsuarios=false&dataInicio=2026-10-01`
+
+Existe também `GET /api/agendamento/busca?todosUsuarios=false`, sem os filtros de data/status, com o mesmo comportamento de posse.
 
 Consumido pela página `/minhas-reservas` do frontend, sempre com `todosUsuarios: false`.
 
@@ -78,34 +106,38 @@ Resposta `200` (lista pode ser vazia):
 ]
 ```
 
-### POST /api/reservas - previsto (#15)
+### POST /api/agendamento — implementado
 
-Request:
+Exige autenticação. Request (`CriarAgendamentoRequest`, com Bean Validation nos campos obrigatórios):
 
 ```json
 {
-  "salaId": "focus",
-  "inicio": "2026-09-30T14:00:00",
-  "fim": "2026-09-30T15:00:00",
-  "quantidadePessoas": 8,
+  "salaId": { "id": 2 },
+  "data": "2026-10-20",
+  "horaInicio": "14:00",
+  "horaFim": "15:00",
+  "qntdPessoas": 4,
   "titulo": "Reunião de planejamento"
 }
 ```
 
-Response `201`:
+Response `201` (`AgendamentoResponse`, sem expor entidades):
 
 ```json
 {
-  "id": 1,
-  "sala": "Sala Focus",
-  "inicio": "2026-09-30T14:00:00",
-  "fim": "2026-09-30T15:00:00",
-  "status": "CONFIRMADA",
-  "solicitante": "usuario.logado"
+  "salaId": { "id": 2, "nome": "Sala 02", "capacidade": 4, "localizacao": "Tamboré", "disponivel": true },
+  "dataAgendamento": "2026-10-20",
+  "dataCriacao": "2026-10-14T10:15:00",
+  "horaInicio": "14:00",
+  "horaFim": "15:00",
+  "qntdPessoas": 4,
+  "titulo": "Reunião de planejamento",
+  "usuarioIdSolicitante": { "id": 3, "email": "usuario@teste.com", "nome": "Usuario Teste", "perfilUsuario": "USER" },
+  "status": "CONFIRMADO"
 }
 ```
 
-Validações: sala existente e ativa, capacidade suficiente, data válida, horário inicial anterior ao final, usuário autenticado e ausência de conflito na mesma sala.
+Validações: sala existente e disponível, capacidade suficiente, data não passada, quantidade de pessoas ≥ 1 e ausência de conflito na mesma sala. A criação usa lock pessimista na sala para evitar double booking; o solicitante vem do usuário autenticado.
 
 ### Cancelamento de reserva — previsto
 
@@ -144,18 +176,38 @@ DTOs: `CalendarAvailabilityRequest`, `CalendarAvailabilityResponse`, `CalendarEv
 - Provedor concreto (tecnologia, autenticação, consistência entre banco e calendário): **A definir**.
 - **Microsoft Graph não pode ser usado no MVP** (ver `AGENTS.md`).
 
-## Integração de IA - `LlamaClient` (#18)
+## Assistente de IA — Ollama (integrado ao produto)
+
+O backend contém o cliente do Ollama (`integration`/`OllamaService`) e o orquestrador de conversa (`/api/agendamento/conversas/**`), e o assistente do agendamento os usa de verdade. Todos os endpoints exigem token JWT; conversas e ações são resolvidas pelo dono do token (tentar acessar conversa de outro usuário responde `403`).
 
 | Método | Propósito |
 |---|---|
-| `enviar prompt` | Envia a solicitação em linguagem natural |
-| `receber resposta` | Devolve a resposta interpretada |
+| `POST /api/agendamento/conversas` | Abre uma conversa nova → `201 {conversaId, status}` |
+| `POST /api/agendamento/conversas/mensagens` | Interpreta a mensagem do usuário e devolve a etapa atual → `200 OrquestradorAgendamentoResponse` |
+| `PATCH /api/agendamento/conversas/{id}/selecionar` | Registra a sala escolhida (`{salaId}`) → `200 OrquestradorAgendamentoResponse` |
+| `POST /api/agendamento/conversas/{id}/confirmar` | Cria a reserva → `201 OrquestradorAgendamentoResponse` |
 
-DTOs: `LlamaRequest`, `LlamaResponse`.
+`OrquestradorAgendamentoResponse`:
 
-- Timeout, retry controlado e tratamento de indisponibilidade são obrigatórios.
-- Ambiente de execução (API própria, servidor local, serviço corporativo): **A definir**.
-- Credenciais ficam somente no backend, em variáveis de ambiente.
+```json
+{
+  "conversaId": 4,
+  "estado": "AGUARDANDO_ESCOLHA",
+  "mensagem": "Encontrei algumas salas disponíveis. Qual você prefere?",
+  "sugestoes": [
+    { "salaId": 2, "nome": "Sala 02", "capacidade": 4, "localizacao": "Tamboré" }
+  ],
+  "data": "2026-10-16",
+  "horaInicio": "14:00:00",
+  "horaFim": null,
+  "qntdPessoas": 6
+}
+```
+
+- `estado` percorre `RECEBENDO_SOLICITACAO` → `AGUARDANDO_INFORMACAO` (falta dado, ex.: horário de término) → `AGUARDANDO_ESCOLHA` (mostra `sugestoes`) → `AGUARDANDO_CONFIRMACAO` → `CONFIRMADO`.
+- `data`, `horaInicio`, `horaFim` e `qntdPessoas` podem vir `null` conforme o que já foi interpretado; o front os usa para sincronizar o painel de resumo com o chat.
+- Falha na interpretação (Ollama indisponível) responde `503` com mensagem amigável; timeout, retry controlado e tratamento de indisponibilidade são obrigatórios.
+- O modelo roda no Ollama local (`ollama.url`/`ollama.model` no `application.yaml`); credenciais e chaves ficam somente no backend, em variáveis de ambiente.
 - O Angular conversa apenas com o Spring Boot; nunca com o modelo diretamente.
 
 ## Regras gerais
