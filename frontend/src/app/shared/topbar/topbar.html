@@ -10,27 +10,6 @@
     </span>
   }
 
-  <nav class="topbar__menu" aria-label="Navegação principal">
-    @if (exibirAcoesPortal()) {
-      <a class="topbar__item" routerLink="/minhas-reservas">
-        <svg
-          class="topbar__menuIcone"
-          viewBox="0 0 16 16"
-          width="16"
-          height="16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.4"
-          aria-hidden="true"
-        >
-          <rect x="1" y="2.5" width="14" height="12.5" rx="2" />
-          <path d="M1 6.5h14M4.5 0.5v3M11.5 0.5v3" stroke-linecap="round" />
-        </svg>
-        <span>Minhas reservas</span>
-      </a>
-    }
-  </nav>
-
   @if (exibirAcoesPortal()) {
     <div class="topbar__acoes">
       <button
@@ -101,9 +80,6 @@
 
   @if (usuario()) {
     <div class="topbar__usuario">
-      @if (exibirAcoesPortal()) {
-        <span class="topbar__nome">{{ usuario() }}</span>
-      }
       <div class="topbar__perfil">
         <button
           class="topbar__avatar"

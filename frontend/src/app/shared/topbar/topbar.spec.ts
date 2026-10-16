@@ -83,6 +83,9 @@ describe('Topbar', () => {
     compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.topbar__localizacao')).toBeNull();
     expect(compiled.querySelector('.topbar__reservas')).toBeNull();
+    expect(compiled.querySelector('.topbar__item')).toBeNull();
+    expect(compiled.querySelector('.topbar__nome')).toBeNull();
+    expect(compiled.textContent).not.toContain('Minhas reservas');
     expect(compiled.querySelector('.topbar__acoes')).toBeTruthy();
   });
 
@@ -188,12 +191,11 @@ describe('Topbar', () => {
     await login;
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Kevin Miranda');
-
     const perfil = fixture.nativeElement as HTMLElement;
+    expect(perfil.querySelector('.topbar__nome')).toBeNull();
     perfil.querySelector<HTMLButtonElement>('.topbar__avatar')?.click();
     fixture.detectChanges();
-    expect(perfil.querySelector('.topbar__menu-perfil')).toBeTruthy();
+    expect(perfil.querySelector('.topbar__menu-perfil')?.textContent).toContain('Kevin Miranda');
 
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     fixture.detectChanges();

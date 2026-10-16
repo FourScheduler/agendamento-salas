@@ -70,7 +70,8 @@ Padrão do portal (extraído do bundle oficial):
 - Ícones da barra são brancos. Fundo transparente nos botões de ícone.
 - Nas rotas `/agendamento` e `/minhas-reservas`, `TAMBORÉ` aparece em branco ao lado da marca, sem
   uma divisória adicional. `Minhas reservas` aparece à direita, antes do avatar, e o nome do usuário
-  não aparece junto ao avatar. Na rota `/portal`, a barra mantém o menu e o nome do usuário.
+  não aparece junto ao avatar. Na rota `/portal`, não exibir o link `Minhas reservas` nem o nome do
+  usuário ao lado do avatar; o menu do perfil continua disponível.
 
 ## 4. Estrutura de página
 
