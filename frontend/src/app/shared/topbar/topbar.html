@@ -4,26 +4,34 @@
     <span class="topbar__texto">Portal</span>
   </a>
 
+  @if (exibirLocalizacao()) {
+    <span class="topbar__localizacao">
+      <span>Tamboré</span>
+    </span>
+  }
+
   <nav class="topbar__menu" aria-label="Navegação principal">
-    <a class="topbar__item" routerLink="/minhas-reservas" routerLinkActive="topbar__item--ativo">
-      <svg
-        class="topbar__menuIcone"
-        viewBox="0 0 16 16"
-        width="16"
-        height="16"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.4"
-        aria-hidden="true"
-      >
-        <rect x="1" y="2.5" width="14" height="12.5" rx="2" />
-        <path d="M1 6.5h14M4.5 0.5v3M11.5 0.5v3" stroke-linecap="round" />
-      </svg>
-      <span>Minhas reservas</span>
-    </a>
+    @if (exibirAcoesPortal()) {
+      <a class="topbar__item" routerLink="/minhas-reservas">
+        <svg
+          class="topbar__menuIcone"
+          viewBox="0 0 16 16"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.4"
+          aria-hidden="true"
+        >
+          <rect x="1" y="2.5" width="14" height="12.5" rx="2" />
+          <path d="M1 6.5h14M4.5 0.5v3M11.5 0.5v3" stroke-linecap="round" />
+        </svg>
+        <span>Minhas reservas</span>
+      </a>
+    }
   </nav>
 
-  @if (exibirIcones()) {
+  @if (exibirAcoesPortal()) {
     <div class="topbar__acoes">
       <button
         class="topbar__botao-icone topbar__notificacoes"
@@ -72,9 +80,30 @@
     </div>
   }
 
+  @if (!exibirAcoesPortal()) {
+    <a class="topbar__reservas" routerLink="/minhas-reservas">
+      <svg
+        class="topbar__menuIcone"
+        viewBox="0 0 16 16"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.4"
+        aria-hidden="true"
+      >
+        <rect x="1" y="2.5" width="14" height="12.5" rx="2" />
+        <path d="M1 6.5h14M4.5 0.5v3M11.5 0.5v3" stroke-linecap="round" />
+      </svg>
+      <span>Minhas reservas</span>
+    </a>
+  }
+
   @if (usuario()) {
     <div class="topbar__usuario">
-      <span class="topbar__nome">{{ usuario() }}</span>
+      @if (exibirAcoesPortal()) {
+        <span class="topbar__nome">{{ usuario() }}</span>
+      }
       <div class="topbar__perfil">
         <button
           class="topbar__avatar"

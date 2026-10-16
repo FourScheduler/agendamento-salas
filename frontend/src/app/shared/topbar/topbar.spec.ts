@@ -1,10 +1,14 @@
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { Topbar } from './topbar';
 import { AuthService } from '../../core/services/auth.service';
 import { environment } from '../../../environments/environment';
+
+@Component({ template: '' })
+class RotaTeste {}
 
 describe('Topbar', () => {
   let httpMock: HttpTestingController;
@@ -13,7 +17,15 @@ describe('Topbar', () => {
     window.localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [Topbar],
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideRouter([
+          { path: 'agendamento', component: RotaTeste },
+          { path: 'minhas-reservas', component: RotaTeste },
+          { path: 'portal', component: RotaTeste },
+        ]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
@@ -47,6 +59,31 @@ describe('Topbar', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.topbar__entrar')).toBeTruthy();
     expect(compiled.querySelector('.topbar__usuario')).toBeNull();
+  });
+
+  it('should show Tamboré beside the brand on booking and reservations routes', async () => {
+    const fixture = TestBed.createComponent(Topbar);
+    const router = TestBed.inject(Router);
+
+    await router.navigateByUrl('/minhas-reservas');
+    fixture.detectChanges();
+    let compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.topbar__localizacao')?.textContent?.trim()).toBe('Tamboré');
+    expect(compiled.querySelector('.topbar__reservas')?.textContent).toContain('Minhas reservas');
+    expect(compiled.querySelector('.topbar__acoes')).toBeNull();
+
+    await router.navigateByUrl('/agendamento');
+    fixture.detectChanges();
+    compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.topbar__localizacao')?.textContent?.trim()).toBe('Tamboré');
+    expect(compiled.querySelector('.topbar__reservas')?.textContent).toContain('Minhas reservas');
+
+    await router.navigateByUrl('/portal');
+    fixture.detectChanges();
+    compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('.topbar__localizacao')).toBeNull();
+    expect(compiled.querySelector('.topbar__reservas')).toBeNull();
+    expect(compiled.querySelector('.topbar__acoes')).toBeTruthy();
   });
 
   it('should open the login modal and authenticate with the typed name', async () => {

@@ -1,4 +1,5 @@
 .topbar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 1.5rem;
@@ -6,6 +7,29 @@
   min-height: 50px;
   padding: 0 30px;
   background: var(--navy);
+}
+
+.topbar__localizacao,
+.topbar__reservas {
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.topbar__localizacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.topbar__reservas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #ffffff;
+  text-transform: none;
+  white-space: nowrap;
 }
 
 .topbar__marca {
@@ -123,10 +147,13 @@
   display: inline-flex;
   align-items: center;
   gap: 0.625rem;
-  margin-left: auto;
   color: #ffffff;
   font-size: 0.875rem;
   font-weight: 600;
+}
+
+.topbar__nome {
+  margin-left: 1rem;
 }
 
 .topbar__perfil { position: relative; }
@@ -336,6 +363,11 @@
 
   .topbar__nome {
     display: none;
+  }
+
+  .topbar__localizacao,
+  .topbar__reservas {
+    font-size: 0.75rem;
   }
 }
 

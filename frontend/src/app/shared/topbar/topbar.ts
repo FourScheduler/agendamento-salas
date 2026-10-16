@@ -8,7 +8,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { USUARIO_MOCK } from '../../core/data/usuario-mock';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -16,7 +16,7 @@ import { filter, map } from 'rxjs';
 
 @Component({
   selector: 'app-topbar',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink],
   templateUrl: './topbar.html',
   styleUrl: './topbar.css',
   host: {
@@ -32,12 +32,23 @@ export class Topbar {
   readonly usuario = this.auth.usuario;
   readonly autenticado = this.auth.autenticado;
   readonly nomePadrao = USUARIO_MOCK;
-  readonly exibirIcones = toSignal(
+  readonly exibirAcoesPortal = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-      map((event) => !/^\/agendamento(?:\/|[?#]|$)/.test(event.urlAfterRedirects)),
+      map((event) => !/^\/(?:agendamento|minhas-reservas)(?:\/|[?#]|$)/.test(event.urlAfterRedirects)),
     ),
-    { initialValue: !/^\/agendamento(?:\/|[?#]|$)/.test(this.router.url) },
+    {
+      initialValue: !/^\/(?:agendamento|minhas-reservas)(?:\/|[?#]|$)/.test(this.router.url),
+    },
+  );
+  readonly exibirLocalizacao = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => /^\/(?:agendamento|minhas-reservas)(?:\/|[?#]|$)/.test(event.urlAfterRedirects)),
+    ),
+    {
+      initialValue: /^\/(?:agendamento|minhas-reservas)(?:\/|[?#]|$)/.test(this.router.url),
+    },
   );
 
   readonly modalAberto = signal(false);
