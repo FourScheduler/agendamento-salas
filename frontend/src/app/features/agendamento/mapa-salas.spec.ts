@@ -31,7 +31,7 @@ describe('MapaSalas', () => {
     expect(compiled.querySelectorAll('button.sala').length).toBe(8);
     expect(compiled.querySelectorAll('.legenda__itens li').length).toBe(5);
     expect(compiled.querySelector('app-lista-salas')).toBeTruthy();
-    expect(compiled.textContent).toContain('Layout ilustrativo');
+    expect(compiled.textContent).not.toContain('Layout ilustrativo');
     expect(compiled.textContent).toContain('Focus: 1 a 2 pessoas');
     expect(compiled.textContent).toContain('Time do suporte');
   });
