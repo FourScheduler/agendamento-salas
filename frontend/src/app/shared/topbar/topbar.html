@@ -23,54 +23,54 @@
     </a>
   </nav>
 
-  <div class="topbar__acoes">
-    <!-- Sino de notificações -->
-    <button
-      class="topbar__botao-icone topbar__notificacoes"
-      type="button"
-      aria-label="Notificações"
-    >
-      <svg
-        class="topbar__icone"
-        viewBox="0 0 24 24"
-        width="24"
-        height="24"
-        fill="#ffffff"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
+  @if (exibirIcones()) {
+    <div class="topbar__acoes">
+      <button
+        class="topbar__botao-icone topbar__notificacoes"
+        type="button"
+        aria-label="Notificações"
       >
-        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-        <path d="M10 21h4" />
-      </svg>
-
-      <span class="topbar__contador">13</span>
-    </button>
-
-    <!-- Relógio -->
-    <button class="topbar__botao-icone" type="button" aria-label="Horário">
-      <svg
-        class="topbar__icone topbar__icone--relogio"
-        viewBox="0 0 24 24"
-        width="24"
-        height="24"
-        aria-hidden="true"
-      >
-        <circle cx="12" cy="12" r="10" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2" />
-
-        <path
-          d="M12 6v6l4 2"
-          fill="none"
-          stroke="#222238"
+        <svg
+          class="topbar__icone"
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="#ffffff"
+          stroke="currentColor"
           stroke-width="1.8"
           stroke-linecap="round"
           stroke-linejoin="round"
-        />
-      </svg>
-    </button>
-  </div>
+          aria-hidden="true"
+        >
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+          <path d="M10 21h4" />
+        </svg>
+
+        <span class="topbar__contador">13</span>
+      </button>
+
+      <button class="topbar__botao-icone" type="button" aria-label="Horário">
+        <svg
+          class="topbar__icone topbar__icone--relogio"
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2" />
+
+          <path
+            d="M12 6v6l4 2"
+            fill="none"
+            stroke="#222238"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+  }
 
   @if (usuario()) {
     <div class="topbar__usuario">

@@ -8,9 +8,11 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { USUARIO_MOCK } from '../../core/data/usuario-mock';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { filter, map } from 'rxjs';
 
 @Component({
   selector: 'app-topbar',
@@ -21,10 +23,18 @@ import { USUARIO_MOCK } from '../../core/data/usuario-mock';
 export class Topbar {
   private readonly auth = inject(AuthService);
   private readonly injector = inject(Injector);
+  private readonly router = inject(Router);
 
   readonly usuario = this.auth.usuario;
   readonly autenticado = this.auth.autenticado;
   readonly nomePadrao = USUARIO_MOCK;
+  readonly exibirIcones = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => !/^\/agendamento(?:\/|[?#]|$)/.test(event.urlAfterRedirects)),
+    ),
+    { initialValue: !/^\/agendamento(?:\/|[?#]|$)/.test(this.router.url) },
+  );
 
   readonly modalAberto = signal(false);
   readonly nomeDigitado = signal(USUARIO_MOCK);
