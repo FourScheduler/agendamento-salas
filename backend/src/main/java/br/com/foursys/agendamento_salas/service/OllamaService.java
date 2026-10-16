@@ -13,6 +13,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Map;
 
 @Service
 public class OllamaService {
@@ -20,21 +21,50 @@ public class OllamaService {
     private final RestClient ollamaRestClient;
     private final String model;
     private final ObjectMapper objectMapper;
+    private final int keepAliveSeconds;
+    private final int maxOutputTokens;
 
-    public OllamaService(RestClient ollamaRestClient, @Value("${ollama.model}") String model, ObjectMapper objectMapper) {
+    public OllamaService(
+            RestClient ollamaRestClient,
+            @Value("${ollama.model}") String model,
+            ObjectMapper objectMapper,
+            @Value("${ollama.keep-alive-seconds:-1}") int keepAliveSeconds,
+            @Value("${ollama.max-output-tokens:120}") int maxOutputTokens
+    ) {
         this.ollamaRestClient = ollamaRestClient;
         this.model = model;
         this.objectMapper = objectMapper;
+        this.keepAliveSeconds = keepAliveSeconds;
+        this.maxOutputTokens = maxOutputTokens;
     }
 
     public String gerarResposta(String prompt) {
-        OllamaRequest request = new OllamaRequest(model, prompt, false);
+        Map<String, Object> opcoes = Map.of(
+                "num_predict", maxOutputTokens,
+                "temperature", 0.1
+        );
+
+        Map<String, Object> request = Map.of(
+                "model", model,
+                "prompt", prompt,
+                "stream", false,
+                "format", "json",
+                "think", false,
+                "keep_alive", keepAliveSeconds,
+                "options", opcoes
+        );
 
         OllamaResponse response = ollamaRestClient.post()
                 .uri("/api/generate")
                 .body(request)
                 .retrieve()
                 .body(OllamaResponse.class);
+
+        if (response == null || response.response() == null) {
+            throw new IllegalStateException(
+                    "O Ollama retornou uma resposta vazia."
+            );
+        }
 
         return response.response();
     }
@@ -52,11 +82,7 @@ public class OllamaService {
         LocalDate dataAtual = LocalDate.now();
 
         String contexto = """
-                Data já conhecida: %s
-                Horário inicial já conhecido: %s
-                Horário final já conhecido: %s
-                Quantidade de pessoas já conhecida: %s
-                Localização já conhecida: %s
+                data=%s, inicio=%s, fim=%s, pessoas=%s, local=%s
                 """.formatted(
                 valorOuNaoInformado(dataConhecida),
                 valorOuNaoInformado(inicioConhecido),
@@ -66,122 +92,39 @@ public class OllamaService {
         );
 
         String prompt = """
-                Você é um assistente responsável por interpretar pedidos
-                de agendamento de salas.
-                
-                A data atual é %s.
-                
-                CONTEXTO DA CONVERSA:
-                Os valores abaixo já foram registrados pelo sistema.
-                Use-os para entender a nova mensagem, mas NÃO os considere
-                como informações fornecidas novamente pelo usuário.
-                
+                Você extrai dados de pedidos de agendamento de salas e responde só em JSON.
+                Data atual: %s.
+
+                CONTEXTO JÁ REGISTRADO (não repita esses valores no resultado):
                 %s
-                
-                SUA TAREFA:
-                Interprete somente as informações novas ou corrigidas
-                que o usuário forneceu na mensagem atual.
-                
-                Para cada campo, retorne:
-                - valor: o valor extraído da mensagem atual ou null.
-                - informado: true se a mensagem atual informou ou corrigiu
-                  esse campo; false caso contrário.
-                
-                REGRA OBRIGATÓRIA:
-                Se um campo não foi informado nem corrigido na mensagem atual:
-                - valor deve ser null.
-                - informado deve ser false.
-                - Não copie para o resultado o valor que já estava no contexto.
-                - Nunca invente informações.
-                - Nunca use 00:00 como substituto para horário ausente.
-                
-                REGRAS PARA DATAS:
-                - Se a mensagem atual disser "hoje", informado deve ser true
-                  e valor deve ser %s.
-                - Se disser "amanhã", informado deve ser true e valor deve
-                  ser a data do dia seguinte a %s.
-                - Interprete datas relativas usando a data atual informada.
-                - Se não houver uma nova data na mensagem, retorne null
-                  e informado false para data.
-                
-                REGRAS PARA HORÁRIOS:
-                - "14h" deve ser convertido para "14:00:00".
-                - "14h30" deve ser convertido para "14:30:00".
-                - "14:00" deve ser convertido para "14:00:00".
-                - Não invente horários.
-                - Se a mensagem não informar ou corrigir um horário,
-                  retorne null e informado false para esse campo.
-                
-                REGRAS PARA DURAÇÃO:
-                - Se a mensagem informar duração ("por 1h", "durante
-                  30 minutos", "1h30", "2 horas"), converta para minutos
-                  e preencha "duracaoMinutos": "30 min" = 30, "1h" = 60,
-                  "1h30" = 90, "2 horas" = 120.
-                - informado deve ser true e o valor deve ser um número
-                  inteiro de minutos.
-                - Nesses casos, NÃO preencha "fim": o sistema calcula o
-                  horário final a partir do horário inicial.
-                - Se a mensagem informar o horário final explicitamente
-                  (ex.: "até 15h"), preencha "fim" e deixe
-                  "duracaoMinutos" com valor null e informado false.
-                
-                REGRAS PARA QUANTIDADE:
-                - Converta quantidades escritas por extenso em números.
-                - Exemplo: "cinco pessoas" corresponde ao número 5.
-                - Não invente quantidades.
-                - Se a mensagem não informar ou corrigir a quantidade,
-                  retorne null e informado false.
-                
-                REGRAS PARA LOCALIZAÇÃO:
-                - Identifique a localização desejada para a sala,
-                  caso ela seja mencionada na mensagem atual.
-                - Exemplos: "no Centro", "na unidade Paulista",
-                  "perto da recepção".
-                - Retorne somente a localização mencionada pelo usuário,
-                  sem inventar endereços ou locais.
-                - Se o usuário corrigir a localização anterior,
-                  retorne a nova localização e informado true.
-                - Se nenhuma localização for informada ou corrigida,
-                  retorne null e informado false.
-                - Não confunda localização com nome de sala.
-                
-                Retorne SOMENTE JSON válido, sem markdown ou explicações.
-                Use exatamente esta estrutura:
-                
-                {
-                  "data": {
-                    "valor": null,
-                    "informado": false
-                  },
-                  "inicio": {
-                    "valor": null,
-                    "informado": false
-                  },
-                  "fim": {
-                    "valor": null,
-                    "informado": false
-                  },
-                  "quantidadePessoas": {
-                    "valor": null,
-                    "informado": false
-                  },
-                  "localizacao": {
-                    "valor": null,
-                    "informado": false
-                  },
-                  "duracaoMinutos": {
-                    "valor": null,
-                    "informado": false
-                  }
-                }
-                
-                MENSAGEM ATUAL DO USUÁRIO:
-                %s
+
+                Extraia da mensagem atual apenas o que foi informado ou corrigido.
+                Cada campo retorna {"valor": <valor ou null>, "informado": <true|false>}.
+                Regras:
+                - Não informado = valor null e informado false. Nunca invente. Nunca use 00:00.
+                - "hoje" = %s; "amanhã" = %s; outras datas relativas use a data atual.
+                - Horários: "14h" = "14:00:00", "14h30" = "14:30:00", "14:00" = "14:00:00".
+                - Duração ("1h", "1h30", "30 min") = minutos em duracaoMinutos e deixe "fim" null.
+                - Horário final explícito ("até 15h") = "fim" e duracaoMinutos null/false.
+                - Quantidade por extenso vira número ("cinco" = 5).
+                - localização é unidade ou endereço mencionado ("no Centro"), nunca nome de sala.
+
+                Exemplos:
+                Mensagem: Quero uma sala dia 20 de outubro às 16h para 3 pessoas no Centro
+                {"data":{"valor":"2026-10-20","informado":true},"inicio":{"valor":"16:00:00","informado":true},"fim":{"valor":null,"informado":false},"quantidadePessoas":{"valor":3,"informado":true},"localizacao":{"valor":"Centro","informado":true},"duracaoMinutos":{"valor":null,"informado":false}}
+                Mensagem: começa às 9h e dura 1h30
+                {"data":{"valor":null,"informado":false},"inicio":{"valor":"09:00:00","informado":true},"fim":{"valor":null,"informado":false},"quantidadePessoas":{"valor":null,"informado":false},"localizacao":{"valor":null,"informado":false},"duracaoMinutos":{"valor":90,"informado":true}}
+                Mensagem: pode ser na sala do diretor
+                {"data":{"valor":null,"informado":false},"inicio":{"valor":null,"informado":false},"fim":{"valor":null,"informado":false},"quantidadePessoas":{"valor":null,"informado":false},"localizacao":{"valor":null,"informado":false},"duracaoMinutos":{"valor":null,"informado":false}}
+
+                Responda SOMENTE com este JSON, sem markdown:
+                {"data":{"valor":null,"informado":false},"inicio":{"valor":null,"informado":false},"fim":{"valor":null,"informado":false},"quantidadePessoas":{"valor":null,"informado":false},"localizacao":{"valor":null,"informado":false},"duracaoMinutos":{"valor":null,"informado":false}}
+                Mensagem atual: %s
                 """.formatted(
                 dataAtual,
                 contexto,
                 dataAtual,
-                dataAtual,
+                dataAtual.plusDays(1),
                 mensagem
         );
 
