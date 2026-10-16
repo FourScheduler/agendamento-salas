@@ -142,7 +142,7 @@ describe('Topbar', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('.login-modal')).toBeNull();
   });
 
-  it('should sign out and show the sign in button again', async () => {
+  it('should close the profile menu on outside click and sign out', async () => {
     const fixture = TestBed.createComponent(Topbar);
     const login = TestBed.inject(AuthService).entrar('Kevin Miranda');
     responderDemo();
@@ -153,9 +153,18 @@ describe('Topbar', () => {
 
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Kevin Miranda');
 
-    (fixture.nativeElement as HTMLElement)
-      .querySelector<HTMLButtonElement>('.topbar__sair')
-      ?.click();
+    const perfil = fixture.nativeElement as HTMLElement;
+    perfil.querySelector<HTMLButtonElement>('.topbar__avatar')?.click();
+    fixture.detectChanges();
+    expect(perfil.querySelector('.topbar__menu-perfil')).toBeTruthy();
+
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    fixture.detectChanges();
+    expect(perfil.querySelector('.topbar__menu-perfil')).toBeNull();
+
+    perfil.querySelector<HTMLButtonElement>('.topbar__avatar')?.click();
+    fixture.detectChanges();
+    perfil.querySelector<HTMLButtonElement>('.topbar__menu-perfil-sair')?.click();
     fixture.detectChanges();
 
     expect(TestBed.inject(AuthService).autenticado()).toBe(false);

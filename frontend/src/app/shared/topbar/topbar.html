@@ -75,8 +75,29 @@
   @if (usuario()) {
     <div class="topbar__usuario">
       <span class="topbar__nome">{{ usuario() }}</span>
-      <span class="topbar__avatar" aria-hidden="true">{{ iniciais() }}</span>
-      <button class="topbar__sair" type="button" (click)="sair()">Sair</button>
+      <div class="topbar__perfil">
+        <button
+          class="topbar__avatar"
+          type="button"
+          aria-label="Abrir menu do perfil"
+          aria-controls="menu-perfil"
+          [attr.aria-expanded]="menuPerfilAberto()"
+          (click)="alternarMenuPerfil()"
+          (keydown.escape)="fecharMenuPerfil()"
+        >
+          {{ iniciais() }}
+        </button>
+
+        @if (menuPerfilAberto()) {
+          <div class="topbar__menu-perfil" id="menu-perfil">
+            <div class="topbar__menu-perfil-cabecalho">
+              <span class="topbar__menu-perfil-avatar" aria-hidden="true">{{ iniciais() }}</span>
+              <p class="topbar__menu-perfil-nome">{{ usuario() }}</p>
+            </div>
+            <button class="topbar__menu-perfil-sair" type="button" (click)="sair()">Sair</button>
+          </div>
+        }
+      </div>
     </div>
   } @else {
     <button class="topbar__entrar" type="button" (click)="abrirModal()">Entrar</button>

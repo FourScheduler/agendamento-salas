@@ -129,6 +129,8 @@
   font-weight: 600;
 }
 
+.topbar__perfil { position: relative; }
+
 .topbar__avatar {
   display: inline-flex;
   align-items: center;
@@ -141,10 +143,84 @@
   color: var(--navy);
   font-size: 0.875rem;
   font-weight: 600;
+  cursor: pointer;
 }
 
-.topbar__entrar,
-.topbar__sair {
+.topbar__avatar:focus-visible,
+.topbar__menu-perfil-sair:focus-visible { outline: 2px solid var(--orange); }
+
+.topbar__menu-perfil {
+  position: absolute;
+  top: calc(100% + 1rem);
+  right: 0;
+  z-index: 20;
+  width: min(250px, calc(100vw - 2rem));
+  height: 240px;
+  padding: 1.5rem 1.25rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--navy);
+  box-shadow: 0 4px 14px rgba(19, 19, 31, 0.16);
+}
+
+.topbar__menu-perfil::before {
+  position: absolute;
+  top: -0.5rem;
+  right: 0.75rem;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-top: 1px solid var(--border-soft);
+  border-left: 1px solid var(--border-soft);
+  background: #ffffff;
+  content: '';
+  transform: rotate(45deg);
+}
+
+.topbar__menu-perfil-cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.25rem 0 1rem;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.topbar__menu-perfil-avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--orange-400);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.topbar__menu-perfil-nome {
+  margin: 0;
+  font-weight: 600;
+}
+
+.topbar__menu-perfil-sair {
+  width: 100%;
+  padding: 0.5rem 0.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--navy);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.topbar__menu-perfil-sair:hover {
+  color: var(--orange);
+}
+
+.topbar__entrar {
   margin-left: auto;
   padding: 0.4375rem 1rem;
   border: 1px solid var(--orange);
@@ -156,23 +232,9 @@
   cursor: pointer;
 }
 
-.topbar__entrar:hover,
-.topbar__sair:hover {
+.topbar__entrar:hover {
   background: var(--orange-dark);
   border-color: var(--orange-dark);
-}
-
-.topbar__sair {
-  margin-left: 0.5rem;
-  border-color: rgba(255, 255, 255, 0.45);
-  background: transparent;
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.topbar__sair:hover {
-  border-color: #ffffff;
-  background: rgba(255, 255, 255, 0.08);
 }
 
 .login-overlay {

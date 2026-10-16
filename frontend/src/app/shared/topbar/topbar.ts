@@ -19,11 +19,15 @@ import { filter, map } from 'rxjs';
   imports: [RouterLink, RouterLinkActive],
   templateUrl: './topbar.html',
   styleUrl: './topbar.css',
+  host: {
+    '(document:click)': 'fecharMenuPerfilAoClicarFora($event)',
+  },
 })
 export class Topbar {
   private readonly auth = inject(AuthService);
   private readonly injector = inject(Injector);
   private readonly router = inject(Router);
+  private readonly hostElement = inject(ElementRef<HTMLElement>);
 
   readonly usuario = this.auth.usuario;
   readonly autenticado = this.auth.autenticado;
@@ -37,6 +41,7 @@ export class Topbar {
   );
 
   readonly modalAberto = signal(false);
+  readonly menuPerfilAberto = signal(false);
   readonly nomeDigitado = signal(USUARIO_MOCK);
   readonly entrando = signal(false);
   readonly erroLogin = signal<string | null>(null);
@@ -78,6 +83,25 @@ export class Topbar {
     this.erroLogin.set(null);
   }
 
+  alternarMenuPerfil(): void {
+    this.menuPerfilAberto.update((aberto) => !aberto);
+  }
+
+  fecharMenuPerfil(): void {
+    this.menuPerfilAberto.set(false);
+  }
+
+  fecharMenuPerfilAoClicarFora(event: MouseEvent): void {
+    if (!this.menuPerfilAberto()) {
+      return;
+    }
+
+    const perfil = this.hostElement.nativeElement.querySelector('.topbar__perfil');
+    if (!perfil || !event.composedPath().includes(perfil)) {
+      this.fecharMenuPerfil();
+    }
+  }
+
   async entrar(): Promise<void> {
     const nome = this.nomeDigitado().trim();
     if (!nome || this.entrando()) {
@@ -98,6 +122,7 @@ export class Topbar {
   }
 
   sair(): void {
+    this.fecharMenuPerfil();
     this.auth.sair();
   }
 }
