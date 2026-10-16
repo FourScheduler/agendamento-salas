@@ -1,0 +1,94 @@
+<section class="mesas" aria-label="Reserva de mesas">
+  <main class="mesas__cartao">
+    <section class="page-heading" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">TAMBORÉ</p>
+        <h1 id="page-title">Mapa de mesas</h1>
+        <p class="subtitle">Selecione uma mesa livre para reservar.</p>
+      </div>
+      <ul class="legend" aria-label="Legenda dos estados">
+        <li><span class="swatch swatch--free"></span>Mesas livres</li>
+        <li><span class="swatch swatch--fixed"></span>Mesas fixas</li>
+        <li><span class="swatch swatch--structure"></span>Coluna estrutural</li>
+      </ul>
+    </section>
+
+    <div class="map-scroll">
+      <section class="floorplan" aria-label="Planta do escritório">
+        <div class="left-plan">
+          <div class="desk-grid desk-grid--paired left-grid" aria-label="Mesas 1 a 72">
+            @for (celula of esquerdas; track celula.chave) {
+              @if (celula.mesa; as mesa) {
+                <app-celula-mesa
+                  [mesa]="mesa"
+                  [estado]="estados()[mesa.numero]"
+                  [selecionada]="selecionada()?.numero === mesa.numero"
+                  (selecionar)="selecionar($event)"
+                />
+              } @else {
+                <div class="desk-aisle" aria-hidden="true">CORREDOR</div>
+              }
+            }
+          </div>
+        </div>
+        <div class="corridor" aria-hidden="true"></div>
+        <div class="right-plan">
+          <div class="desk-grid" aria-label="Mesas 100 a 115">
+            @for (mesa of superiores; track mesa.numero) {
+              <app-celula-mesa
+                [mesa]="mesa"
+                [estado]="estados()[mesa.numero]"
+                [selecionada]="selecionada()?.numero === mesa.numero"
+                (selecionar)="selecionar($event)"
+              />
+            }
+          </div>
+          <div class="middle-right" aria-label="Mesas 96 a 99 e coluna estrutural">
+            <div class="structure" aria-label="Coluna estrutural"></div>
+            @for (mesa of centrais; track mesa.numero) {
+              <app-celula-mesa
+                [mesa]="mesa"
+                [estado]="estados()[mesa.numero]"
+                [selecionada]="selecionada()?.numero === mesa.numero"
+                (selecionar)="selecionar($event)"
+              />
+            }
+          </div>
+          <div class="entrance">ENTRADA</div>
+          <div class="desk-grid bottom-desks lower-right" aria-label="Mesas 73 a 95">
+            <div class="structure structure--single" aria-label="Coluna estrutural"></div>
+            @for (mesa of inferiores; track mesa.numero) {
+              <app-celula-mesa
+                [mesa]="mesa"
+                [estado]="estados()[mesa.numero]"
+                [selecionada]="selecionada()?.numero === mesa.numero"
+                (selecionar)="selecionar($event)"
+              />
+            }
+          </div>
+        </div>
+        <div class="windows" aria-label="Janelas">JANELAS</div>
+      </section>
+    </div>
+
+    <section class="edit-panel" aria-label="Controles de estado das mesas">
+      <strong class="edit-title">Alterar estado da mesa selecionada</strong>
+      <button class="status-button" type="button" [disabled]="!selecionada()" (click)="aplicarEstado('free')">
+        Mesas livres
+      </button>
+      <button class="status-button" type="button" [disabled]="!selecionada()" (click)="aplicarEstado('fixed')">
+        Mesas fixas
+      </button>
+      <label class="all-label" for="all-state">
+        Aplicar a todas
+        <select id="all-state" [value]="estadoGeral()" (change)="definirEstadoGeral($event)">
+          <option value="free">Livre</option>
+          <option value="fixed">Fixa</option>
+        </select>
+      </label>
+      <button class="apply-all" type="button" (click)="aplicarATodas()">Aplicar</button>
+      <p class="selection-note">{{ notaSelecao() }}</p>
+    </section>
+    <p class="message" role="status" aria-live="polite">{{ mensagem() }}</p>
+  </main>
+</section>

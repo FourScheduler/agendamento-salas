@@ -1,0 +1,19 @@
+<button
+  type="button"
+  class="desk"
+  [class.desk--free]="estado() === 'free'"
+  [class.desk--fixed]="estado() === 'fixed'"
+  [class.desk--selected]="selecionada()"
+  [class.desk--chair-top]="mesa().cadeira === 'topo'"
+  [class.desk--chair-bottom]="mesa().cadeira === 'base'"
+  [attr.data-number]="mesa().numero"
+  [attr.aria-pressed]="selecionada()"
+  [attr.aria-label]="'Mesa ' + mesa().numero + ', ' + mesa().nome"
+  (click)="selecionar.emit(mesa())"
+>
+  <span class="desk__number">{{ mesa().numero }}</span>
+  <span class="desk__name">{{ mesa().nome }}</span>
+  @if (mesa().cadeira) {
+    <span class="desk__chair" aria-hidden="true"></span>
+  }
+</button>
