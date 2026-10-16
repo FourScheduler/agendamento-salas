@@ -25,6 +25,12 @@
   min-width: 0;
 }
 
+@media (min-width: 901px) {
+  .agendamento__corpo app-painel-reserva {
+    margin-top: -5.5rem;
+  }
+}
+
 @media (max-width: 900px) {
   .agendamento__corpo {
     grid-template-columns: minmax(0, 1fr);
