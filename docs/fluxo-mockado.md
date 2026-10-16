@@ -7,7 +7,7 @@
 3. A API retorna as salas compatíveis com a necessidade.
 4. O usuário escolhe uma sala livre na planta e revisa o resumo. O seletor de pessoas respeita a
    capacidade da sala escolhida e a linha de equipamentos deixa o pedido à equipe de Facilities.
-5. A confirmação fica disponível após o login e, nesta etapa, gera apenas uma mensagem visual de
-   sucesso.
+5. A confirmação fica disponível após o login e apresenta o sucesso em um pop-up (toast), sem
+   mensagem de sucesso dentro do resumo da reserva.
 
 Esse fluxo serve para demonstração e não cria eventos reais em calendários corporativos.

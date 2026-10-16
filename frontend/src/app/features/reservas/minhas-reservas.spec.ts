@@ -88,6 +88,7 @@ describe('MinhasReservas', () => {
     const compilado = fixture.nativeElement as HTMLElement;
     expect(compilado.textContent).toContain('Sala Focus');
     expect(compilado.textContent).toContain('Tamboré');
+    expect(compilado.querySelector('.minhas-reservas__cabecalho .eyebrow')).toBeNull();
     expect(compilado.textContent).toContain('Confirmada');
   });
 

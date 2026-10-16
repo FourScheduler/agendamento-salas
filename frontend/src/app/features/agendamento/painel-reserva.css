@@ -216,14 +216,3 @@
   font-size: 0.75rem;
   text-align: center;
 }
-
-.resumo__sucesso {
-  padding: 0.5rem 0.625rem;
-  border: 1px solid #b7e0c6;
-  border-radius: 8px;
-  background: #eefaf3;
-  color: #1f7a4d;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-align: center;
-}

@@ -68,6 +68,10 @@ Padrão do portal (extraído do bundle oficial):
 - À direita: nome do usuário + avatar circular de 2rem, fundo branco, borda 1px `--gray-200`,
   texto `--navy` com as iniciais. O nome some até `700px`.
 - Ícones da barra são brancos. Fundo transparente nos botões de ícone.
+- Nas rotas `/agendamento` e `/minhas-reservas`, `TAMBORÉ` aparece em branco ao lado da marca, sem
+  uma divisória adicional. `Minhas reservas` aparece à direita, antes do avatar, e o nome do usuário
+  não aparece junto ao avatar. Na rota `/portal`, não exibir o link `Minhas reservas` nem o nome do
+  usuário ao lado do avatar; o menu do perfil continua disponível.
 
 ## 4. Estrutura de página
 
@@ -75,6 +79,7 @@ Padrão do portal (extraído do bundle oficial):
 - Breakpoints do portal: `599px`, `700px`, `900px`, `1200px` e `1800px`. Este projeto usa `700px`
   (topbar e lista de salas) e `900px` (colunas do agendamento).
 - Cabeçalho no topo: sobretítulo laranja em caixa alta (`TAMBORÉ`), título, subtítulo.
+- Na tela `/minhas-reservas`, não exibir o sobretítulo `TAMBORÉ` sobre o título da página.
 - Áreas de conteúdo em grid simples, com gap de 2.5rem; a coluna do resumo tem 360px.
 - Em telas estreitas, as colunas empilham em uma única coluna.
 

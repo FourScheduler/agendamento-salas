@@ -11,7 +11,7 @@ describe('PainelReserva', () => {
 
   function montar(
     pessoas = 4,
-    opcoes: { autenticado?: boolean; confirmacao?: string; solicitante?: string } = {},
+    opcoes: { autenticado?: boolean; solicitante?: string } = {},
   ) {
     const fixture = TestBed.createComponent(PainelReserva);
     fixture.componentRef.setInput('sala', resolverEstados([{ id: 1 }])[0]);
@@ -21,7 +21,6 @@ describe('PainelReserva', () => {
     fixture.componentRef.setInput('pessoas', pessoas);
     fixture.componentRef.setInput('autenticado', opcoes.autenticado ?? false);
     fixture.componentRef.setInput('solicitante', opcoes.solicitante ?? null);
-    fixture.componentRef.setInput('confirmacao', opcoes.confirmacao ?? null);
     fixture.detectChanges();
     return fixture;
   }
@@ -78,18 +77,15 @@ describe('PainelReserva', () => {
     expect(confirmado).toBe(true);
   });
 
-  it('should show the confirmation message when provided', async () => {
-    const fixture = montar(4, {
-      autenticado: true,
-      confirmacao: 'Reserva confirmada para Sala 01 (demonstração).',
-    });
+  it('should not render a success message in the summary', async () => {
+    const fixture = montar(4, { autenticado: true });
     await fixture.whenStable();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.resumo__sucesso')?.textContent).toContain(
-      'Reserva confirmada para Sala 01',
+    expect(compiled.querySelector('.resumo__sucesso')).toBeNull();
+    expect(compiled.querySelector('.resumo__nota')?.textContent).toContain(
+      'nada é enviado ao Outlook',
     );
-    expect(compiled.querySelector('.resumo__nota')).toBeNull();
   });
 
   it('should show the requester of the reservation', async () => {

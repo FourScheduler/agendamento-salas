@@ -295,10 +295,6 @@
       <span aria-hidden="true">→</span>
     </button>
 
-    @if (confirmacao(); as texto) {
-      <p class="resumo__sucesso" role="status">{{ texto }}</p>
-    } @else {
-      <p class="resumo__nota">{{ notaConfirmacao() }}</p>
-    }
+    <p class="resumo__nota">{{ notaConfirmacao() }}</p>
   </div>
 </aside>

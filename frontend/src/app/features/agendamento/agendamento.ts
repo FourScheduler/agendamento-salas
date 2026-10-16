@@ -55,7 +55,6 @@ export class Agendamento implements OnInit {
   readonly autenticado = this.auth.autenticado;
   readonly usuario = this.auth.usuario;
   readonly confirmando = signal(false);
-  readonly confirmacao = signal<string | null>(null);
   readonly erroConfirmacao = signal<string | null>(null);
 
   readonly salaEscolhida = computed(() => {
@@ -74,7 +73,7 @@ export class Agendamento implements OnInit {
   selecionar(nome: string): void {
     const sala = this.salas().find((item) => item.nome === nome);
     this.selecionada.set(nome);
-    this.limparResultadoConfirmacao();
+    this.limparErroConfirmacao();
 
     if (sala && this.pessoas() > sala.capacidade) {
       this.pessoas.set(sala.capacidade);
@@ -84,25 +83,25 @@ export class Agendamento implements OnInit {
 
   atualizarData(valor: string): void {
     this.data.set(valor);
-    this.limparResultadoConfirmacao();
+    this.limparErroConfirmacao();
     this.buscar();
   }
 
   atualizarHora(valor: string): void {
     this.horaInicio.set(valor);
-    this.limparResultadoConfirmacao();
+    this.limparErroConfirmacao();
     this.buscar();
   }
 
   atualizarDuracao(valor: number): void {
     this.duracao.set(valor);
-    this.limparResultadoConfirmacao();
+    this.limparErroConfirmacao();
     this.buscar();
   }
 
   atualizarPessoas(valor: number): void {
     this.pessoas.set(valor);
-    this.limparResultadoConfirmacao();
+    this.limparErroConfirmacao();
     this.buscar();
   }
 
@@ -190,9 +189,13 @@ export class Agendamento implements OnInit {
       );
       // A reserva foi criada; a próxima solicitação começa uma conversa nova.
       this.conversaId = null;
-      this.limparResultadoConfirmacao();
+      this.limparErroConfirmacao();
       this.buscar();
-      this.toast.sucesso('Reserva confirmada', resposta.mensagem);
+      const horaInicio = resposta.horaInicio?.slice(0, 5) ?? this.horaInicio();
+      const horaFim = resposta.horaFim?.slice(0, 5) ?? horaFinal(horaInicio, this.duracao());
+      this.toast.sucesso(
+        mensagemToastReserva(resposta.data ?? this.data(), horaInicio, horaFim),
+      );
       return { texto: resposta.mensagem };
     } catch (erro: unknown) {
       return { texto: mensagemDeErro(erro) };
@@ -231,7 +234,7 @@ export class Agendamento implements OnInit {
     }
 
     if (mudou) {
-      this.limparResultadoConfirmacao();
+      this.limparErroConfirmacao();
       this.buscar();
     }
   }
@@ -257,7 +260,7 @@ export class Agendamento implements OnInit {
 
     const horaFim = horaFinal(this.horaInicio(), this.duracao());
     this.confirmando.set(true);
-    this.limparResultadoConfirmacao();
+    this.limparErroConfirmacao();
 
     try {
       const reserva = await firstValueFrom(
@@ -279,8 +282,7 @@ export class Agendamento implements OnInit {
           ? ` (nº ${reserva.id}${reserva.status ? ` · ${reserva.status}` : ''})`
           : '';
       const texto = `Reserva confirmada para ${nomeSala} em ${this.data()}, das ${this.horaInicio()} às ${horaFim}${detalhes}.`;
-      this.confirmacao.set(texto);
-      this.toast.sucesso('Reserva confirmada', texto);
+      this.toast.sucesso(mensagemToastReserva(this.data(), this.horaInicio(), horaFim));
       this.buscar();
       return texto;
     } catch (erro: unknown) {
@@ -329,8 +331,7 @@ export class Agendamento implements OnInit {
       });
   }
 
-  private limparResultadoConfirmacao(): void {
-    this.confirmacao.set(null);
+  private limparErroConfirmacao(): void {
     this.erroConfirmacao.set(null);
   }
 
@@ -373,4 +374,9 @@ export class Agendamento implements OnInit {
 
 function horaFinal(inicio: string, duracao: number): string {
   return paraHora((paraMinutos(inicio) ?? 0) + duracao);
+}
+
+function mensagemToastReserva(data: string, horaInicio: string, horaFim: string): string {
+  const [ano, mes, dia] = data.split('-');
+  return `Reserva confirmada das ${horaInicio} às ${horaFim} ${dia}/${mes}/${ano.slice(-2)}`;
 }

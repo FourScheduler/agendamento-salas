@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { apiErrorInterceptor } from '../../core/http/api-error';
 import { authInterceptor } from '../../core/http/auth-interceptor';
 import { RespostaAssistente } from '../../shared/assistente-ia/assistente-ia';
+import { ToastService } from '../../shared/toast/toast';
 import { environment } from '../../../environments/environment';
 
 function aguardarMicrotarefas(): Promise<void> {
@@ -176,7 +177,13 @@ describe('Agendamento', () => {
     const texto = await promessa;
     expect(texto).toContain('Reserva confirmada para Sala 02');
     expect(texto).toContain('nº 1 · CONFIRMADO');
-    expect(fixture.componentInstance.confirmacao()).toContain('Reserva confirmada');
+    const [ano, mes, dia] = fixture.componentInstance.data().split('-');
+    expect(TestBed.inject(ToastService).toasts()[0]).toEqual({
+      id: expect.any(Number),
+      tipo: 'sucesso',
+      titulo: `Reserva confirmada das 09:00 às 10:00 ${dia}/${mes}/${ano.slice(-2)}`,
+    });
+    expect(TestBed.inject(ToastService).toasts()[0].mensagem).toBeUndefined();
 
     responder([]);
     await fixture.whenStable();
@@ -311,6 +318,9 @@ describe('Agendamento', () => {
     const respostaConfirmacao = await promessaConfirmacao;
 
     expect(respostaConfirmacao.texto).toContain('sucesso');
+    const toast = TestBed.inject(ToastService).toasts()[0];
+    expect(toast.titulo).toBe('Reserva confirmada das 14:00 às 15:00 20/10/26');
+    expect(toast.mensagem).toBeUndefined();
     await fixture.whenStable();
   });
 
