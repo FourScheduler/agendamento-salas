@@ -1,7 +1,8 @@
 .pagina_agendamento {
-  width: min(100%, 1500px);
+  width: min(95%, 1500px);
   margin: 0 auto;
   padding: 2rem clamp(1.5rem, 4vw, 4rem) 4rem;
+  margin-left: 0px;
 }
 
 .agendamento__cabecalho {
