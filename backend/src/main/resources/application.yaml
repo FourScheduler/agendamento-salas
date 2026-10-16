@@ -32,4 +32,10 @@ app:
 
 ollama:
   url: http://localhost:11434
-  model: gemma3:4b
+  model: qwen3:1.7b
+  keep-alive-seconds: -1
+  max-output-tokens: 120
+  connect-timeout-ms: 5000
+  read-timeout-ms: 60000
+  warmup:
+    enabled: true

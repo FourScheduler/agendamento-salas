@@ -28,8 +28,10 @@ class OllamaServiceTest {
         ollamaService = spy(
                 new OllamaService(
                         null,
-                        "gemma3:4b",
-                        objectMapper
+                        "qwen3:1.7b",
+                        objectMapper,
+                        -1,
+                        120
                 )
         );
     }

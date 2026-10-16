@@ -21,3 +21,7 @@ app:
   jwt:
     secret: Zm91cnNjaGVkdWxlci10b2tlbi1kZS10ZXN0ZS1uYW8tdXNhci1lbS1wcm9kdWNhbw==
     expiration-seconds: 3600
+
+ollama:
+  warmup:
+    enabled: false
