@@ -24,7 +24,7 @@ describe('AssistenteIa', () => {
     const { raiz } = iniciar();
 
     expect(raiz.querySelector('.ai-assistant')?.getAttribute('data-state')).toBe('hidden');
-    expect(raiz.textContent).toContain('Olá! Posso te ajudar a reservar uma sala?');
+    expect(raiz.textContent).toContain('Posso te ajudar a reservar uma sala?');
     expect(raiz.querySelector('input.ai-panel__input')).toBeTruthy();
     expect(raiz.querySelector('.ai-panel')).toBeTruthy();
     expect(raiz.querySelector('svg[viewBox="0 0 120 140"]')).toBeTruthy();

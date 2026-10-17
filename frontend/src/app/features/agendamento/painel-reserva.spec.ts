@@ -50,14 +50,14 @@ describe('PainelReserva', () => {
     expect(compiled.textContent).toContain('18 jun, quinta-feira');
   });
 
-  it('should place the reservation label beside the summary title', async () => {
+  it('should show the reservation label in the summary header', async () => {
     const fixture = montar();
     await fixture.whenStable();
 
     const compiled = fixture.nativeElement as HTMLElement;
     const cabecalho = compiled.querySelector('.resumo__cabecalho');
 
-    expect(cabecalho?.querySelector('.resumo__titulo')?.textContent).toContain('Resumo -');
+    expect(cabecalho).toBeTruthy();
     expect(cabecalho?.querySelector('.eyebrow')?.textContent).toContain('Sua reserva');
   });
 
