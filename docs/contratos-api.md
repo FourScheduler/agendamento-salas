@@ -112,7 +112,7 @@ Exige autenticação. Request (`CriarAgendamentoRequest`, com Bean Validation no
 
 ```json
 {
-  "salaId": { "id": 2 },
+  "salaId": [{ "id": 2 }],
   "data": "2026-10-20",
   "horaInicio": "14:00",
   "horaFim": "15:00",
@@ -121,23 +121,23 @@ Exige autenticação. Request (`CriarAgendamentoRequest`, com Bean Validation no
 }
 ```
 
-Response `201` (`AgendamentoResponse`, sem expor entidades):
+Cada sala gera uma reserva independente, vinculada ao mesmo usuário, horário e título. Para uma reunião integrada, a capacidade é a soma das capacidades das salas selecionadas; a confirmação é atômica: se uma sala for inválida, indisponível ou tiver conflito, nenhuma reserva é criada. Salas repetidas e lista vazia são rejeitadas. A resposta conserva os campos da reserva principal por compatibilidade e inclui todos os registros criados:
 
 ```json
 {
-  "salaId": { "id": 2, "nome": "Sala 02", "capacidade": 4, "localizacao": "Tamboré", "disponivel": true },
-  "dataAgendamento": "2026-10-20",
-  "dataCriacao": "2026-10-14T10:15:00",
-  "horaInicio": "14:00",
-  "horaFim": "15:00",
-  "qntdPessoas": 4,
-  "titulo": "Reunião de planejamento",
-  "usuarioIdSolicitante": { "id": 3, "email": "usuario@teste.com", "nome": "Usuario Teste", "perfilUsuario": "USER" },
-  "status": "CONFIRMADO"
+  "id": 42,
+  "sala": { "id": 2, "nome": "Sala 02", "capacidade": 4, "localizacao": "Tamboré", "disponivel": true },
+  "inicio": "14:00",
+  "fim": "15:00",
+  "status": "CONFIRMADO",
+  "solicitante": null,
+  "agendamentos": [
+    { "id": 42, "sala": { "id": 2, "nome": "Sala 02", "capacidade": 4, "localizacao": "Tamboré", "disponivel": true } }
+  ]
 }
 ```
 
-Validações: sala existente e disponível, capacidade suficiente, data não passada, quantidade de pessoas ≥ 1 e ausência de conflito na mesma sala. A criação usa lock pessimista na sala para evitar double booking; o solicitante vem do usuário autenticado.
+Validações: todas as salas existem e estão disponíveis, capacidade total suficiente, data não passada, quantidade de pessoas ≥ 1 e ausência de conflito em cada sala. A criação usa lock pessimista nas salas em ordem crescente de ID para evitar double booking e reduzir deadlocks; o solicitante vem do usuário autenticado. O log de auditoria é gravado individualmente para cada reserva criada.
 
 ### Cancelamento de reserva — previsto
 

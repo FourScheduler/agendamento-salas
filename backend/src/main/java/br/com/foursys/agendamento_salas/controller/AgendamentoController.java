@@ -36,10 +36,16 @@ public class AgendamentoController {
     ) {
 
         Long usuarioAutenticado = securityUtils.get().id();
+        List<Long> salaIds = agendamentoRequest.salaId()
+                .stream()
+                .map(CriarAgendamentoRequest.SalaRef::id)
+                .toList();
+
+
         log.info(
-                "Recebida criacao de agendamento. usuarioId={}, salaId={}, data={}, inicio={}, fim={}, pessoas={}",
+                "Recebida criacao de agendamento. usuarioId={}, salasId={}, data={}, inicio={}, fim={}, pessoas={}",
                 usuarioAutenticado,
-                agendamentoRequest.salaId().id(),
+                salaIds,
                 agendamentoRequest.data(),
                 agendamentoRequest.horaInicio(),
                 agendamentoRequest.horaFim(),
@@ -48,10 +54,12 @@ public class AgendamentoController {
 
         ConfimacaoAgendamentoResponse response = agendamentoService.criar(agendamentoRequest, usuarioAutenticado);
         log.info(
-                "Agendamento criado com sucesso. agendamentoId={}, usuarioId={}, salaId={}, status={}",
-                response.id(),
+                "Agendamento criado com sucesso. agendamentos={}, usuarioId={}, salasId={}, status={}",
+                response.agendamentos().stream()
+                        .map(ConfimacaoAgendamentoResponse.AgendamentoCriado::id)
+                        .toList(),
                 usuarioAutenticado,
-                agendamentoRequest.salaId().id(),
+                salaIds,
                 response.status()
         );
 

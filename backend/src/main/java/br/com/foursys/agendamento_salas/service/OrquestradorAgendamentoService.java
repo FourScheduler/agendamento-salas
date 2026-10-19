@@ -183,7 +183,7 @@ public class OrquestradorAgendamentoService {
         salvarConversa(conversa);
 
         CriarAgendamentoRequest criarAgendamentoRequest = new CriarAgendamentoRequest(
-                new CriarAgendamentoRequest.SalaRef(conversa.getSalaEscolhida().getId()),
+                List.of(new CriarAgendamentoRequest.SalaRef(conversa.getSalaEscolhida().getId())),
                 conversa.getDataAgendamento(),
                 conversa.getHoraInicio(),
                 conversa.getHoraFim(),

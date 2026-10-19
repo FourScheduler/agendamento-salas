@@ -265,7 +265,7 @@ export class Agendamento implements OnInit {
     try {
       const reserva = await firstValueFrom(
         this.reservasService.confirmar({
-          salaId: { id: sala.id },
+          salaId: [{ id: sala.id }],
           data: this.data(),
           horaInicio: this.horaInicio(),
           horaFim,
