@@ -53,10 +53,15 @@ public class AgendamentoService {
 
     @Transactional
     public ConfimacaoAgendamentoResponse criar(CriarAgendamentoRequest agendamentoRequest, Long idUsuario) {
+        List<Long> salaIds = agendamentoRequest.salaId()
+                .stream()
+                .map(CriarAgendamentoRequest.SalaRef::id)
+                .toList();
+
         logger.info(
                 "Iniciando validacao do agendamento. usuarioId={}, salaId={}, data={}, inicio={}, fim={}, pessoas={}",
                 idUsuario,
-                agendamentoRequest.salaId().id(),
+                salaIds,
                 agendamentoRequest.data(),
                 agendamentoRequest.horaInicio(),
                 agendamentoRequest.horaFim(),
@@ -71,40 +76,58 @@ public class AgendamentoService {
 
         // Lock pessimista na sala serializa reservas concorrentes da mesma sala,
         // evitando dupla reserva entre o check de conflito e o insert.
-        Sala sala = salaRepositoryPort.buscarPorIdComBloqueio(agendamentoRequest.salaId().id())
-                .orElseThrow(SalaInexistenteException::new);
-        logger.info(
-                "Sala carregada para validacao do agendamento. salaId={}, capacidade={}, disponivel={}",
+        List<Sala> salas = agendamentoRequest.salaId()
+                .stream()
+                .map(salaRef -> salaRepositoryPort
+                        .buscarPorIdComBloqueio(salaRef.id())
+                        .orElseThrow(SalaInexistenteException::new))
+                .toList();
+
+        salas.forEach(sala -> logger.info(
+                "Sala carregada para validação do agendamento. salaId={}, capacidade={}, disponivel={}",
                 sala.getId(),
                 sala.getCapacidade(),
                 sala.getDisponivel()
-        );
+        ));
 
         validarQuantidadeHorasAgendamento(agendamentoRequest.horaInicio(),
                 agendamentoRequest.horaFim(), usuario.getPerfilUsuario());
 
-        validarCapacidadeMaximaSala(agendamentoRequest.qntdPessoas(), sala.getCapacidade());
+        salas.forEach(sala -> validarCapacidadeMaximaSala(
+                        agendamentoRequest.qntdPessoas(),
+                        sala.getCapacidade()
+                )
+        );
 
-        validarConflitoHorario(sala.getId(), agendamentoRequest.data(), agendamentoRequest.horaInicio(),
-                agendamentoRequest.horaFim());
+        salas.forEach(sala ->
+                validarConflitoHorario(
+                        sala.getId(),
+                        agendamentoRequest.data(),
+                        agendamentoRequest.horaInicio(),
+                        agendamentoRequest.horaFim()
+                )
+        );
 
-        if(!sala.getDisponivel()) {
-            throw new SalaIndisponivelException();
-        }
+        salas.forEach(sala -> {
+            if (!sala.getDisponivel()) {
+                throw new SalaIndisponivelException();
+            }
+        });
 
-        Agendamento agendamento = Agendamento
-                .builder()
-                .usuarioId(usuario)
-                .salaId(sala)
-                .dataAgendamento(agendamentoRequest.data())
-                .dataCriacao(LocalDateTime.now())
-                .horaInicio(agendamentoRequest.horaInicio())
-                .horaFim(agendamentoRequest.horaFim())
-                .qntdPessoas(agendamentoRequest.qntdPessoas())
-                .titulo(agendamentoRequest.titulo())
-                .status(StatusAgendamento.CONFIRMADO)
-                .ultimaAtualizacao(LocalDateTime.now())
-                .build();
+        List<Agendamento> agendamentos = salas.stream()
+                .map(sala -> Agendamento.builder()
+                        .usuarioId(usuario)
+                        .salaId(sala)
+                        .dataAgendamento(agendamentoRequest.data())
+                        .dataCriacao(LocalDateTime.now())
+                        .horaInicio(agendamentoRequest.horaInicio())
+                        .horaFim(agendamentoRequest.horaFim())
+                        .qntdPessoas(agendamentoRequest.qntdPessoas())
+                        .titulo(agendamentoRequest.titulo())
+                        .status(StatusAgendamento.CONFIRMADO)
+                        .ultimaAtualizacao(LocalDateTime.now())
+                        .build())
+                .toList();
 
         if(agendamentoRequest.usuarioIdSolicitante() != null) {
             if(!usuario.getPerfilUsuario().equals(PerfilUsuario.ADMIN)) {
@@ -115,14 +138,16 @@ public class AgendamentoService {
                     .buscarPorId(agendamentoRequest.usuarioIdSolicitante().id())
                     .orElseThrow(UsuarioInexistenteException::new);
 
-            agendamento.setUsuarioIdSolicitante(solicitante);
+            agendamentos.forEach(agendamento ->
+                    agendamento.setUsuarioIdSolicitante(solicitante)
+            );
         }
 
-        agendamentoRepositoryPort.salvar(agendamento);
+        agendamentoRepositoryPort.salvar(agendamentos);
 
         Log log = Log
                 .builder()
-                .agendamento(agendamento)
+                .List<agendamento>(agendamentos)
                 .usuario(usuario).status(StatusLog.CRIACAO)
                 .dataCriacao(LocalDateTime.now())
                 .build();

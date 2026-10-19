@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Component
 public interface AgendamentoRepositoryPort {
-    Agendamento salvar(Agendamento agendamento);
+    List<Agendamento> salvar(List<Agendamento> agendamento);
 
     List<Agendamento> buscarFiltrados(
             Long usuarioId,

@@ -5,10 +5,11 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 public record CriarAgendamentoRequest(
         @NotNull(message = "Informe a sala do agendamento.")
-        SalaRef salaId,
+        List<SalaRef> salaId,
         @NotNull(message = "Informe a data do agendamento.")
         LocalDate data,
         @NotNull(message = "Informe o horário inicial do agendamento.")

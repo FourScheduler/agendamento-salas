@@ -22,8 +22,8 @@ public class AgendamentoRepositoryAdapter implements AgendamentoRepositoryPort {
     }
 
     @Override
-    public Agendamento salvar(Agendamento agendamento) {
-        return agendamentoJpaRepository.save(agendamento);
+    public List<Agendamento> salvar(List<Agendamento> agendamentos) {
+        return agendamentoJpaRepository.save(agendamentos);
     }
 
     @Override
