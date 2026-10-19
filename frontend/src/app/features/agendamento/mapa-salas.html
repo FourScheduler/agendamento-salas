@@ -21,7 +21,7 @@
 
     <p class="planta__disponibilidade">
       <span class="planta__ponto" aria-hidden="true"></span>
-      Disponibilidade às {{ horaInicio() }}
+      {{ seloDisponibilidade() }}
     </p>
   </header>
 
@@ -80,12 +80,15 @@
               [class.sala--ocupada]="sala.estado === 'ocupada'"
               [class.sala--indisponivel]="sala.estado === 'indisponivel'"
               [class.sala--selecionada]="selecionada() === sala.nome"
-              [attr.aria-pressed]="selecionada() === sala.nome"
-              [disabled]="sala.estado !== 'disponivel'"
-              (click)="selecionar.emit(sala.nome)"
+              [attr.aria-pressed]="
+                sala.estado === 'disponivel' ? selecionada() === sala.nome : null
+              "
+              [attr.aria-disabled]="sala.estado === 'disponivel' ? null : true"
+              (click)="clicar(sala.nome)"
             >
               <span class="sala__nome">{{ sala.nome }}</span>
               <span class="sala__capacidade">Até {{ sala.capacidade }}</span>
+              <span class="sala__dica" role="tooltip">{{ dicaDaSala(sala) }}</span>
 
               @if (selecionada() === sala.nome) {
                 <span class="sala__marca" aria-hidden="true">
@@ -109,7 +112,7 @@
       <app-lista-salas
         [salas]="salas()"
         [selecionada]="selecionada()"
-        (selecionar)="selecionar.emit($event)"
+        (clique)="clicar($event)"
       />
     }
   </div>

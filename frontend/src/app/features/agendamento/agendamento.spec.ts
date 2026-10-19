@@ -8,6 +8,7 @@ import { authInterceptor } from '../../core/http/auth-interceptor';
 import { RespostaAssistente } from '../../shared/assistente-ia/assistente-ia';
 import { ToastService } from '../../shared/toast/toast';
 import { environment } from '../../../environments/environment';
+import { hojeIso } from '../../core/util/formatos';
 
 function aguardarMicrotarefas(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
@@ -52,11 +53,27 @@ describe('Agendamento', () => {
     // dia, a validação de fimDeJornada aborta a busca antes de qualquer requisição.
     fixture.componentInstance.horaInicio.set('09:00');
     fixture.detectChanges();
+    // Toda busca carrega as ocupações do dia junto com o mapa.
+    chamadaDeOcupacoes().flush([]);
     return fixture;
   }
 
   function chamadaDeBusca() {
     return httpMock.expectOne((requisicao) => requisicao.url.includes('/api/salas/disponiveis'));
+  }
+
+  function chamadaDeOcupacoes() {
+    return httpMock.expectOne((requisicao) => requisicao.url.includes('/api/salas/ocupacoes'));
+  }
+
+  /**
+   * Limpa as ocupações pendentes da planta. Só existem quando a data muda ou depois
+   * de uma reserva nova, então nem toda busca traz esse segundo GET.
+   */
+  function responderOcupacoes() {
+    httpMock
+      .match((requisicao) => requisicao.url.includes('/api/salas/ocupacoes'))
+      .forEach((chamada) => chamada.flush([]));
   }
 
   function responder(salas: { id: number; nome: string }[]) {
@@ -108,7 +125,8 @@ describe('Agendamento', () => {
       'button.sala',
     );
     expect(salas.length).toBe(8);
-    expect(Array.from(salas).filter((sala) => !sala.disabled).length).toBe(1);
+    expect(Array.from(salas).filter((sala) => sala.getAttribute('aria-disabled') !== 'true').length)
+      .toBe(1);
   });
 
   it('should show the empty state when no room is free', async () => {
@@ -185,9 +203,48 @@ describe('Agendamento', () => {
     });
     expect(TestBed.inject(ToastService).toasts()[0].mensagem).toBeUndefined();
 
+    responderOcupacoes();
     responder([]);
     await fixture.whenStable();
     expect(fixture.componentInstance.selecionada()).toBeNull();
+  });
+
+  it('should reset the date to today and the people count to 1 after confirming', async () => {
+    const fixture = iniciar();
+    responder([{ id: 6, nome: 'Componivel 02' }]);
+    await fixture.whenStable();
+
+    const componente = fixture.componentInstance;
+    componente.data.set('2099-10-27');
+    componente.pessoas.set(5);
+    // Capacidade 8 do mapa: 5 pessoas não dispara a busca de ajuste da capacidade.
+    componente.selecionar('Componivel 02');
+
+    await entrarDemo(httpMock);
+
+    const promessa = componente.confirmarReserva();
+
+    const chamada = httpMock.expectOne(`${environment.apiUrl}/api/agendamento`);
+    expect(chamada.request.body).toMatchObject({ data: '2099-10-27', qntdPessoas: 5 });
+
+    chamada.flush({
+      id: 1,
+      sala: { id: 6, nome: 'Componivel 02' },
+      inicio: '09:00:00',
+      fim: '10:00:00',
+      status: 'CONFIRMADO',
+      solicitante: { id: 3, nome: 'Usuario Teste Um', email: 'usuario@teste.com' },
+    });
+
+    await promessa;
+    // O aviso continua falando da reserva feita; o painel é que volta ao padrão.
+    expect(TestBed.inject(ToastService).toasts()[0].titulo).toContain('27/10/99');
+    expect(componente.data()).toBe(hojeIso());
+    expect(componente.pessoas()).toBe(1);
+
+    responderOcupacoes();
+    responder([]);
+    await fixture.whenStable();
   });
 
   it('should confirm using the selected room when the response has no room details', async () => {
@@ -210,6 +267,7 @@ describe('Agendamento', () => {
 
     expect(await promessa).toContain('Reserva confirmada para Sala 02');
 
+    responderOcupacoes();
     responder([]);
     await fixture.whenStable();
   });
@@ -263,6 +321,7 @@ describe('Agendamento', () => {
 
     const resposta = await promessa;
     // A interpretação sincroniza o painel e recarrega o mapa.
+    responderOcupacoes();
     responder([{ id: 2, nome: 'Sala 02' }]);
 
     expect(fixture.componentInstance.data()).toBe('2026-10-20');
@@ -314,6 +373,7 @@ describe('Agendamento', () => {
     await aguardarMicrotarefas();
 
     // A confirmação recarrega o mapa com a sala já ocupada.
+    responderOcupacoes();
     responder([]);
     const respostaConfirmacao = await promessaConfirmacao;
 

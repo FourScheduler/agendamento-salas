@@ -17,10 +17,11 @@ describe('ListaSalas', () => {
     return fixture;
   }
 
+  /** Salas que a lista marca como reserváveis (`aria-disabled` só nas ocupadas). */
   function habilitadas(fixture: { nativeElement: HTMLElement }) {
     const lista = fixture.nativeElement as HTMLElement;
     return Array.from(lista.querySelectorAll<HTMLButtonElement>('button')).filter(
-      (item) => !item.disabled,
+      (item) => item.getAttribute('aria-disabled') !== 'true',
     );
   }
 
@@ -56,7 +57,7 @@ describe('ListaSalas', () => {
     const fixture = montar([{ id: 6 }]);
     let escolhida = '';
 
-    fixture.componentInstance.selecionar.subscribe((nome) => (escolhida = nome));
+    fixture.componentInstance.clique.subscribe((nome) => (escolhida = nome));
 
     habilitadas(fixture)[0].click();
 

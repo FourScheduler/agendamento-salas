@@ -4,6 +4,7 @@ import br.com.foursys.agendamento_salas.config.CorsConfig;
 import br.com.foursys.agendamento_salas.config.SecurityConfig;
 import br.com.foursys.agendamento_salas.domain.Sala;
 import br.com.foursys.agendamento_salas.dto.request.CriarSalaRequest;
+import br.com.foursys.agendamento_salas.dto.response.OcupacaoSalaResponse;
 import br.com.foursys.agendamento_salas.dto.response.SalaResponse;
 import br.com.foursys.agendamento_salas.exception.SalaInexistenteException;
 import br.com.foursys.agendamento_salas.exception.ValidacaoBuscaException;
@@ -304,6 +305,36 @@ class SalaControllerTests {
 				.andExpect(status().isBadRequest());
 	}
 
+
+	@Test
+	void deveRetornarOcupacoesDoDiaSemAutenticacao() throws Exception {
+		when(salaService.buscarOcupacoes(any(LocalDate.class)))
+				.thenReturn(List.of(
+						new OcupacaoSalaResponse(2L, LocalTime.of(14, 0), LocalTime.of(15, 0)),
+						new OcupacaoSalaResponse(5L, LocalTime.of(16, 30), LocalTime.of(17, 0))
+				));
+
+		mockMvc.perform(
+						get("/api/salas/ocupacoes")
+								.param("data", LocalDate.now().plusDays(1).toString())
+				)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].salaId").value(2))
+				.andExpect(jsonPath("$[0].horaInicio").value("14:00"))
+				.andExpect(jsonPath("$[1].salaId").value(5));
+	}
+
+	@Test
+	void deveRejeitarDataPassadaNasOcupacoes() throws Exception {
+		when(salaService.buscarOcupacoes(any(LocalDate.class)))
+				.thenThrow(new ValidacaoBuscaException("A data não pode estar no passado."));
+
+		mockMvc.perform(
+						get("/api/salas/ocupacoes")
+								.param("data", "2020-01-01")
+				)
+				.andExpect(status().isBadRequest());
+	}
 
 	@Test
 	void deveRetornar404ParaRotaDesconhecida() throws Exception {

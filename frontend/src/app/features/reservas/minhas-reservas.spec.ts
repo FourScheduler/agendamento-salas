@@ -7,6 +7,7 @@ import { MinhasReservas } from './minhas-reservas';
 import { Reserva } from '../../core/models/api.models';
 import { apiErrorInterceptor } from '../../core/http/api-error';
 import { authInterceptor } from '../../core/http/auth-interceptor';
+import { ToastService } from '../../shared/toast/toast';
 import { environment } from '../../../environments/environment';
 
 /** Rota usada apenas para o teste do botão de voltar. */
@@ -17,6 +18,7 @@ describe('MinhasReservas', () => {
   let httpMock: HttpTestingController;
 
   const urlBusca = `${environment.apiUrl}/api/agendamento/busca/filtro`;
+  const urlBase = `${environment.apiUrl}/api/agendamento/cancelar`;
 
   /** A busca agora vai com query params; casamos pela URL base. */
   function esperarBusca() {
@@ -24,6 +26,7 @@ describe('MinhasReservas', () => {
   }
 
   const reservaFutura: Reserva = {
+    id: 77,
     salaId: { id: 1, nome: 'Sala Focus', capacidade: 2, localizacao: 'Tamboré' },
     dataAgendamento: '2099-10-20',
     dataCriacao: '2026-10-14T10:15:00',
@@ -128,7 +131,7 @@ describe('MinhasReservas', () => {
 
     const compilado = fixture.nativeElement as HTMLElement;
     expect(compilado.querySelector('.minhas-reservas__login')).toBeFalsy();
-    expect(compilado.querySelector('input')).toBeFalsy();
+    expect(compilado.querySelector('input[type="password"]')).toBeFalsy();
   });
 
   it('should render only future reservations by default and switch to past ones', async () => {
@@ -149,6 +152,277 @@ describe('MinhasReservas', () => {
     compilado = fixture.nativeElement as HTMLElement;
     expect(compilado.textContent).toContain('Reunião encerrada');
     expect(compilado.textContent).not.toContain('Reunião de alinhamento');
+  });
+
+  it('should number future reservations in chronological order', async () => {
+    const fixture = criarFixture();
+    await fixture.whenStable();
+
+    // A API devolve fora de ordem; a tela deve ordenar e numerar 1º, 2º...
+    esperarBusca().flush([
+      { ...reservaFutura, dataAgendamento: '2099-11-05', titulo: 'Segunda reunião' },
+      { ...reservaFutura, dataAgendamento: '2099-10-20', titulo: 'Primeira reunião' },
+    ]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compilado = fixture.nativeElement as HTMLElement;
+    const cartoes = compilado.querySelectorAll('.minhas-reservas__cartao');
+    expect(cartoes.length).toBe(2);
+
+    const seloPrimeira = cartoes[0].querySelector('.minhas-reservas__ordem');
+    const seloSegunda = cartoes[1].querySelector('.minhas-reservas__ordem');
+    expect(seloPrimeira?.textContent?.trim()).toBe('1º');
+    expect(seloSegunda?.textContent?.trim()).toBe('2º');
+    expect(seloPrimeira?.getAttribute('aria-label')).toBe('Reserva de número 1');
+
+    const textos = [...cartoes].map((cartao) => cartao.textContent ?? '');
+    expect(textos[0]).toContain('Primeira reunião');
+    expect(textos[1]).toContain('Segunda reunião');
+  });
+
+  it('should not number past reservations', async () => {
+    const fixture = criarFixture();
+    const componente = fixture.componentInstance;
+    await fixture.whenStable();
+    esperarBusca().flush([reservaPassada, { ...reservaPassada, dataAgendamento: '2019-05-10' }]);
+    await fixture.whenStable();
+
+    componente.trocarFiltro('passadas');
+    fixture.detectChanges();
+
+    const compilado = fixture.nativeElement as HTMLElement;
+    expect(compilado.querySelectorAll('.minhas-reservas__cartao').length).toBe(2);
+    expect(compilado.querySelector('.minhas-reservas__ordem')).toBeNull();
+  });
+
+  it('should show the status beside the room name and keep the cancel action alone', async () => {
+    const fixture = criarFixture();
+    await fixture.whenStable();
+    esperarBusca().flush([reservaFutura]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compilado = fixture.nativeElement as HTMLElement;
+    const nomeLinha = compilado.querySelector('.minhas-reservas__nomeLinha');
+    expect(nomeLinha?.querySelector('.minhas-reservas__sala')?.textContent).toContain('Sala Focus');
+    expect(nomeLinha?.querySelector('.minhas-reservas__status')?.textContent?.trim()).toBe(
+      'Confirmada',
+    );
+
+    // O selo de status saiu da coluna de ações; ali ficam só os botões.
+    const acoes = compilado.querySelector('.minhas-reservas__acoes');
+    expect(acoes?.querySelector('.minhas-reservas__status')).toBeNull();
+    expect(acoes?.querySelectorAll('button').length).toBe(1);
+    expect(acoes?.querySelector('.minhas-reservas__acao--cancelar')).toBeTruthy();
+  });
+
+  it('should ask for confirmation before cancelling and then call the cancel endpoint', async () => {
+    const fixture = criarFixture();
+    await fixture.whenStable();
+    esperarBusca().flush([reservaFutura]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compilado = fixture.nativeElement as HTMLElement;
+    const botaoCancelar = compilado.querySelector<HTMLButtonElement>(
+      '.minhas-reservas__acao--cancelar',
+    );
+    expect(botaoCancelar).toBeTruthy();
+
+    // Sem confirmação ainda não há chamada de cancelamento.
+    botaoCancelar?.click();
+    fixture.detectChanges();
+    expect(compilado.querySelector('.minhas-reservas__confirmacao')).toBeTruthy();
+
+    const botaoConfirmar = compilado.querySelector<HTMLButtonElement>(
+      '.minhas-reservas__acao--perigo',
+    );
+    botaoConfirmar?.click();
+    fixture.detectChanges();
+
+    const chamadaCancelamento = httpMock.expectOne(
+      (requisicao) => requisicao.url === `${urlBase}/77` && requisicao.method === 'DELETE',
+    );
+    chamadaCancelamento.flush(null);
+    await fixture.whenStable();
+
+    expect(TestBed.inject(ToastService).toasts()[0].titulo).toBe('Reserva cancelada');
+
+    // A lista é recarregada depois do cancelamento.
+    esperarBusca().flush([]);
+    await fixture.whenStable();
+  });
+
+  it('should keep the reservation and close the confirmation when the user gives up', async () => {
+    const fixture = criarFixture();
+    await fixture.whenStable();
+    esperarBusca().flush([reservaFutura]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compilado = fixture.nativeElement as HTMLElement;
+    compilado.querySelector<HTMLButtonElement>('.minhas-reservas__acao--cancelar')?.click();
+    fixture.detectChanges();
+
+    compilado.querySelector<HTMLButtonElement>('.minhas-reservas__acao--manter')?.click();
+    fixture.detectChanges();
+
+    expect(compilado.querySelector('.minhas-reservas__confirmacao')).toBeNull();
+    expect(compilado.querySelector('.minhas-reservas__acao--cancelar')).toBeTruthy();
+    httpMock.expectNone((requisicao) => requisicao.url === `${urlBase}/77`);
+  });
+
+  it('should show an error toast and keep the list when the cancel fails', async () => {
+    const fixture = criarFixture();
+    await fixture.whenStable();
+    esperarBusca().flush([reservaFutura]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compilado = fixture.nativeElement as HTMLElement;
+    compilado.querySelector<HTMLButtonElement>('.minhas-reservas__acao--cancelar')?.click();
+    fixture.detectChanges();
+    compilado.querySelector<HTMLButtonElement>('.minhas-reservas__acao--perigo')?.click();
+    fixture.detectChanges();
+
+    httpMock
+      .expectOne((requisicao) => requisicao.url === `${urlBase}/77`)
+      .flush(
+        { status: 403, message: 'Você não pode cancelar esta reserva.' },
+        { status: 403, statusText: 'Forbidden' },
+      );
+    await fixture.whenStable();
+
+    const toast = TestBed.inject(ToastService).toasts()[0];
+    expect(toast.titulo).toBe('Não foi possível cancelar');
+    expect(toast.mensagem).toBe('Você não pode cancelar esta reserva.');
+    expect(compilado.querySelector('.minhas-reservas__confirmacao')).toBeNull();
+  });
+  it('should send the status filter to the backend and keep only that status', async () => {
+    const fixture = criarFixture();
+    const componente = fixture.componentInstance;
+    await fixture.whenStable();
+    esperarBusca().flush([reservaFutura]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    componente.trocarStatus({ target: { value: 'CANCELADO' } } as unknown as Event);
+    await fixture.whenStable();
+
+    const chamada = esperarBusca();
+    expect(chamada.request.params.get('statusAgendamento')).toBe('CANCELADO');
+    expect(chamada.request.params.get('dataInicio')).toBeNull();
+    chamada.flush([{ ...reservaFutura, id: 88, status: 'CANCELADO', titulo: 'Reunião cancelada' }]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compilado = fixture.nativeElement as HTMLElement;
+    expect(compilado.textContent).toContain('Reunião cancelada');
+    expect(compilado.textContent).toContain('Cancelada');
+  });
+
+  it('should send the custom period to the backend and take it over the future/past selector', async () => {
+    const fixture = criarFixture();
+    const componente = fixture.componentInstance;
+    await fixture.whenStable();
+    esperarBusca().flush([]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    componente.trocarData('inicio', { target: { value: '2026-11-01' } } as unknown as Event);
+    await fixture.whenStable();
+
+    const chamada = esperarBusca();
+    expect(chamada.request.params.get('dataInicio')).toBe('2026-11-01');
+    expect(chamada.request.params.get('dataFinal')).toBeNull();
+    // Uma reserva passada volta porque o backend é quem recorta por data.
+    chamada.flush([reservaPassada]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compilado = fixture.nativeElement as HTMLElement;
+    expect(compilado.textContent).toContain('Reunião encerrada');
+
+    // O seletor Futuras/Passadas recua enquanto o período estiver preenchido.
+    const botoes = compilado.querySelectorAll<HTMLButtonElement>('.minhas-reservas__filtro');
+    expect(botoes[0].disabled).toBe(true);
+    expect(botoes[1].disabled).toBe(true);
+
+    // E a numeração não aparece no período personalizado.
+    expect(compilado.querySelector('.minhas-reservas__ordem')).toBeNull();
+  });
+
+  it('should keep the cancel button for future reservations inside a custom period', async () => {
+    const fixture = criarFixture();
+    const componente = fixture.componentInstance;
+    await fixture.whenStable();
+    esperarBusca().flush([]);
+    await fixture.whenStable();
+
+    componente.trocarData('inicio', { target: { value: '2099-01-01' } } as unknown as Event);
+    await fixture.whenStable();
+    esperarBusca().flush([reservaFutura]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compilado = fixture.nativeElement as HTMLElement;
+    // Sem numeral, mas com o botão: cancelar depende da data, não da numeração.
+    expect(compilado.querySelector('.minhas-reservas__ordem')).toBeNull();
+    expect(compilado.querySelector('.minhas-reservas__acao--cancelar')).toBeTruthy();
+  });
+
+  it('should not search while the initial date is after the final one', async () => {
+    const fixture = criarFixture();
+    const componente = fixture.componentInstance;
+    await fixture.whenStable();
+    esperarBusca().flush([]);
+    await fixture.whenStable();
+
+    componente.trocarData('inicio', { target: { value: '2026-12-31' } } as unknown as Event);
+    await fixture.whenStable();
+    esperarBusca().flush([]);
+    await fixture.whenStable();
+
+    componente.trocarData('fim', { target: { value: '2026-01-01' } } as unknown as Event);
+    fixture.detectChanges();
+
+    expect(componente.periodoInvalido()).toBe(true);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      'A data inicial não pode ser posterior à data final.',
+    );
+    // Nenhuma nova chamada depois do período inválido.
+    httpMock.expectNone((requisicao) => requisicao.url === urlBusca);
+  });
+
+  it('should clear the filters and search again without parameters', async () => {
+    const fixture = criarFixture();
+    const componente = fixture.componentInstance;
+    await fixture.whenStable();
+    esperarBusca().flush([]);
+    await fixture.whenStable();
+
+    componente.trocarStatus({ target: { value: 'CONFIRMADO' } } as unknown as Event);
+    await fixture.whenStable();
+    esperarBusca().flush([reservaFutura]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const compilado = fixture.nativeElement as HTMLElement;
+    expect(compilado.querySelector('.minhas-reservas__limpar')).toBeTruthy();
+
+    componente.limparFiltros();
+    await fixture.whenStable();
+
+    const chamada = esperarBusca();
+    expect(chamada.request.params.get('statusAgendamento')).toBeNull();
+    expect(chamada.request.params.get('dataInicio')).toBeNull();
+    expect(chamada.request.params.get('dataFinal')).toBeNull();
+    chamada.flush([]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(compilado.querySelector('.minhas-reservas__limpar')).toBeNull();
   });
 
   it('should show the empty state when the API returns items that are not reservations', async () => {

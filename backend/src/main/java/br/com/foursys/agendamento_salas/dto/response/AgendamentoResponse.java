@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 public record AgendamentoResponse(
+        Long id,
         SalaResponse salaId,
         LocalDate dataAgendamento,
         LocalDateTime dataCriacao,

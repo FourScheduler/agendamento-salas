@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { BuscaSalasRequest, Sala } from '../models/api.models';
+import { BuscaSalasRequest, OcupacaoSala, Sala } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
 export class SalasService {
@@ -18,5 +18,12 @@ export class SalasService {
       .set('qntdPessoas', request.qntdPessoas);
 
     return this.http.get<Sala[]>(`${this.baseUrl}/api/salas/disponiveis`, { params });
+  }
+
+  /** Ocupações confirmadas do dia, usadas pela planta para indicar a próxima folga. */
+  buscarOcupacoes(data: string): Observable<OcupacaoSala[]> {
+    return this.http.get<OcupacaoSala[]>(`${this.baseUrl}/api/salas/ocupacoes`, {
+      params: new HttpParams().set('data', data),
+    });
   }
 }

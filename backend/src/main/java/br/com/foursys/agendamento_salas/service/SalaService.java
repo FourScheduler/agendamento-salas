@@ -3,6 +3,7 @@ package br.com.foursys.agendamento_salas.service;
 import br.com.foursys.agendamento_salas.domain.Sala;
 import br.com.foursys.agendamento_salas.domain.Usuario;
 import br.com.foursys.agendamento_salas.dto.request.CriarSalaRequest;
+import br.com.foursys.agendamento_salas.dto.response.OcupacaoSalaResponse;
 import br.com.foursys.agendamento_salas.dto.response.SalaResponse;
 import br.com.foursys.agendamento_salas.enums.PerfilUsuario;
 import br.com.foursys.agendamento_salas.exception.SalaInexistenteException;
@@ -10,6 +11,7 @@ import br.com.foursys.agendamento_salas.exception.SalaJaExisteException;
 import br.com.foursys.agendamento_salas.exception.UsuarioInexistenteException;
 import br.com.foursys.agendamento_salas.exception.ValidacaoBuscaException;
 import br.com.foursys.agendamento_salas.mapper.SalaMapper;
+import br.com.foursys.agendamento_salas.port.out.AgendamentoRepositoryPort;
 import br.com.foursys.agendamento_salas.port.out.SalaRepositoryPort;
 import br.com.foursys.agendamento_salas.port.out.UsuarioRepositoryPort;
 import org.springframework.stereotype.Service;
@@ -28,11 +30,18 @@ public class SalaService {
     private final SalaRepositoryPort salaRepositoryPort;
     private final SalaMapper salaMapper;
     private final UsuarioRepositoryPort usuarioRepositoryPort;
+    private final AgendamentoRepositoryPort agendamentoRepositoryPort;
 
-    public SalaService(SalaRepositoryPort salaRepositoryPort, SalaMapper salaMapper, UsuarioRepositoryPort usuarioRepositoryPort) {
+    public SalaService(
+            SalaRepositoryPort salaRepositoryPort,
+            SalaMapper salaMapper,
+            UsuarioRepositoryPort usuarioRepositoryPort,
+            AgendamentoRepositoryPort agendamentoRepositoryPort
+    ) {
         this.salaRepositoryPort = salaRepositoryPort;
         this.salaMapper = salaMapper;
         this.usuarioRepositoryPort = usuarioRepositoryPort;
+        this.agendamentoRepositoryPort = agendamentoRepositoryPort;
     }
 
     public SalaResponse criar(CriarSalaRequest request){
@@ -112,6 +121,24 @@ public class SalaService {
                 )
 
                 .map(salaMapper::entityToResponse)
+                .toList();
+    }
+
+    /**
+     * Ocupações confirmadas de uma data. A planta usa a lista para informar,
+     * em cada sala, o próximo horário em que ela fica livre.
+     */
+    public List<OcupacaoSalaResponse> buscarOcupacoes(LocalDate data) {
+        if (data == null || data.isBefore(LocalDate.now())) {
+            throw new ValidacaoBuscaException("A data não pode estar no passado.");
+        }
+
+        return agendamentoRepositoryPort.buscarPorData(data).stream()
+                .map(agendamento -> new OcupacaoSalaResponse(
+                        agendamento.getSalaId().getId(),
+                        agendamento.getHoraInicio(),
+                        agendamento.getHoraFim()
+                ))
                 .toList();
     }
 

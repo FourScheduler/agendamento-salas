@@ -71,6 +71,26 @@ Resposta `200`:
 
 Salas com capacidade inferior a `pessoas` são filtradas; a resposta pode ser uma lista vazia.
 
+### GET /api/salas/ocupacoes — implementado
+
+Lista as janelas ocupadas por reservas confirmadas de uma data. A planta do agendamento usa a lista para indicar, em cada sala ocupada, o próximo horário em que ela fica livre. É pública, como `/api/salas/disponiveis`, e não expõe solicitante nem título da reserva.
+
+| Parâmetro | Obrigatório | Formato |
+|---|---|---|
+| `data` | sim | data ISO (`yyyy-MM-dd`), não pode estar no passado |
+
+Exemplo: `GET /api/salas/ocupacoes?data=2026-10-20`
+
+Resposta `200` (lista pode ser vazia):
+
+```json
+[
+  { "salaId": 2, "horaInicio": "14:00", "horaFim": "15:00" }
+]
+```
+
+Entram apenas reservas com status `CONFIRMADO`, o mesmo critério da busca de salas livres. O cálculo da folga (duração pedida e término dentro do mesmo dia) fica no frontend, junto das regras já usadas pela busca. Enquanto a resposta não chega, a dica mostra a sala ocupada sem sugerir horário.
+
 ### GET /api/agendamento/busca/filtro — implementado
 
 Lista agendamentos com filtros opcionais na **query string** (navegadores não enviam corpo em GET). Exige header `Authorization: Bearer <token>` (obtido em `POST /auth/login`); sem token a resposta é `401`.
@@ -139,9 +159,11 @@ Response `201` (`AgendamentoResponse`, sem expor entidades):
 
 Validações: sala existente e disponível, capacidade suficiente, data não passada, quantidade de pessoas ≥ 1 e ausência de conflito na mesma sala. A criação usa lock pessimista na sala para evitar double booking; o solicitante vem do usuário autenticado.
 
-### Cancelamento de reserva — previsto
+### DELETE /api/agendamento/cancelar/{id} — implementado
 
-Escopo e contrato: **A definir**.
+Exige autenticação. Cancela a reserva e responde `200` sem corpo. O dono vem do token, não do corpo: dono ou `ADMIN` cancela; usuário sem relação com a reserva responde `403` e id inexistente responde `404`. A reserva passa para `CANCELADO` com `dataCancelamento` preenchida e o cancelamento gera registro de log.
+
+Consumido pelo botão **Cancelar reserva** de `/minhas-reservas`, que só aparece para reserva futura `CONFIRMADO` e pede confirmação em duas etapas antes de enviar o `DELETE`.
 
 ### Interpretação em linguagem natural - previsto (#19)
 

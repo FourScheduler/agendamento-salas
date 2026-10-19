@@ -127,6 +127,17 @@ class AgendamentoControllerTests {
         );
     }
 
+    @Test
+    @DisplayName("Deve encaminhar o cancelamento para o serviço com o usuário autenticado")
+    void deveEncaminharCancelamentoParaOServico() {
+        when(securityUtils.get()).thenReturn(new AuthenticatedUser(42L, "usuario@email.com"));
+
+        var response = agendamentoController.cancelarAgendamento(15L);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(agendamentoService).cancelarAgendamento(15L, 42L);
+    }
+
     private AgendamentoResponse agendamentoResponse() {
         SalaResponse sala = SalaResponse.builder()
                 .id(12L)
@@ -136,6 +147,7 @@ class AgendamentoControllerTests {
                 .build();
 
         return new AgendamentoResponse(
+                1L,
                 sala,
                 LocalDate.now().plusDays(1),
                 LocalDateTime.now(),

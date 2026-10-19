@@ -16,7 +16,8 @@ export class ListaSalas {
   readonly salas = input<SalaPlanta[]>([]);
   readonly selecionada = input<string | null>(null);
 
-  readonly selecionar = output<string>();
+  /** Clique em qualquer sala, inclusive ocupada: quem recebe decide o que fazer com ele. */
+  readonly clique = output<string>();
 
   rotulo(estado: EstadoSala): string {
     return ROTULOS[estado];

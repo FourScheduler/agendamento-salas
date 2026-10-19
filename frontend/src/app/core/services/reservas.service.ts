@@ -38,4 +38,9 @@ export class ReservasService {
 
     return this.http.get<Reserva[]>(`${this.baseUrl}/api/agendamento/busca/filtro`, { params });
   }
+
+  /** Cancela um agendamento do usuário autenticado (o backend valida a posse). */
+  cancelar(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/api/agendamento/cancelar/${id}`);
+  }
 }

@@ -50,6 +50,15 @@ public class AgendamentoRepositoryAdapter implements AgendamentoRepositoryPort {
     }
 
     @Override
+    public List<Agendamento> buscarPorData(LocalDate dataAgendamento) {
+        // Mesmo critério da busca de salas livres: só reserva confirmada conta como ocupação.
+        return agendamentoJpaRepository.findByDataAgendamentoAndStatus(
+                dataAgendamento,
+                StatusAgendamento.CONFIRMADO
+        );
+    }
+
+    @Override
     public void cancelar(Agendamento agendamento) {
         agendamentoJpaRepository.save(agendamento);
     }
