@@ -43,7 +43,10 @@ class AgendamentoControllerTests {
         when(securityUtils.get()).thenReturn(new AuthenticatedUser(42L, "usuario@email.com"));
 
         CriarAgendamentoRequest request = new CriarAgendamentoRequest(
-                List.of(new CriarAgendamentoRequest.SalaRef(12L)),
+                List.of(
+                        new CriarAgendamentoRequest.SalaRef(12L),
+                        new CriarAgendamentoRequest.SalaRef(13L)
+                ),
                 LocalDate.now().plusDays(1),
                 LocalTime.of(9, 0),
                 LocalTime.of(10, 0),
@@ -58,6 +61,12 @@ class AgendamentoControllerTests {
                 .capacidade(8)
                 .disponivel(true)
                 .build();
+        SalaResponse segundaSalaResponse = SalaResponse.builder()
+                .id(13L)
+                .nome("Sala 02")
+                .capacidade(4)
+                .disponivel(true)
+                .build();
 
         ConfimacaoAgendamentoResponse expected = ConfimacaoAgendamentoResponse.builder()
                 .id(99L)
@@ -66,7 +75,10 @@ class AgendamentoControllerTests {
                 .fim(LocalTime.of(10, 0))
                 .status(StatusAgendamento.CONFIRMADO)
                 .solicitante(null)
-                .agendamentos(List.of(new ConfimacaoAgendamentoResponse.AgendamentoCriado(99L, salaResponse)))
+                .agendamentos(List.of(
+                        new ConfimacaoAgendamentoResponse.AgendamentoCriado(99L, salaResponse),
+                        new ConfimacaoAgendamentoResponse.AgendamentoCriado(100L, segundaSalaResponse)
+                ))
                 .build();
 
         when(agendamentoService.criar(request, 42L)).thenReturn(expected);

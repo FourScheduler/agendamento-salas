@@ -88,7 +88,7 @@ class AgendamentoServiceTest {
             CriarAgendamentoRequest request = request(
                     sala, null, LocalTime.of(9, 0), LocalTime.of(11, 0), 8
             );
-            prepararCriacao(usuario, sala, request);
+            prepararCriacao(usuario, sala);
             prepararSalvamento();
 
             ConfimacaoAgendamentoResponse confirmacao = service.criar(request, usuario.getId());
@@ -127,7 +127,7 @@ class AgendamentoServiceTest {
             CriarAgendamentoRequest request = request(
                     sala, solicitante, LocalTime.of(9, 0), LocalTime.of(12, 0), 4
             );
-            prepararCriacao(admin, sala, request);
+            prepararCriacao(admin, sala);
             prepararSalvamento();
             when(usuarioRepositoryPort.buscarPorId(solicitante.getId())).thenReturn(Optional.of(solicitante));
 
@@ -141,15 +141,15 @@ class AgendamentoServiceTest {
         }
 
         @Test
-        @DisplayName("Deve criar uma reserva por sala quando a capacidade é integrada")
-        void deveCriarAgendamentosParaListaDeSalas() {
-            Usuario usuario = usuario(7L, PerfilUsuario.USER);
+        @DisplayName("Deve permitir que administrador crie uma reserva por sala integrada")
+        void deveCriarAgendamentosParaListaDeSalasQuandoAdmin() {
+            Usuario usuario = usuario(7L, PerfilUsuario.ADMIN);
             Sala primeiraSala = sala(12L, true, 4);
             Sala segundaSala = sala(13L, true, 4);
             CriarAgendamentoRequest request = new CriarAgendamentoRequest(
                     List.of(
-                            new CriarAgendamentoRequest.SalaRef(primeiraSala.getId()),
-                            new CriarAgendamentoRequest.SalaRef(segundaSala.getId())
+                            new CriarAgendamentoRequest.SalaRef(segundaSala.getId()),
+                            new CriarAgendamentoRequest.SalaRef(primeiraSala.getId())
                     ),
                     LocalDate.now().plusDays(1),
                     LocalTime.of(9, 0),
@@ -180,8 +180,144 @@ class AgendamentoServiceTest {
             assertThat(confirmacao.agendamentos())
                     .extracting(ConfimacaoAgendamentoResponse.AgendamentoCriado::id)
                     .containsExactly(99L, 100L);
-            verify(agendamentoRepositoryPort).salvar(anyList());
-            verify(logRepositoryPort, org.mockito.Mockito.times(2)).salvar(any(Log.class));
+            ArgumentCaptor<List<Agendamento>> agendamentoCaptor = ArgumentCaptor.forClass(List.class);
+            ArgumentCaptor<Log> logCaptor = ArgumentCaptor.forClass(Log.class);
+            verify(agendamentoRepositoryPort).salvar(agendamentoCaptor.capture());
+            verify(logRepositoryPort, org.mockito.Mockito.times(2)).salvar(logCaptor.capture());
+            assertThat(agendamentoCaptor.getValue())
+                    .extracting(Agendamento::getSalaId)
+                    .containsExactly(primeiraSala, segundaSala);
+            assertThat(logCaptor.getAllValues())
+                    .extracting(Log::getAgendamento)
+                    .containsExactlyElementsOf(agendamentoCaptor.getValue());
+        }
+
+        @Test
+        @DisplayName("Deve impedir usuário comum de criar reserva integrada")
+        void deveImpedirUsuarioComumDeAgendarEmMultiplasSalas() {
+            Usuario usuario = usuario(7L, PerfilUsuario.USER);
+            CriarAgendamentoRequest request = new CriarAgendamentoRequest(
+                    List.of(
+                            new CriarAgendamentoRequest.SalaRef(12L),
+                            new CriarAgendamentoRequest.SalaRef(13L)
+                    ),
+                    LocalDate.now().plusDays(1),
+                    LocalTime.of(9, 0),
+                    LocalTime.of(10, 0),
+                    8,
+                    null,
+                    "Alinhamento"
+            );
+            when(usuarioRepositoryPort.buscarPorId(usuario.getId())).thenReturn(Optional.of(usuario));
+
+            assertThrows(
+                    UsuarioSemPermissaoException.class,
+                    () -> service.criar(request, usuario.getId())
+            );
+
+            verifyNoInteractions(salaRepositoryPort, agendamentoRepositoryPort, logRepositoryPort);
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar integração cuja capacidade total seja insuficiente")
+        void deveRejeitarCapacidadeInsuficienteNaListaDeSalas() {
+            Usuario admin = usuario(7L, PerfilUsuario.ADMIN);
+            Sala primeiraSala = sala(12L, true, 3);
+            Sala segundaSala = sala(13L, true, 3);
+            CriarAgendamentoRequest request = new CriarAgendamentoRequest(
+                    List.of(
+                            new CriarAgendamentoRequest.SalaRef(primeiraSala.getId()),
+                            new CriarAgendamentoRequest.SalaRef(segundaSala.getId())
+                    ),
+                    LocalDate.now().plusDays(1),
+                    LocalTime.of(9, 0),
+                    LocalTime.of(10, 0),
+                    7,
+                    null,
+                    "Alinhamento"
+            );
+            when(usuarioRepositoryPort.buscarPorId(admin.getId())).thenReturn(Optional.of(admin));
+            when(salaRepositoryPort.buscarPorIdComBloqueio(primeiraSala.getId()))
+                    .thenReturn(Optional.of(primeiraSala));
+            when(salaRepositoryPort.buscarPorIdComBloqueio(segundaSala.getId()))
+                    .thenReturn(Optional.of(segundaSala));
+
+            assertThrows(
+                    CapacidadeNaoSuportadaException.class,
+                    () -> service.criar(request, admin.getId())
+            );
+
+            verify(agendamentoRepositoryPort, never()).salvar(any());
+            verifyNoInteractions(logRepositoryPort);
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar sala repetida antes de adquirir bloqueios")
+        void deveRejeitarSalaRepetidaNaLista() {
+            Usuario admin = usuario(7L, PerfilUsuario.ADMIN);
+            CriarAgendamentoRequest request = new CriarAgendamentoRequest(
+                    List.of(
+                            new CriarAgendamentoRequest.SalaRef(12L),
+                            new CriarAgendamentoRequest.SalaRef(12L)
+                    ),
+                    LocalDate.now().plusDays(1),
+                    LocalTime.of(9, 0),
+                    LocalTime.of(10, 0),
+                    4,
+                    null,
+                    "Alinhamento"
+            );
+            ValidacaoBuscaException erro = assertThrows(
+                    ValidacaoBuscaException.class,
+                    () -> service.criar(request, admin.getId())
+            );
+
+            assertThat(erro).hasMessage("Não informe a mesma sala mais de uma vez.");
+            verifyNoInteractions(
+                    usuarioRepositoryPort,
+                    salaRepositoryPort,
+                    agendamentoRepositoryPort,
+                    logRepositoryPort
+            );
+        }
+
+        @Test
+        @DisplayName("Deve não persistir nenhuma reserva se uma sala integrada tiver conflito")
+        void deveEvitarPersistenciaParcialQuandoSalaIntegradaTemConflito() {
+            Usuario admin = usuario(7L, PerfilUsuario.ADMIN);
+            Sala primeiraSala = sala(12L, true, 4);
+            Sala segundaSala = sala(13L, true, 4);
+            CriarAgendamentoRequest request = new CriarAgendamentoRequest(
+                    List.of(
+                            new CriarAgendamentoRequest.SalaRef(primeiraSala.getId()),
+                            new CriarAgendamentoRequest.SalaRef(segundaSala.getId())
+                    ),
+                    LocalDate.now().plusDays(1),
+                    LocalTime.of(9, 0),
+                    LocalTime.of(10, 0),
+                    8,
+                    null,
+                    "Alinhamento"
+            );
+            when(usuarioRepositoryPort.buscarPorId(admin.getId())).thenReturn(Optional.of(admin));
+            when(salaRepositoryPort.buscarPorIdComBloqueio(primeiraSala.getId()))
+                    .thenReturn(Optional.of(primeiraSala));
+            when(salaRepositoryPort.buscarPorIdComBloqueio(segundaSala.getId()))
+                    .thenReturn(Optional.of(segundaSala));
+            when(agendamentoRepositoryPort.existeConflito(
+                    primeiraSala.getId(), request.data(), request.horaInicio(), request.horaFim()
+            )).thenReturn(false);
+            when(agendamentoRepositoryPort.existeConflito(
+                    segundaSala.getId(), request.data(), request.horaInicio(), request.horaFim()
+            )).thenReturn(true);
+
+            assertThrows(
+                    SalaIndisponivelException.class,
+                    () -> service.criar(request, admin.getId())
+            );
+
+            verify(agendamentoRepositoryPort, never()).salvar(any());
+            verifyNoInteractions(logRepositoryPort);
         }
 
         @Test
@@ -299,7 +435,7 @@ class AgendamentoServiceTest {
             CriarAgendamentoRequest request = request(
                     sala, null, LocalTime.of(9, 0), LocalTime.of(10, 0), 4
             );
-            prepararCriacao(usuario(7L, PerfilUsuario.USER), sala, request);
+            prepararCriacao(usuario(7L, PerfilUsuario.USER), sala);
 
             assertThrows(SalaIndisponivelException.class, () -> service.criar(request, 7L));
 
@@ -330,7 +466,7 @@ class AgendamentoServiceTest {
             CriarAgendamentoRequest request = request(
                     sala, usuario(8L, PerfilUsuario.USER), LocalTime.of(9, 0), LocalTime.of(10, 0), 4
             );
-            prepararCriacao(usuario(7L, PerfilUsuario.USER), sala, request);
+            prepararCriacao(usuario(7L, PerfilUsuario.USER), sala);
 
             assertThrows(UsuarioSemPermissaoException.class, () -> service.criar(request, 7L));
 
@@ -346,7 +482,7 @@ class AgendamentoServiceTest {
             CriarAgendamentoRequest request = request(
                     sala, usuario(8L, PerfilUsuario.USER), LocalTime.of(9, 0), LocalTime.of(10, 0), 4
             );
-            prepararCriacao(usuario(7L, PerfilUsuario.ADMIN), sala, request);
+            prepararCriacao(usuario(7L, PerfilUsuario.ADMIN), sala);
             when(usuarioRepositoryPort.buscarPorId(8L)).thenReturn(Optional.empty());
 
             assertThrows(UsuarioInexistenteException.class, () -> service.criar(request, 7L));
@@ -478,12 +614,9 @@ class AgendamentoServiceTest {
         }
     }
 
-    private void prepararCriacao(Usuario usuario, Sala sala, CriarAgendamentoRequest request) {
+    private void prepararCriacao(Usuario usuario, Sala sala) {
         when(usuarioRepositoryPort.buscarPorId(usuario.getId())).thenReturn(Optional.of(usuario));
         when(salaRepositoryPort.buscarPorIdComBloqueio(sala.getId())).thenReturn(Optional.of(sala));
-        when(agendamentoRepositoryPort.existeConflito(
-                sala.getId(), request.data(), request.horaInicio(), request.horaFim()
-        )).thenReturn(false);
     }
 
     private void prepararSalvamento() {

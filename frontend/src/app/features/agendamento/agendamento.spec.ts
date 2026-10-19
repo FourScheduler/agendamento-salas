@@ -172,6 +172,7 @@ describe('Agendamento', () => {
       fim: '15:00:00',
       status: 'CONFIRMADO',
       solicitante: { id: 3, nome: 'Usuario Teste Um', email: 'usuario@teste.com' },
+      agendamentos: [{ id: 1, sala: { id: 2, nome: 'Sala 02' } }],
     });
 
     const texto = await promessa;

@@ -68,23 +68,20 @@ describe('ReservasService', () => {
     expect(chamada.request.method).toBe('POST');
     expect(chamada.request.body).toEqual(criacao);
 
-    chamada.flush({
+    const confirmacao = {
       id: 1,
       sala: { id: 2, nome: 'Sala 02' },
       inicio: '14:00:00',
       fim: '15:00:00',
       status: 'CONFIRMADO',
       solicitante: { id: 3, nome: 'Usuario Teste Um', email: 'usuario@teste.com' },
-    });
+      agendamentos: [
+        { id: 1, sala: { id: 2, nome: 'Sala 02' } },
+      ],
+    };
+    chamada.flush(confirmacao);
 
-    expect(resposta).toEqual({
-      id: 1,
-      sala: { id: 2, nome: 'Sala 02' },
-      inicio: '14:00:00',
-      fim: '15:00:00',
-      status: 'CONFIRMADO',
-      solicitante: { id: 3, nome: 'Usuario Teste Um', email: 'usuario@teste.com' },
-    });
+    expect(resposta).toEqual(confirmacao);
   });
 
   it('should search the authenticated user reservations with query params', () => {
