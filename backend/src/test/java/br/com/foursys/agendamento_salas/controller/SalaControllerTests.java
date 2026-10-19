@@ -320,7 +320,8 @@ class SalaControllerTests {
 				)
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].salaId").value(2))
-				.andExpect(jsonPath("$[0].horaInicio").value("14:00"))
+				.andExpect(jsonPath("$[0].horaInicio").value("14:00:00"))
+				.andExpect(jsonPath("$[0].horaFim").value("15:00:00"))
 				.andExpect(jsonPath("$[1].salaId").value(5));
 	}
 

@@ -85,9 +85,11 @@ Resposta `200` (lista pode ser vazia):
 
 ```json
 [
-  { "salaId": 2, "horaInicio": "14:00", "horaFim": "15:00" }
+  { "salaId": 2, "horaInicio": "14:00:00", "horaFim": "15:00:00" }
 ]
 ```
+
+As horas chegam como `HH:mm:ss`, igual às outras respostas da API (ex.: `AgendamentoResponse`); o frontend usa os 5 primeiros caracteres para exibir e comparar horários.
 
 Entram apenas reservas com status `CONFIRMADO`, o mesmo critério da busca de salas livres. O cálculo da folga (duração pedida e término dentro do mesmo dia) fica no frontend, junto das regras já usadas pela busca. Enquanto a resposta não chega, a dica mostra a sala ocupada sem sugerir horário.
 
