@@ -42,6 +42,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -88,23 +89,20 @@ class AgendamentoServiceTest {
                     sala, null, LocalTime.of(9, 0), LocalTime.of(11, 0), 8
             );
             prepararCriacao(usuario, sala, request);
-            when(agendamentoRepositoryPort.salvar(any(Agendamento.class))).thenAnswer(invocation -> {
-                Agendamento salvo = invocation.getArgument(0);
-                salvo.setId(99L);
-                return salvo;
-            });
+            prepararSalvamento();
 
             ConfimacaoAgendamentoResponse confirmacao = service.criar(request, usuario.getId());
 
-            ArgumentCaptor<Agendamento> agendamentoCaptor = ArgumentCaptor.forClass(Agendamento.class);
+            ArgumentCaptor<List<Agendamento>> agendamentoCaptor = ArgumentCaptor.forClass(List.class);
             ArgumentCaptor<Log> logCaptor = ArgumentCaptor.forClass(Log.class);
             verify(agendamentoRepositoryPort).salvar(agendamentoCaptor.capture());
             verify(logRepositoryPort).salvar(logCaptor.capture());
 
-            Agendamento salvo = agendamentoCaptor.getValue();
+            Agendamento salvo = agendamentoCaptor.getValue().get(0);
             Log log = logCaptor.getValue();
             assertThat(confirmacao.id()).isEqualTo(99L);
             assertThat(confirmacao.sala()).isEqualTo(salaResponse(sala));
+            assertThat(confirmacao.agendamentos()).hasSize(1);
             assertThat(confirmacao.inicio()).isEqualTo(request.horaInicio());
             assertThat(confirmacao.fim()).isEqualTo(request.horaFim());
             assertThat(confirmacao.status()).isEqualTo(StatusAgendamento.CONFIRMADO);
@@ -130,15 +128,60 @@ class AgendamentoServiceTest {
                     sala, solicitante, LocalTime.of(9, 0), LocalTime.of(12, 0), 4
             );
             prepararCriacao(admin, sala, request);
+            prepararSalvamento();
             when(usuarioRepositoryPort.buscarPorId(solicitante.getId())).thenReturn(Optional.of(solicitante));
 
             ConfimacaoAgendamentoResponse confirmacao = service.criar(request, admin.getId());
 
-            ArgumentCaptor<Agendamento> agendamentoCaptor = ArgumentCaptor.forClass(Agendamento.class);
+            ArgumentCaptor<List<Agendamento>> agendamentoCaptor = ArgumentCaptor.forClass(List.class);
             verify(agendamentoRepositoryPort).salvar(agendamentoCaptor.capture());
             verify(logRepositoryPort).salvar(any(Log.class));
-            assertThat(agendamentoCaptor.getValue().getUsuarioIdSolicitante()).isEqualTo(solicitante);
+            assertThat(agendamentoCaptor.getValue().get(0).getUsuarioIdSolicitante()).isEqualTo(solicitante);
             assertThat(confirmacao.solicitante()).isEqualTo(usuarioResponse(solicitante));
+        }
+
+        @Test
+        @DisplayName("Deve criar uma reserva por sala quando a capacidade é integrada")
+        void deveCriarAgendamentosParaListaDeSalas() {
+            Usuario usuario = usuario(7L, PerfilUsuario.USER);
+            Sala primeiraSala = sala(12L, true, 4);
+            Sala segundaSala = sala(13L, true, 4);
+            CriarAgendamentoRequest request = new CriarAgendamentoRequest(
+                    List.of(
+                            new CriarAgendamentoRequest.SalaRef(primeiraSala.getId()),
+                            new CriarAgendamentoRequest.SalaRef(segundaSala.getId())
+                    ),
+                    LocalDate.now().plusDays(1),
+                    LocalTime.of(9, 0),
+                    LocalTime.of(10, 0),
+                    8,
+                    null,
+                    "Alinhamento"
+            );
+            when(usuarioRepositoryPort.buscarPorId(usuario.getId())).thenReturn(Optional.of(usuario));
+            when(salaRepositoryPort.buscarPorIdComBloqueio(primeiraSala.getId()))
+                    .thenReturn(Optional.of(primeiraSala));
+            when(salaRepositoryPort.buscarPorIdComBloqueio(segundaSala.getId()))
+                    .thenReturn(Optional.of(segundaSala));
+            when(agendamentoRepositoryPort.existeConflito(
+                    any(), any(), any(), any()
+            )).thenReturn(false);
+            when(agendamentoRepositoryPort.salvar(anyList())).thenAnswer(invocation -> {
+                List<Agendamento> salvos = invocation.getArgument(0);
+                for (int i = 0; i < salvos.size(); i++) {
+                    salvos.get(i).setId(99L + i);
+                }
+                return salvos;
+            });
+
+            ConfimacaoAgendamentoResponse confirmacao = service.criar(request, usuario.getId());
+
+            assertThat(confirmacao.agendamentos()).hasSize(2);
+            assertThat(confirmacao.agendamentos())
+                    .extracting(ConfimacaoAgendamentoResponse.AgendamentoCriado::id)
+                    .containsExactly(99L, 100L);
+            verify(agendamentoRepositoryPort).salvar(anyList());
+            verify(logRepositoryPort, org.mockito.Mockito.times(2)).salvar(any(Log.class));
         }
 
         @Test
@@ -173,7 +216,7 @@ class AgendamentoServiceTest {
         @DisplayName("Deve rejeitar agendamento com data no passado")
         void deveRejeitarAgendamentoComDataNoPassado() {
             CriarAgendamentoRequest request = new CriarAgendamentoRequest(
-                    new CriarAgendamentoRequest.SalaRef(12L),
+                    List.of(new CriarAgendamentoRequest.SalaRef(12L)),
                     LocalDate.now().minusDays(1),
                     LocalTime.of(9, 0),
                     LocalTime.of(10, 0),
@@ -443,6 +486,14 @@ class AgendamentoServiceTest {
         )).thenReturn(false);
     }
 
+    private void prepararSalvamento() {
+        when(agendamentoRepositoryPort.salvar(anyList())).thenAnswer(invocation -> {
+            List<Agendamento> salvos = invocation.getArgument(0);
+            salvos.forEach(agendamento -> agendamento.setId(99L));
+            return salvos;
+        });
+    }
+
     private Usuario usuario(Long id, PerfilUsuario perfil) {
         Usuario usuario = new Usuario();
         usuario.setId(id);
@@ -509,7 +560,7 @@ class AgendamentoServiceTest {
             int quantidadePessoas
     ) {
         return new CriarAgendamentoRequest(
-                new CriarAgendamentoRequest.SalaRef(sala.getId()),
+                List.of(new CriarAgendamentoRequest.SalaRef(sala.getId())),
                 LocalDate.now().plusDays(1),
                 inicio,
                 fim,

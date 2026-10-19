@@ -53,10 +53,8 @@ public class AgendamentoService {
 
     @Transactional
     public ConfimacaoAgendamentoResponse criar(CriarAgendamentoRequest agendamentoRequest, Long idUsuario) {
-        List<Long> salaIds = agendamentoRequest.salaId()
-                .stream()
-                .map(CriarAgendamentoRequest.SalaRef::id)
-                .toList();
+        LocalDateTime agora = LocalDateTime.now();
+        List<Long> salaIds = extrairIdSalas(agendamentoRequest);
 
         logger.info(
                 "Iniciando validacao do agendamento. usuarioId={}, salaId={}, data={}, inicio={}, fim={}, pessoas={}",
@@ -70,16 +68,16 @@ public class AgendamentoService {
 
         Usuario usuario = buscarUsuario(idUsuario);
 
+        validarPermissaoQtdSalasAgendamento(usuario.getPerfilUsuario(), salaIds.size());
         validarDataAgendamento(agendamentoRequest.data());
         validarQuantidadePessoas(agendamentoRequest.qntdPessoas());
         validarHorarioAgendamento(agendamentoRequest.horaInicio(), agendamentoRequest.horaFim());
 
-        // Lock pessimista na sala serializa reservas concorrentes da mesma sala,
-        // evitando dupla reserva entre o check de conflito e o insert.
-        List<Sala> salas = agendamentoRequest.salaId()
-                .stream()
-                .map(salaRef -> salaRepositoryPort
-                        .buscarPorIdComBloqueio(salaRef.id())
+        // Adquirir os locks em ordem estável reduz deadlocks em reservas integradas.
+        List<Sala> salas = salaIds.stream()
+                .sorted()
+                .map(salaId -> salaRepositoryPort
+                        .buscarPorIdComBloqueio(salaId)
                         .orElseThrow(SalaInexistenteException::new))
                 .toList();
 
@@ -93,14 +91,10 @@ public class AgendamentoService {
         validarQuantidadeHorasAgendamento(agendamentoRequest.horaInicio(),
                 agendamentoRequest.horaFim(), usuario.getPerfilUsuario());
 
-        salas.forEach(sala -> validarCapacidadeMaximaSala(
-                        agendamentoRequest.qntdPessoas(),
-                        sala.getCapacidade()
-                )
-        );
+        validarCapacidadeSala(agendamentoRequest, salas);
+        validarDisponibilidadeSalas(salas);
 
-        salas.forEach(sala ->
-                validarConflitoHorario(
+        salas.forEach(sala -> validarConflitoHorario(
                         sala.getId(),
                         agendamentoRequest.data(),
                         agendamentoRequest.horaInicio(),
@@ -108,24 +102,18 @@ public class AgendamentoService {
                 )
         );
 
-        salas.forEach(sala -> {
-            if (!sala.getDisponivel()) {
-                throw new SalaIndisponivelException();
-            }
-        });
-
         List<Agendamento> agendamentos = salas.stream()
                 .map(sala -> Agendamento.builder()
                         .usuarioId(usuario)
                         .salaId(sala)
                         .dataAgendamento(agendamentoRequest.data())
-                        .dataCriacao(LocalDateTime.now())
+                        .dataCriacao(agora)
                         .horaInicio(agendamentoRequest.horaInicio())
                         .horaFim(agendamentoRequest.horaFim())
                         .qntdPessoas(agendamentoRequest.qntdPessoas())
                         .titulo(agendamentoRequest.titulo())
                         .status(StatusAgendamento.CONFIRMADO)
-                        .ultimaAtualizacao(LocalDateTime.now())
+                        .ultimaAtualizacao(agora)
                         .build())
                 .toList();
 
@@ -143,38 +131,33 @@ public class AgendamentoService {
             );
         }
 
-        agendamentoRepositoryPort.salvar(agendamentos);
+        List<Agendamento> agendamentosSalvos = agendamentoRepositoryPort.salvar(agendamentos);
 
-        Log log = Log
-                .builder()
-                .List<agendamento>(agendamentos)
-                .usuario(usuario).status(StatusLog.CRIACAO)
-                .dataCriacao(LocalDateTime.now())
-                .build();
+        salvarLogsCriacao(agendamentosSalvos, usuario, agora);
 
-        logRepositoryPort.salvar(log);
         logger.info(
-                "Agendamento registrado e log de auditoria salvo. agendamentoId={}, usuarioId={}, salaId={}",
-                agendamento.getId(),
+                "Agendamentos registrados e logs de auditoria salvos. " +
+                        "agendamentoIds={}, usuarioId={}, salasId={}",
+                agendamentosSalvos.stream()
+                        .map(Agendamento::getId)
+                        .toList(),
                 idUsuario,
-                sala.getId()
+                agendamentosSalvos.stream()
+                        .map(Agendamento::getSalaId)
+                        .map(Sala::getId)
+                        .toList()
         );
 
-        return ConfimacaoAgendamentoResponse.builder()
-                .id(agendamento.getId())
-                .sala(SalaResponse.builder()
-                        .id(sala.getId())
-                        .nome(sala.getNome())
-                        .disponivel(sala.getDisponivel())
-                        .capacidade(sala.getCapacidade())
-                        .localizacao(sala.getLocalizacao())
-                        .build())
-                .inicio(agendamento.getHoraInicio())
-                .fim(agendamento.getHoraFim())
-                .status(agendamento.getStatus())
-                .solicitante(agendamento.getUsuarioIdSolicitante() != null
-                        ? toUsuarioResponse(agendamento.getUsuarioIdSolicitante())
-                        : null)
+        return construirRespostaAgendamento(agendamentosSalvos);
+    }
+
+    private SalaResponse toSalaResponse(Sala sala) {
+        return SalaResponse.builder()
+                .id(sala.getId())
+                .nome(sala.getNome())
+                .disponivel(sala.getDisponivel())
+                .capacidade(sala.getCapacidade())
+                .localizacao(sala.getLocalizacao())
                 .build();
     }
 
@@ -261,6 +244,7 @@ public class AgendamentoService {
         logRepositoryPort.salvar(log);
     }
 
+
 //  Métodos Utilitarios
     private long calcularDuracao(LocalTime inicio, LocalTime fim) {
         return Duration.between(inicio, fim).toMinutes();
@@ -287,12 +271,6 @@ public class AgendamentoService {
         }
     }
 
-    private void validarCapacidadeMaximaSala(int qtdPessoas, int capacidadeSala) {
-        if(qtdPessoas > capacidadeSala) {
-            throw new CapacidadeNaoSuportadaException();
-        }
-    }
-
     private void validarConflitoHorario(Long idSala, LocalDate dataAgendamento, LocalTime horaInicio, LocalTime horaFim) {
         boolean conflito = agendamentoRepositoryPort.existeConflito(idSala, dataAgendamento, horaInicio, horaFim);
 
@@ -311,6 +289,29 @@ public class AgendamentoService {
         }
     }
 
+    private void validarPermissaoQtdSalasAgendamento(PerfilUsuario perfilUsuario, int tamanhoListaSalar) {
+        if(perfilUsuario.equals(PerfilUsuario.USER)) {
+            if(tamanhoListaSalar > 1) {
+                throw new UsuarioSemPermissaoException();
+            }
+        }
+    }
+
+    private void validarCapacidadeSala(CriarAgendamentoRequest agendamentoRequest, List<Sala> salas) {
+        long capacidadeTotal = salas.stream().mapToLong(Sala::getCapacidade).sum();
+        if (agendamentoRequest.qntdPessoas() > capacidadeTotal) {
+            throw new CapacidadeNaoSuportadaException();
+        }
+    }
+
+    private void validarDisponibilidadeSalas(List<Sala> salas) {
+        salas.forEach(sala -> {
+            if (!sala.getDisponivel()) {
+                throw new SalaIndisponivelException();
+            }
+        });
+    }
+
     private Usuario buscarUsuario(Long id) {
         return usuarioRepositoryPort.buscarPorId(id)
                 .orElseThrow(UsuarioInexistenteException::new);
@@ -319,5 +320,67 @@ public class AgendamentoService {
     private Agendamento buscarAgendamento(Long id) {
         return agendamentoRepositoryPort.buscarPorId(id)
                 .orElseThrow(AgendamentoInexistenteException::new);
+    }
+
+    private List<Long> extrairIdSalas(CriarAgendamentoRequest agendamentoRequest) {
+        if (agendamentoRequest == null
+                || agendamentoRequest.salaId() == null
+                || agendamentoRequest.salaId().isEmpty()) {
+            throw new ValidacaoBuscaException("Informe ao menos uma sala válida para o agendamento.");
+        }
+
+        if (agendamentoRequest.salaId().stream()
+                .anyMatch(sala -> sala == null || sala.id() == null)) {
+            throw new ValidacaoBuscaException(
+                    "Informe ao menos uma sala válida para o agendamento."
+            );
+        }
+
+        List<Long> salaIds = agendamentoRequest.salaId().stream()
+                .map(CriarAgendamentoRequest.SalaRef::id)
+                .toList();
+
+        if (salaIds.size() != salaIds.stream().distinct().count()) {
+            throw new ValidacaoBuscaException(
+                    "Não informe a mesma sala mais de uma vez."
+            );
+        }
+
+        return salaIds;
+    }
+
+    private void salvarLogsCriacao(List<Agendamento> agendamentos, Usuario usuario, LocalDateTime dataCriacao) {
+        agendamentos.forEach(agendamento -> {
+            Log log = Log.builder()
+                    .agendamento(agendamento)
+                    .usuario(usuario)
+                    .status(StatusLog.CRIACAO)
+                    .dataCriacao(dataCriacao)
+                    .build();
+
+            logRepositoryPort.salvar(log);
+        });
+    }
+
+    private ConfimacaoAgendamentoResponse construirRespostaAgendamento(List<Agendamento> agendamentos) {
+        Agendamento primeiroAgendamento = agendamentos.get(0);
+
+        return ConfimacaoAgendamentoResponse.builder()
+                .id(primeiroAgendamento.getId())
+                .sala(toSalaResponse(primeiroAgendamento.getSalaId()))
+                .inicio(primeiroAgendamento.getHoraInicio())
+                .fim(primeiroAgendamento.getHoraFim())
+                .status(primeiroAgendamento.getStatus())
+                .solicitante(
+                        primeiroAgendamento.getUsuarioIdSolicitante() != null
+                                ? toUsuarioResponse(primeiroAgendamento.getUsuarioIdSolicitante())
+                                : null
+                )
+                .agendamentos(agendamentos.stream()
+                        .map(agendamento ->
+                                new ConfimacaoAgendamentoResponse.AgendamentoCriado(
+                                        agendamento.getId(),
+                                        toSalaResponse(agendamento.getSalaId())))
+                        .toList()).build();
     }
 }

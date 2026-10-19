@@ -160,7 +160,7 @@ describe('Agendamento', () => {
     const chamada = httpMock.expectOne(`${environment.apiUrl}/api/agendamento`);
     expect(chamada.request.method).toBe('POST');
     expect(chamada.request.body).toMatchObject({
-      salaId: { id: 2 },
+      salaId: [{ id: 2 }],
       qntdPessoas: 1,
       titulo: 'Reunião - Sala 02',
     });

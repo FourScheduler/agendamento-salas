@@ -25,7 +25,7 @@ export interface BuscaSalasRequest {
 }
 
 export interface CriaAgendamentoRequest {
-  salaId: { id: number };
+  salaId: { id: number }[];
   data: string;
   horaInicio: string;
   horaFim: string;
@@ -36,6 +36,7 @@ export interface CriaAgendamentoRequest {
 export interface ConfirmacaoAgendamento {
   id: number;
   sala?: { id: number; nome: string };
+  agendamentos?: { id: number; sala: { id: number; nome: string } }[];
   inicio: string;
   fim: string;
   status: string;

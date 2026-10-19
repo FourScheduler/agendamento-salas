@@ -53,7 +53,7 @@ describe('ReservasService', () => {
 
   it('should post the booking to the real agendamento endpoint', () => {
     const criacao = {
-      salaId: { id: 2 },
+      salaId: [{ id: 2 }],
       data: '2026-10-20',
       horaInicio: '14:00',
       horaFim: '15:00',

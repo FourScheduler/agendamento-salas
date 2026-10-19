@@ -1,6 +1,8 @@
 package br.com.foursys.agendamento_salas.dto.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
@@ -8,8 +10,8 @@ import java.time.LocalTime;
 import java.util.List;
 
 public record CriarAgendamentoRequest(
-        @NotNull(message = "Informe a sala do agendamento.")
-        List<SalaRef> salaId,
+        @NotEmpty(message = "Informe ao menos uma sala para o agendamento.")
+        List<@Valid SalaRef> salaId,
         @NotNull(message = "Informe a data do agendamento.")
         LocalDate data,
         @NotNull(message = "Informe o horário inicial do agendamento.")
@@ -22,7 +24,7 @@ public record CriarAgendamentoRequest(
         UsuarioRef usuarioIdSolicitante,
         String titulo
 ) {
-    public record SalaRef(Long id) {
+    public record SalaRef(@NotNull(message = "Informe o identificador da sala.") Long id) {
     }
 
     public record UsuarioRef(Long id) {
