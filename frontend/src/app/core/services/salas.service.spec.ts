@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { SalasService } from './salas.service';
-import { BuscaSalasRequest, Sala } from '../models/api.models';
+import { BuscaSalasRequest, OcupacaoSala, Sala } from '../models/api.models';
 import { environment } from '../../../environments/environment';
 
 describe('SalasService', () => {
@@ -62,6 +62,24 @@ describe('SalasService', () => {
     expect(chamada.request.params.get('horaInicio')).toBe('09:00');
     expect(chamada.request.params.get('horaFim')).toBe('10:00');
     expect(chamada.request.params.get('qntdPessoas')).toBe('6');
+    expect(chamada.request.body).toBeNull();
+    chamada.flush(esperadas);
+  });
+
+  it('should load the occupations of the day with the date as query param', () => {
+    const esperadas: OcupacaoSala[] = [
+      { salaId: 2, horaInicio: '14:00', horaFim: '15:00' },
+    ];
+
+    service.buscarOcupacoes('2026-10-10').subscribe((respostas) => {
+      expect(respostas).toEqual(esperadas);
+    });
+
+    const chamada = httpMock.expectOne(
+      (requisicao) => requisicao.url === `${environment.apiUrl}/api/salas/ocupacoes`,
+    );
+    expect(chamada.request.method).toBe('GET');
+    expect(chamada.request.params.get('data')).toBe('2026-10-10');
     expect(chamada.request.body).toBeNull();
     chamada.flush(esperadas);
   });

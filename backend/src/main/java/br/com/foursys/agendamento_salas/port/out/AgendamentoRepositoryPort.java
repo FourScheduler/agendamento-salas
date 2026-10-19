@@ -25,6 +25,9 @@ public interface AgendamentoRepositoryPort {
     boolean existeConflito(Long salaId, LocalDate dataAgendamento,
                            LocalTime horaInicio, LocalTime horaFim);
 
+    /** Reservas confirmadas de uma data, para a planta calcular quando cada sala fica livre. */
+    List<Agendamento> buscarPorData(LocalDate dataAgendamento);
+
     void cancelar(Agendamento agendamento);
 
     Optional<Agendamento> buscarPorId(Long id);

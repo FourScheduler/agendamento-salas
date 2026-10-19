@@ -1,6 +1,7 @@
 package br.com.foursys.agendamento_salas.controller;
 
 import br.com.foursys.agendamento_salas.dto.request.CriarSalaRequest;
+import br.com.foursys.agendamento_salas.dto.response.OcupacaoSalaResponse;
 import br.com.foursys.agendamento_salas.dto.response.SalaResponse;
 import br.com.foursys.agendamento_salas.mapper.SalaMapper;
 import br.com.foursys.agendamento_salas.service.SalaService;
@@ -65,6 +66,17 @@ public class SalaController {
                         emailDoUsuario(authentication)
                   )
         );
+    }
+
+    /**
+     * Ocupações do dia, sem autenticação: a planta usa para dizer em cada sala
+     * quando ela fica livre. Não expõe solicitante nem título da reserva.
+     */
+    @GetMapping("ocupacoes")
+    public ResponseEntity<List<OcupacaoSalaResponse>> buscarOcupacoes(
+            @RequestParam LocalDate data
+    ) {
+        return ResponseEntity.ok(salaService.buscarOcupacoes(data));
     }
 
     private String emailDoUsuario(Authentication authentication) {

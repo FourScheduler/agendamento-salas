@@ -14,6 +14,8 @@ import java.util.List;
 public interface AgendamentoJpaRepository extends JpaRepository<Agendamento, Long>, JpaSpecificationExecutor<Agendamento> {
     List<Agendamento> findByUsuarioId_Id(Long id);
 
+    List<Agendamento> findByDataAgendamentoAndStatus(LocalDate dataAgendamento, StatusAgendamento status);
+
     @Query("""
             SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END
             FROM Agendamento a

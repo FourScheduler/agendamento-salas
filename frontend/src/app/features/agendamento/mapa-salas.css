@@ -167,13 +167,35 @@
   cursor: pointer;
 }
 
-.sala:enabled:hover {
+.sala:hover {
   border-color: var(--orange-400);
 }
 
-.sala:disabled {
-  cursor: not-allowed;
+.sala__dica {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  max-width: 100%;
+  padding: 0.25rem 0.5rem;
+  transform: translate(-50%, -50%);
+  border-radius: 6px;
+  background: var(--navy);
+  color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
+
+.sala:hover .sala__dica,
+.sala:focus-visible .sala__dica {
+  visibility: visible;
+  opacity: 1;
+}
+
 .sala__nome {
   font-size: 0.875rem;
   font-weight: 600;

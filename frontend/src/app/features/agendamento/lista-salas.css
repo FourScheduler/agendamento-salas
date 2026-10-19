@@ -23,10 +23,6 @@
   cursor: pointer;
 }
 
-.lista__item:disabled {
-  cursor: not-allowed;
-}
-
 .lista__item--ocupada {
   background: var(--red-soft);
   border-color: var(--red-line);

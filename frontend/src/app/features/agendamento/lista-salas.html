@@ -7,9 +7,11 @@
         [class.lista__item--ocupada]="sala.estado === 'ocupada'"
         [class.lista__item--indisponivel]="sala.estado === 'indisponivel'"
         [class.lista__item--selecionada]="selecionada() === sala.nome"
-        [attr.aria-pressed]="selecionada() === sala.nome"
-        [disabled]="sala.estado !== 'disponivel'"
-        (click)="selecionar.emit(sala.nome)"
+        [attr.aria-pressed]="
+          sala.estado === 'disponivel' ? selecionada() === sala.nome : null
+        "
+        [attr.aria-disabled]="sala.estado === 'disponivel' ? null : true"
+        (click)="clique.emit(sala.nome)"
       >
         <span class="lista__info">
           <span class="lista__nome">{{ sala.nome }}</span>

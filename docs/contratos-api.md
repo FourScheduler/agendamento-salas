@@ -71,6 +71,28 @@ Resposta `200`:
 
 Salas com capacidade inferior a `pessoas` são filtradas; a resposta pode ser uma lista vazia.
 
+### GET /api/salas/ocupacoes — implementado
+
+Lista as janelas ocupadas por reservas confirmadas de uma data. A planta do agendamento usa a lista para indicar, em cada sala ocupada, o próximo horário em que ela fica livre. É pública, como `/api/salas/disponiveis`, e não expõe solicitante nem título da reserva.
+
+| Parâmetro | Obrigatório | Formato |
+|---|---|---|
+| `data` | sim | data ISO (`yyyy-MM-dd`), não pode estar no passado |
+
+Exemplo: `GET /api/salas/ocupacoes?data=2026-10-20`
+
+Resposta `200` (lista pode ser vazia):
+
+```json
+[
+  { "salaId": 2, "horaInicio": "14:00:00", "horaFim": "15:00:00" }
+]
+```
+
+As horas chegam como `HH:mm:ss`, igual às outras respostas da API (ex.: `AgendamentoResponse`); o frontend usa os 5 primeiros caracteres para exibir e comparar horários.
+
+Entram apenas reservas com status `CONFIRMADO`, o mesmo critério da busca de salas livres. O cálculo da folga (duração pedida e término dentro do mesmo dia) fica no frontend, junto das regras já usadas pela busca. Enquanto a resposta não chega, a dica mostra a sala ocupada sem sugerir horário.
+
 ### GET /api/agendamento/busca/filtro — implementado
 
 Lista agendamentos com filtros opcionais na **query string** (navegadores não enviam corpo em GET). Exige header `Authorization: Bearer <token>` (obtido em `POST /auth/login`); sem token a resposta é `401`.
@@ -139,9 +161,11 @@ Cada sala gera uma reserva independente, vinculada ao mesmo usuário, horário e
 
 Validações: todas as salas existem e estão disponíveis, capacidade total suficiente, data não passada, quantidade de pessoas ≥ 1 e ausência de conflito em cada sala. A criação usa lock pessimista nas salas em ordem crescente de ID para evitar double booking e reduzir deadlocks; o solicitante vem do usuário autenticado. O log de auditoria é gravado individualmente para cada reserva criada.
 
-### Cancelamento de reserva — previsto
+### DELETE /api/agendamento/cancelar/{id} — implementado
 
-Escopo e contrato: **A definir**.
+Exige autenticação. Cancela a reserva e responde `200` sem corpo. O dono vem do token, não do corpo: dono ou `ADMIN` cancela; usuário sem relação com a reserva responde `403` e id inexistente responde `404`. A reserva passa para `CANCELADO` com `dataCancelamento` preenchida e o cancelamento gera registro de log.
+
+Consumido pelo botão **Cancelar reserva** de `/minhas-reservas`, que só aparece para reserva futura `CONFIRMADO` e pede confirmação em duas etapas antes de enviar o `DELETE`.
 
 ### Interpretação em linguagem natural - previsto (#19)
 

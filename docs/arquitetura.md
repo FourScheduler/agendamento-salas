@@ -20,7 +20,7 @@ No futuro, apenas o backend poderá integrar IA e Microsoft Graph. O frontend co
 
 ## Segurança
 
-- `POST /auth/login`, `POST /auth/demo`, `GET /api/salas/disponiveis` e `GET /api/salas/{id}` são públicos.
+- `POST /auth/login`, `POST /auth/demo`, `GET /api/salas/disponiveis`, `GET /api/salas/ocupacoes` e `GET /api/salas/{id}` são públicos.
 - `POST /api/usuarios` e `POST /api/salas/admin/criar` exigem perfil `ADMIN`.
 - Qualquer outra rota (incluindo `/api/ollama/**` e `/api/agendamento/**`) exige token JWT válido.
 - Sem token ou com token inválido a resposta é `401`; sem perfil adequado é `403`, ambos no modelo de erro padrão.

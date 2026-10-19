@@ -1,7 +1,7 @@
 import { DestroyRef, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
-import { BuscaSalasRequest, OrquestradorResposta, SugestaoSala } from '../../core/models/api.models';
+import { BuscaSalasRequest, OcupacaoSala, OrquestradorResposta, SugestaoSala } from '../../core/models/api.models';
 import { mensagemDeErro } from '../../core/http/api-error';
 import { AuthService } from '../../core/services/auth.service';
 import { SalasService } from '../../core/services/salas.service';
@@ -48,6 +48,14 @@ export class Agendamento implements OnInit {
   readonly equipamentos = signal(false);
 
   readonly salas = signal<SalaPlanta[]>([]);
+  /**
+   * Ocupações do dia por requisição; `itens` nulo significa que a resposta ainda
+   * não chegou (ou falhou) e a planta não pode arriscar um horário livre.
+   */
+  private readonly ocupacoesSalvas = signal<{
+    data: string;
+    itens: OcupacaoSala[] | null;
+  } | null>(null);
   readonly selecionada = signal<string | null>(null);
   readonly carregando = signal(false);
   readonly erroApi = signal<string | null>(null);
@@ -64,6 +72,12 @@ export class Agendamento implements OnInit {
     }
 
     return this.salas().find((sala) => sala.nome === nome) ?? null;
+  });
+
+  /** Ocupações do dia exibido; nulas enquanto não carregadas. */
+  readonly ocupacoes = computed(() => {
+    const salvas = this.ocupacoesSalvas();
+    return salvas && salvas.data === this.data() ? salvas.itens : null;
   });
 
   ngOnInit(): void {
@@ -190,12 +204,13 @@ export class Agendamento implements OnInit {
       // A reserva foi criada; a próxima solicitação começa uma conversa nova.
       this.conversaId = null;
       this.limparErroConfirmacao();
-      this.buscar();
       const horaInicio = resposta.horaInicio?.slice(0, 5) ?? this.horaInicio();
       const horaFim = resposta.horaFim?.slice(0, 5) ?? horaFinal(horaInicio, this.duracao());
       this.toast.sucesso(
         mensagemToastReserva(resposta.data ?? this.data(), horaInicio, horaFim),
       );
+      this.reiniciarPainel();
+      this.buscar();
       return { texto: resposta.mensagem };
     } catch (erro: unknown) {
       return { texto: mensagemDeErro(erro) };
@@ -283,6 +298,7 @@ export class Agendamento implements OnInit {
           : '';
       const texto = `Reserva confirmada para ${nomeSala} em ${this.data()}, das ${this.horaInicio()} às ${horaFim}${detalhes}.`;
       this.toast.sucesso(mensagemToastReserva(this.data(), this.horaInicio(), horaFim));
+      this.reiniciarPainel();
       this.buscar();
       return texto;
     } catch (erro: unknown) {
@@ -300,6 +316,9 @@ export class Agendamento implements OnInit {
       this.erroValidacao.set(falha);
       return;
     }
+
+    // A planta usa as ocupações do dia para apontar, em cada sala, a próxima folga.
+    this.carregarOcupacoes();
 
     const requisicao: BuscaSalasRequest = {
       data: this.data(),
@@ -333,6 +352,41 @@ export class Agendamento implements OnInit {
 
   private limparErroConfirmacao(): void {
     this.erroConfirmacao.set(null);
+  }
+
+  /**
+   * Busca as ocupações do dia junto com o mapa, uma vez por data: a mesma janela
+   * já serve a qualquer horário ou quantidade de pessoas ajustados na sequência.
+   * Falha aqui degrada a dica para "ocupada neste horário", sem inventar horário.
+   */
+  private carregarOcupacoes(): void {
+    const data = this.data();
+    if (this.ocupacoesSalvas()?.data === data) {
+      return;
+    }
+
+    this.ocupacoesSalvas.set({ data, itens: null });
+    this.salasService
+      .buscarOcupacoes(data)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (itens) => this.ocupacoesSalvas.set({ data, itens }),
+        error: () => this.ocupacoesSalvas.set(null),
+      });
+  }
+
+  /**
+   * Devolve o painel ao estado inicial depois de uma reserva confirmada:
+   * data de hoje e 1 pessoa, prontos para a próxima reserva.
+   * A data é recalculada no momento porque `hoje` é fixo desde a abertura da tela.
+   */
+  private reiniciarPainel(): void {
+    this.data.set(hojeIso());
+    this.pessoas.set(1);
+    // A reserva nova muda as ocupações do dia, então as antigas não valem mais.
+    this.ocupacoesSalvas.set(null);
+    this.erroValidacao.set(null);
+    this.limparErroConfirmacao();
   }
 
   private atualizarSelecao(livres: string[]): void {

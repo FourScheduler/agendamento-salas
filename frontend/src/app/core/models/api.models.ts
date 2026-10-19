@@ -17,6 +17,13 @@ export interface Sala {
   localizacao: string;
 }
 
+/** Janela ocupada por uma reserva confirmada em uma data. */
+export interface OcupacaoSala {
+  salaId: number;
+  horaInicio: string;
+  horaFim: string;
+}
+
 export interface BuscaSalasRequest {
   data: string;
   horaInicio: string;
@@ -68,6 +75,8 @@ export interface ReservaSala {
 }
 
 export interface Reserva {
+  /** Id do agendamento; necessário para ações como cancelar. */
+  id?: number;
   salaId: ReservaSala;
   /** Compatibilidade temporária com respostas que usam `sala` em vez de `salaId`. */
   sala?: ReservaSala;

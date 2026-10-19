@@ -19,6 +19,21 @@ describe('MapaSalas', () => {
     return fixture;
   }
 
+  /** Salas que a planta marca como reserváveis (`aria-disabled` só nas ocupadas). */
+  function selecionaveis(fixture: { nativeElement: HTMLElement }) {
+    const compilado = fixture.nativeElement as HTMLElement;
+    return Array.from(compilado.querySelectorAll<HTMLButtonElement>('button.sala')).filter(
+      (sala) => sala.getAttribute('aria-disabled') !== 'true',
+    );
+  }
+
+  function botaoPorNome(fixture: { nativeElement: HTMLElement }, nome: string) {
+    const compilado = fixture.nativeElement as HTMLElement;
+    return Array.from(compilado.querySelectorAll<HTMLButtonElement>('button.sala')).find(
+      (sala) => sala.querySelector('.sala__nome')?.textContent?.trim() === nome,
+    );
+  }
+
   it('should create the component', () => {
     const fixture = TestBed.createComponent(MapaSalas);
     expect(fixture.componentInstance).toBeTruthy();
@@ -37,12 +52,12 @@ describe('MapaSalas', () => {
     expect(compiled.textContent).toContain('Time do suporte');
   });
 
-  it('should disable occupied rooms', () => {
+  it('should mark occupied rooms as not bookable', () => {
     const fixture = montar([{ id: 6 }]);
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.querySelectorAll('.sala--ocupada').length).toBe(7);
-    expect(compiled.querySelectorAll('.sala:disabled').length).toBe(7);
+    expect(compiled.querySelectorAll('button.sala[aria-disabled="true"]').length).toBe(7);
   });
 
   it('should emit the selected room', () => {
@@ -50,10 +65,7 @@ describe('MapaSalas', () => {
     let escolhida = '';
 
     fixture.componentInstance.selecionar.subscribe((nome) => (escolhida = nome));
-    const compilado = fixture.nativeElement as HTMLElement;
-    const disponivel = Array.from(
-      compilado.querySelectorAll<HTMLButtonElement>('button.sala'),
-    ).filter((sala) => !sala.disabled);
+    const disponivel = selecionaveis(fixture);
     expect(disponivel.length).toBe(1);
 
     disponivel[0].click();
@@ -105,5 +117,112 @@ describe('MapaSalas', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('app-erro')).toBeTruthy();
     expect(compiled.textContent).toContain('Falha de rede.');
+  });
+
+  it('should show when an occupied room becomes free', () => {
+    const fixture = montar([{ id: 6 }]);
+    fixture.componentRef.setInput('ocupacoes', [
+      { salaId: 1, horaInicio: '14:00', horaFim: '15:00' },
+    ]);
+    fixture.detectChanges();
+
+    const dica = botaoPorNome(fixture, 'Sala 01')?.querySelector('.sala__dica');
+
+    expect(dica?.textContent).toContain('Sala 01 · disponível às 15:00');
+  });
+
+  it('should say when an occupied room has no slot left today', () => {
+    const fixture = montar([{ id: 6 }]);
+    fixture.componentRef.setInput('ocupacoes', [
+      { salaId: 1, horaInicio: '14:00', horaFim: '23:30' },
+    ]);
+    fixture.detectChanges();
+
+    const dica = botaoPorNome(fixture, 'Sala 01')?.querySelector('.sala__dica');
+
+    expect(dica?.textContent).toContain('sem horário livre hoje');
+  });
+
+  it('should show the free room as available right now', () => {
+    const fixture = montar([{ id: 6 }]);
+
+    const dica = botaoPorNome(fixture, 'Componivel 02')?.querySelector('.sala__dica');
+
+    expect(dica?.textContent).toContain('Componivel 02 · disponível agora');
+  });
+
+  it('should not guess an hour while the occupations are unknown', () => {
+    const fixture = montar([{ id: 6 }]);
+
+    const dica = botaoPorNome(fixture, 'Sala 01')?.querySelector('.sala__dica');
+
+    expect(dica?.textContent).toContain('ocupada neste horário');
+  });
+
+  it('should explain the capacity when the group does not fit the room', () => {
+    const fixture = montar([{ id: 6 }]);
+    fixture.componentRef.setInput('pessoas', 5);
+    fixture.detectChanges();
+
+    const dica = botaoPorNome(fixture, 'Sala Focus')?.querySelector('.sala__dica');
+
+    expect(dica?.textContent).toContain('não atende 5 pessoas (até 2)');
+  });
+
+  it('should keep the generic label before any room is clicked', () => {
+    const fixture = montar([{ id: 6 }]);
+
+    expect(fixture.componentInstance.seloDisponibilidade()).toBe(
+      'Disponibilidade às 14:00',
+    );
+  });
+
+  it('should inform the next free time when an occupied room is clicked', () => {
+    const fixture = montar([{ id: 6 }]);
+    fixture.componentRef.setInput('ocupacoes', [
+      { salaId: 1, horaInicio: '14:00', horaFim: '15:00' },
+    ]);
+    fixture.detectChanges();
+
+    let escolhida = '';
+    fixture.componentInstance.selecionar.subscribe((nome) => (escolhida = nome));
+    botaoPorNome(fixture, 'Sala 01')?.click();
+
+    // Clique em sala ocupada informa no selo, mas nunca reserva.
+    expect(escolhida).toBe('');
+    expect(fixture.componentInstance.seloDisponibilidade()).toBe(
+      'Sala 01 · disponível às 15:00',
+    );
+  });
+
+  it('should name the selected room in the header badge', () => {
+    const fixture = montar([{ id: 6 }], 'Componivel 02');
+
+    expect(fixture.componentInstance.seloDisponibilidade()).toBe(
+      'Componivel 02 · disponível agora',
+    );
+  });
+
+  it('should inform the next free time from the room list as well', () => {
+    const fixture = montar([{ id: 6 }]);
+    fixture.componentRef.setInput('ocupacoes', [
+      { salaId: 1, horaInicio: '14:00', horaFim: '15:00' },
+    ]);
+    fixture.detectChanges();
+
+    let escolhida = '';
+    fixture.componentInstance.selecionar.subscribe((nome) => (escolhida = nome));
+    const itemDaLista = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
+        'app-lista-salas button',
+      ),
+    ).find((item) => item.textContent?.includes('Sala 01'));
+
+    itemDaLista?.click();
+
+    expect(escolhida).toBe('');
+    expect(fixture.componentInstance.seloDisponibilidade()).toBe(
+      'Sala 01 · disponível às 15:00',
+    );
   });
 });

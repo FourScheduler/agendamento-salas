@@ -664,6 +664,7 @@ class AgendamentoServiceTest {
 
     private AgendamentoResponse agendamentoResponse() {
         return new AgendamentoResponse(
+                1L,
                 salaResponse(sala(12L)),
                 LocalDate.now().plusDays(1),
                 LocalDateTime.now(),
