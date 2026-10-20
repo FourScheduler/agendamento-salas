@@ -62,6 +62,19 @@ export class MapaSalas {
     }
   }
 
+  /**
+   * Texto do tooltip da sala no mapa: o nome já aparece no próprio cartão,
+   * então a sala livre é apenas "Disponível". O selo do cabeçalho continua
+   * nomeando a sala em `dicaDaSala`.
+   */
+  dicaTooltip(sala: SalaPlanta): string {
+    if (sala.estado === 'disponivel' && sala.capacidade >= this.pessoas()) {
+      return 'Disponível';
+    }
+
+    return this.dicaDaSala(sala);
+  }
+
   /** Texto da dica do mouse e do selo: capacidade que não atende ou próximo horário livre. */
   dicaDaSala(sala: SalaPlanta): string {
     if (sala.capacidade < this.pessoas()) {
@@ -69,7 +82,7 @@ export class MapaSalas {
     }
 
     if (sala.estado === 'disponivel') {
-      return `${sala.nome} · disponível agora`;
+      return `${sala.nome} · Disponível`;
     }
 
     const ocupacoes = this.ocupacoes();
@@ -82,7 +95,7 @@ export class MapaSalas {
       return `${sala.nome} · sem horário livre hoje`;
     }
 
-    return `${sala.nome} · disponível às ${proxima}`;
+    return `${sala.nome} · Disponível às ${proxima}`;
   }
 
   /** Primeira hora, a partir da busca, em que a sala comporta a duração pedida. */

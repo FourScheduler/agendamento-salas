@@ -58,6 +58,5 @@ export class Portal {
       href: 'https://login.lg.com.br/login/bwg_foursys',
     },
     { nome: 'Agendamento de Salas', icone: 'apps/agendamento.svg', rota: '/agendamento' },
-    { nome: 'Reserva de Mesas', icone: 'apps/mesas.svg', rota: '/mesas' },
   ];
 }

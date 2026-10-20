@@ -128,7 +128,7 @@ describe('MapaSalas', () => {
 
     const dica = botaoPorNome(fixture, 'Sala 01')?.querySelector('.sala__dica');
 
-    expect(dica?.textContent).toContain('Sala 01 · disponível às 15:00');
+    expect(dica?.textContent).toContain('Sala 01 · Disponível às 15:00');
   });
 
   it('should say when an occupied room has no slot left today', () => {
@@ -143,12 +143,12 @@ describe('MapaSalas', () => {
     expect(dica?.textContent).toContain('sem horário livre hoje');
   });
 
-  it('should show the free room as available right now', () => {
+  it('should show the free room as available', () => {
     const fixture = montar([{ id: 6 }]);
 
     const dica = botaoPorNome(fixture, 'Componivel 02')?.querySelector('.sala__dica');
 
-    expect(dica?.textContent).toContain('Componivel 02 · disponível agora');
+    expect(dica?.textContent?.trim()).toBe('Disponível');
   });
 
   it('should not guess an hour while the occupations are unknown', () => {
@@ -191,7 +191,7 @@ describe('MapaSalas', () => {
     // Clique em sala ocupada informa no selo, mas nunca reserva.
     expect(escolhida).toBe('');
     expect(fixture.componentInstance.seloDisponibilidade()).toBe(
-      'Sala 01 · disponível às 15:00',
+      'Sala 01 · Disponível às 15:00',
     );
   });
 
@@ -199,7 +199,7 @@ describe('MapaSalas', () => {
     const fixture = montar([{ id: 6 }], 'Componivel 02');
 
     expect(fixture.componentInstance.seloDisponibilidade()).toBe(
-      'Componivel 02 · disponível agora',
+      'Componivel 02 · Disponível',
     );
   });
 
@@ -222,7 +222,7 @@ describe('MapaSalas', () => {
 
     expect(escolhida).toBe('');
     expect(fixture.componentInstance.seloDisponibilidade()).toBe(
-      'Sala 01 · disponível às 15:00',
+      'Sala 01 · Disponível às 15:00',
     );
   });
 });

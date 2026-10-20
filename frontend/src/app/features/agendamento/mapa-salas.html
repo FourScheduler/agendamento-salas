@@ -88,7 +88,7 @@
             >
               <span class="sala__nome">{{ sala.nome }}</span>
               <span class="sala__capacidade">Até {{ sala.capacidade }}</span>
-              <span class="sala__dica" role="tooltip">{{ dicaDaSala(sala) }}</span>
+              <span class="sala__dica" role="tooltip">{{ dicaTooltip(sala) }}</span>
 
               @if (selecionada() === sala.nome) {
                 <span class="sala__marca" aria-hidden="true">
