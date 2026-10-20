@@ -1,0 +1,302 @@
+<aside class="resumo cartao" aria-label="Resumo da reserva">
+  <div class="resumo__cabecalho">
+
+    <p class="eyebrow">Sua reserva</p>
+  </div>
+
+  <div class="resumo__blocos">
+    @if (sala(); as escolhida) {
+      <div class="resumo__sala">
+        <span class="resumo__marca" aria-hidden="true"></span>
+        <div>
+          <p class="campo__rotulo">Sala selecionada</p>
+          <p class="resumo__salaNome">{{ escolhida.nome }}</p>
+          <p class="resumo__salaMeta">
+            {{ escolhida.localizacao }} - Até {{ escolhida.capacidade }} pessoas
+          </p>
+        </div>
+      </div>
+    } @else {
+      <p class="resumo__semSala">Selecione uma sala na planta para continuar.</p>
+    }
+
+    <div class="linha">
+      <button
+        type="button"
+        class="linha__botao"
+        [attr.aria-expanded]="campoAberto() === 'data'"
+        (click)="alternar('data')"
+      >
+        <span class="linha__icone" aria-hidden="true">
+          <svg
+            viewBox="0 0 20 20"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <rect x="1.5" y="3.5" width="17" height="15" rx="2.5" />
+            <path d="M1.5 8h17M6 1.5v4M14 1.5v4" />
+          </svg>
+        </span>
+        <span class="linha__texto">
+          <span class="campo__rotulo">Data</span>
+          <strong>{{ rotuloData() }}</strong>
+        </span>
+        <span
+          class="linha__seta"
+          [class.linha__seta--aberto]="campoAberto() === 'data'"
+          aria-hidden="true"
+        >
+          <svg
+            viewBox="0 0 16 16"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+          >
+            <path d="M3.5 6 8 10.5 12.5 6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+      </button>
+
+      @if (campoAberto() === 'data') {
+        <div class="linha__editor">
+          <label class="campo__rotulo" for="resumo-data">Data da reserva</label>
+          <input
+            class="campo__entrada"
+            id="resumo-data"
+            type="date"
+            [value]="data()"
+            (input)="dataAlterada.emit(valorDoCampo($event))"
+          />
+        </div>
+      }
+    </div>
+
+    <div class="linha">
+      <button
+        type="button"
+        class="linha__botao"
+        [attr.aria-expanded]="campoAberto() === 'horario'"
+        (click)="alternar('horario')"
+      >
+        <span class="linha__icone" aria-hidden="true">
+          <svg
+            viewBox="0 0 20 20"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <circle cx="10" cy="10" r="8.5" />
+            <path d="M10 5.5V10l3 2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+        <span class="linha__texto">
+          <span class="campo__rotulo">Horário</span>
+          <strong>{{ horaInicio() }}</strong>
+        </span>
+        <span
+          class="linha__seta"
+          [class.linha__seta--aberto]="campoAberto() === 'horario'"
+          aria-hidden="true"
+        >
+          <svg
+            viewBox="0 0 16 16"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+          >
+            <path d="M3.5 6 8 10.5 12.5 6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+      </button>
+
+      @if (campoAberto() === 'horario') {
+        <div class="linha__editor">
+          <label class="campo__rotulo" for="resumo-inicio">Horário de início</label>
+          <input
+            class="campo__entrada"
+            id="resumo-inicio"
+            type="time"
+            [value]="horaInicio()"
+            (input)="horaAlterada.emit(valorDoCampo($event))"
+          />
+        </div>
+      }
+    </div>
+
+    <div class="linha">
+      <button
+        type="button"
+        class="linha__botao"
+        [attr.aria-expanded]="campoAberto() === 'duracao'"
+        (click)="alternar('duracao')"
+      >
+        <span class="linha__icone" aria-hidden="true">
+          <svg
+            viewBox="0 0 20 20"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path d="M10 4.5a7 7 0 1 1-6.6 4.7" stroke-linecap="round" />
+            <path d="M3 3v4h4" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+        <span class="linha__texto">
+          <span class="campo__rotulo">Duração</span>
+          <strong>{{ rotuloDuracao(duracao()) }}</strong>
+        </span>
+        <span
+          class="linha__seta"
+          [class.linha__seta--aberto]="campoAberto() === 'duracao'"
+          aria-hidden="true"
+        >
+          <svg
+            viewBox="0 0 16 16"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+          >
+            <path d="M3.5 6 8 10.5 12.5 6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+      </button>
+
+      @if (campoAberto() === 'duracao') {
+        <div class="linha__editor">
+          <label class="campo__rotulo" for="resumo-duracao">Duração da reunião</label>
+          <select
+            class="campo__entrada"
+            id="resumo-duracao"
+            [value]="duracao()"
+            (change)="duracaoAlterada.emit(valorNumerico($event))"
+          >
+            @for (minutos of duracoes(); track minutos) {
+              <option [value]="minutos" [selected]="minutos === duracao()">
+                {{ rotuloDuracao(minutos) }}
+              </option>
+            }
+          </select>
+        </div>
+      }
+    </div>
+
+    <div class="linha linha--fixo">
+      <span class="linha__icone" aria-hidden="true">
+        <svg
+          viewBox="0 0 20 20"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <circle cx="7.5" cy="6.5" r="3.2" />
+          <path d="M1.8 16.5c0-4 11.4-4 11.4 0" stroke-linecap="round" />
+          <circle cx="14.5" cy="7.5" r="2.4" />
+          <path d="M12.6 13.5c.4-2.6 6.6-2.6 6.6.6" stroke-linecap="round" />
+        </svg>
+      </span>
+      <span class="linha__texto">
+        <span class="campo__rotulo">Pessoas</span>
+        <strong>{{ pessoas() }}</strong>
+      </span>
+      <span class="linha__stepper">
+        <button
+          type="button"
+          class="stepper"
+          [disabled]="pessoas() <= 1"
+          aria-label="Remover uma pessoa"
+          (click)="mudarPessoas(-1)"
+        >
+          -
+        </button>
+        <button
+          type="button"
+          class="stepper"
+          [disabled]="naCapacidade()"
+          [attr.aria-label]="
+            naCapacidade() ? 'Quantidade máxima da sala selecionada' : 'Adicionar uma pessoa'
+          "
+          (click)="mudarPessoas(1)"
+        >
+          +
+        </button>
+      </span>
+    </div>
+
+    @if (maximo(); as limite) {
+      <p class="resumo__limite">Esta sala comporta até {{ limite }} pessoas.</p>
+    }
+
+    @if (solicitante(); as nome) {
+      <div class="linha linha--fixo">
+        <span class="linha__icone" aria-hidden="true">
+          <svg
+            viewBox="0 0 20 20"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <circle cx="10" cy="6.5" r="3.2" />
+            <path d="M3.5 16.5c0-3.3 13-3.3 13 0" stroke-linecap="round" />
+          </svg>
+        </span>
+        <span class="linha__texto">
+          <span class="campo__rotulo">Solicitante</span>
+          <strong>{{ nome }}</strong>
+        </span>
+      </div>
+    }
+
+    <div class="linha linha--check">
+      <label class="linha__check" for="resumo-equipamentos">
+        <input
+          id="resumo-equipamentos"
+          class="linha__caixa"
+          type="checkbox"
+          [checked]="equipamentos()"
+          (change)="equipamentosAlterada.emit(caixaMarcada($event))"
+        />
+        <span class="linha__texto">
+          <span class="campo__rotulo">Equipamentos</span>
+          <strong>Câmera e recursos para reunião híbrida</strong>
+        </span>
+      </label>
+      <p class="resumo__facilities">Solicite o equipamento previamente à equipe de Facilities.</p>
+    </div>
+  </div>
+
+  <div class="resumo__rodape">
+    <p class="resumo__horario">
+      <span>Seu horário</span>
+      <strong>{{ horaInicio() }} - {{ horaFim() }}</strong>
+    </p>
+
+    <button
+      class="botao resumo__confirmar"
+      type="button"
+      [disabled]="!podeConfirmar()"
+      (click)="confirmar.emit()"
+    >
+      {{ confirmando() ? 'Confirmando...' : 'Confirmar reserva' }}
+      <span aria-hidden="true">→</span>
+    </button>
+
+    <p class="resumo__nota">{{ notaConfirmacao() }}</p>
+  </div>
+</aside>

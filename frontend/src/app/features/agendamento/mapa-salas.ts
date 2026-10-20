@@ -1,0 +1,132 @@
+import { Component, computed, input, output, signal } from '@angular/core';
+import { OcupacaoSala } from '../../core/models/api.models';
+import { SalaPlanta } from '../../core/data/mapa-mock';
+import {
+  dataExtenso as formatarData,
+  diaSemana as formatarDia,
+  fimDeJornada,
+  paraHora,
+  paraMinutos,
+} from '../../core/util/formatos';
+import { Carregando } from '../../shared/estados/carregando';
+import { Erro } from '../../shared/estados/erro';
+import { Vazio } from '../../shared/estados/vazio';
+import { ListaSalas } from './lista-salas';
+
+@Component({
+  selector: 'app-mapa-salas',
+  imports: [Carregando, Erro, ListaSalas, Vazio],
+  templateUrl: './mapa-salas.html',
+  styleUrl: './mapa-salas.css',
+})
+export class MapaSalas {
+  readonly salas = input<SalaPlanta[]>([]);
+  readonly data = input<string>('');
+  readonly horaInicio = input<string>('');
+  readonly duracao = input(60);
+  readonly pessoas = input(1);
+  /** Ocupações do dia buscado; nulas enquanto a resposta não chega. */
+  readonly ocupacoes = input<OcupacaoSala[] | null>(null);
+  readonly carregando = input(false);
+  readonly erro = input<string | null>(null);
+  readonly selecionada = input<string | null>(null);
+
+  readonly selecionar = output<string>();
+  readonly tentarNovamente = output<void>();
+
+  /** Sala que o selo do cabeçalho deve detalhar; nenhuma antes do primeiro clique. */
+  private readonly salaInformada = signal<string | null>(null);
+
+  readonly rotuloDia = computed(() => formatarDia(this.data()));
+  readonly rotuloData = computed(() => formatarData(this.data()));
+  readonly livres = computed(
+    () => this.salas().filter((sala) => sala.estado === 'disponivel').length,
+  );
+
+  /** Selo verde do cabeçalho: genérico sem sala, específico depois de escolher uma. */
+  readonly seloDisponibilidade = computed(() => {
+    const sala = this.salaDoSelo();
+    return sala ? this.dicaDaSala(sala) : `Disponibilidade às ${this.horaInicio()}`;
+  });
+
+  /**
+   * Sala reserva; sala ocupada só alimenta o selo com o próximo horário livre.
+   * Clicar em sala ocupada nunca reserva nada — vale para o mapa e para a lista.
+   */
+  clicar(nome: string): void {
+    const sala = this.salas().find((item) => item.nome === nome);
+    this.salaInformada.set(nome);
+
+    if (sala?.estado === 'disponivel') {
+      this.selecionar.emit(nome);
+    }
+  }
+
+  /** Texto da dica do mouse e do selo: capacidade que não atende ou próximo horário livre. */
+  dicaDaSala(sala: SalaPlanta): string {
+    if (sala.capacidade < this.pessoas()) {
+      return `${sala.nome} · não atende ${this.pessoas()} pessoas (até ${sala.capacidade})`;
+    }
+
+    if (sala.estado === 'disponivel') {
+      return `${sala.nome} · disponível agora`;
+    }
+
+    const ocupacoes = this.ocupacoes();
+    if (ocupacoes === null) {
+      return `${sala.nome} · ocupada neste horário`;
+    }
+
+    const proxima = this.proximaLiberacao(sala, ocupacoes);
+    if (proxima === null) {
+      return `${sala.nome} · sem horário livre hoje`;
+    }
+
+    return `${sala.nome} · disponível às ${proxima}`;
+  }
+
+  /** Primeira hora, a partir da busca, em que a sala comporta a duração pedida. */
+  private proximaLiberacao(sala: SalaPlanta, ocupacoes: OcupacaoSala[]): string | null {
+    const inicioBusca = paraMinutos(this.horaInicio());
+    if (inicioBusca === null) {
+      return null;
+    }
+
+    const janelas = ocupacoes
+      .filter((ocupacao) => ocupacao.salaId === sala.id)
+      .map((ocupacao) => ({
+        inicio: paraMinutos(ocupacao.horaInicio.slice(0, 5)) ?? 0,
+        fim: paraMinutos(ocupacao.horaFim.slice(0, 5)) ?? 0,
+      }));
+
+    const duracao = this.duracao();
+    let livre = inicioBusca;
+    let conflito = janelas.find(
+      (janela) => janela.fim > livre && janela.inicio < livre + duracao,
+    );
+
+    // Cada salto vai para o fim de uma reserva que atrapalha, então o laço sempre avança.
+    while (conflito) {
+      livre = conflito.fim;
+      conflito = janelas.find(
+        (janela) => janela.fim > livre && janela.inicio < livre + duracao,
+      );
+    }
+
+    const candidata = paraHora(livre);
+    return fimDeJornada(candidata, duracao) ? null : candidata;
+  }
+
+  /**
+   * Última sala clicada manda sobre a selecionada: é a que o usuário acabou de ver,
+   * inclusive quando clicou numa ocupada só para saber a próxima folga.
+   */
+  private salaDoSelo(): SalaPlanta | null {
+    const nome = this.salaInformada() ?? this.selecionada();
+    if (!nome) {
+      return null;
+    }
+
+    return this.salas().find((sala) => sala.nome === nome) ?? null;
+  }
+}

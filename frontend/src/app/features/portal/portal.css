@@ -1,0 +1,200 @@
+.portal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding-bottom: 2.5rem;
+}
+
+.portal__conteudo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 80%;
+  overflow: hidden;
+  margin-top: 2rem;
+  background: var(--white);
+}
+
+.portal__hero {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  height: 15rem;
+  padding: 0 1.5rem;
+}
+
+.portal__hero::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 5.2rem;
+  left: 0%;
+  margin-top: -20px;
+  width: 100%;
+  height: 10rem;
+  border-radius: 42px;
+  background: #f8f8f9;
+}
+
+.portal__texto {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+  padding-top: 6rem;
+  margin: 0 5rem 0 8rem;
+}
+
+.portal__titulo {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.portal__titulo span:first-child {
+  color: var(--orange);
+}
+
+.portal__titulo span:nth-child(2) {
+  color: var(--navy);
+}
+
+.portal__slogan {
+  margin-top: 0.25rem;
+  font-size: 1rem;
+}
+
+.portal__arte {
+  z-index: 1;
+  align-self: flex-start;
+  width: 17rem;
+  height: auto;
+  margin: 1rem 10rem 0 0;
+}
+
+.portal__apps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 1rem;
+  width: 100%;
+  margin: 0;
+  padding: 0 0 1rem;
+  list-style: none;
+}
+
+.portal__app a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.portal__caixa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
+  width: 8.5rem;
+  height: 8rem;
+  padding: 1rem;
+}
+
+.portal__icone {
+  width: 2.25rem;
+  height: 2.25rem;
+  object-fit: contain;
+}
+
+.portal__nome {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.portal__app:hover {
+  border-radius: 6px;
+  box-shadow: rgba(0, 0, 0, 0.1) 2px 4px 5px 1px;
+  transform: scale(1.05);
+}
+
+.portal__app:hover .portal__nome {
+  font-weight: 700;
+  text-decoration: underline var(--navy);
+}
+
+.portal__rodape {
+  display: flex;
+  position: fixed;
+  align-items: end;
+  justify-content: space-between;
+  bottom: 0.25rem;
+  width: 98%;
+  padding: 5px;
+}
+
+.portal__nota {
+  font-size: 10px;
+  color: var(--navy);
+}
+
+.portal__versao {
+  font-size: 8px;
+  color: var(--navy);
+}
+
+@media (max-width: 900px) {
+  .portal__conteudo {
+    width: 92%;
+  }
+
+  .portal__hero {
+    height: 12rem;
+    padding: 0 1.5rem;
+  }
+
+  .portal__hero::before {
+    top: 3.5rem;
+    height: 8rem;
+  }
+
+  .portal__texto {
+    padding-top: 3.5rem;
+  }
+
+  .portal__arte {
+    width: 11rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .portal__hero {
+    height: auto;
+    min-height: 9rem;
+    padding-bottom: 1rem;
+  }
+
+  .portal__hero::before {
+    top: 2.5rem;
+    height: calc(100% - 3.5rem);
+  }
+
+  .portal__texto {
+    padding-top: 3.5rem;
+  }
+
+  .portal__arte {
+    width: 8rem;
+  }
+
+  .portal__caixa {
+    width: 7rem;
+    height: auto;
+    min-height: 7rem;
+  }
+}

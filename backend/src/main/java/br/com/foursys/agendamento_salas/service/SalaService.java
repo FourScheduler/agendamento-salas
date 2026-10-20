@@ -3,6 +3,7 @@ package br.com.foursys.agendamento_salas.service;
 import br.com.foursys.agendamento_salas.domain.Sala;
 import br.com.foursys.agendamento_salas.domain.Usuario;
 import br.com.foursys.agendamento_salas.dto.request.CriarSalaRequest;
+import br.com.foursys.agendamento_salas.dto.response.OcupacaoSalaResponse;
 import br.com.foursys.agendamento_salas.dto.response.SalaResponse;
 import br.com.foursys.agendamento_salas.enums.PerfilUsuario;
 import br.com.foursys.agendamento_salas.exception.SalaInexistenteException;
@@ -10,14 +11,18 @@ import br.com.foursys.agendamento_salas.exception.SalaJaExisteException;
 import br.com.foursys.agendamento_salas.exception.UsuarioInexistenteException;
 import br.com.foursys.agendamento_salas.exception.ValidacaoBuscaException;
 import br.com.foursys.agendamento_salas.mapper.SalaMapper;
+import br.com.foursys.agendamento_salas.port.out.AgendamentoRepositoryPort;
 import br.com.foursys.agendamento_salas.port.out.SalaRepositoryPort;
 import br.com.foursys.agendamento_salas.port.out.UsuarioRepositoryPort;
 import org.springframework.stereotype.Service;
 
+import java.text.Normalizer;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -25,11 +30,18 @@ public class SalaService {
     private final SalaRepositoryPort salaRepositoryPort;
     private final SalaMapper salaMapper;
     private final UsuarioRepositoryPort usuarioRepositoryPort;
+    private final AgendamentoRepositoryPort agendamentoRepositoryPort;
 
-    public SalaService(SalaRepositoryPort salaRepositoryPort, SalaMapper salaMapper, UsuarioRepositoryPort usuarioRepositoryPort) {
+    public SalaService(
+            SalaRepositoryPort salaRepositoryPort,
+            SalaMapper salaMapper,
+            UsuarioRepositoryPort usuarioRepositoryPort,
+            AgendamentoRepositoryPort agendamentoRepositoryPort
+    ) {
         this.salaRepositoryPort = salaRepositoryPort;
         this.salaMapper = salaMapper;
         this.usuarioRepositoryPort = usuarioRepositoryPort;
+        this.agendamentoRepositoryPort = agendamentoRepositoryPort;
     }
 
     public SalaResponse criar(CriarSalaRequest request){
@@ -40,7 +52,7 @@ public class SalaService {
         }
 
         Sala sala = Sala.builder()
-                .nome(request.nome())
+                .nome(nomeNormalizado)
                 .disponivel(true)
                 .capacidade(request.capacidade())
                 .localizacao(request.localizacao())
@@ -52,10 +64,9 @@ public class SalaService {
 
     }
 
-    public SalaResponse buscarPorId(Long id){
-       Sala sala = salaRepositoryPort.buscarPorId(id).orElseThrow(SalaInexistenteException::new);
 
-        return salaMapper.entityToResponse(sala);
+    public Sala buscarPorId(Long id){
+        return salaRepositoryPort.buscarPorId(id).orElseThrow(SalaInexistenteException::new);
     }
 
     public List<SalaResponse> listarSalas(){
@@ -65,21 +76,109 @@ public class SalaService {
                 .toList();
     }
 
-    public List<SalaResponse> buscarSalasDisponiveis(LocalDate data, LocalTime inicio, LocalTime fim, Integer pessoas, String email) {
+
+    public List<SalaResponse> buscarSalasDisponiveis(
+            LocalDate data,
+            LocalTime inicio,
+            LocalTime fim,
+            Integer pessoas,
+            String email
+    ) {
+        return buscarSalasDisponiveis(
+                data, inicio, fim, pessoas, null, email
+        );
+    }
+
+    public List<SalaResponse> buscarSalasDisponiveis(
+            LocalDate data,
+            LocalTime inicio,
+            LocalTime fim,
+            Integer pessoas,
+            String localizacao,
+            String email
+    ) {
         validar(data, inicio, fim, pessoas);
 
-        if (calcularDuracao(inicio, fim) > 120 && perfilDoUsuario(email) == PerfilUsuario.USER) {
+        if (calcularDuracao(inicio, fim) > 120
+                && perfilDoUsuario(email) == PerfilUsuario.USER) {
             throw new ValidacaoBuscaException(
                     "A duração não pode ser maior que 2 horas."
             );
         }
 
-        return salaRepositoryPort.buscarDisoniveis(data,inicio,fim,pessoas)
+        return salaRepositoryPort
+                .buscarDisoniveis(data, inicio, fim, pessoas)
                 .stream()
+                .sorted(
+                        Comparator
+                                .comparingInt((Sala sala) ->
+                                        pontuacaoLocalizacao(
+                                                sala.getLocalizacao(),
+                                                localizacao
+                                        )
+                                )
+                                .thenComparingInt(Sala::getCapacidade)
+                )
+
                 .map(salaMapper::entityToResponse)
                 .toList();
-
     }
+
+    /**
+     * Ocupações confirmadas de uma data. A planta usa a lista para informar,
+     * em cada sala, o próximo horário em que ela fica livre.
+     */
+    public List<OcupacaoSalaResponse> buscarOcupacoes(LocalDate data) {
+        if (data == null || data.isBefore(LocalDate.now())) {
+            throw new ValidacaoBuscaException("A data não pode estar no passado.");
+        }
+
+        return agendamentoRepositoryPort.buscarPorData(data).stream()
+                .map(agendamento -> new OcupacaoSalaResponse(
+                        agendamento.getSalaId().getId(),
+                        agendamento.getHoraInicio(),
+                        agendamento.getHoraFim()
+                ))
+                .toList();
+    }
+
+    private int pontuacaoLocalizacao(
+            String localizacaoSala,
+            String localizacaoDesejada
+    ) {
+        if (localizacaoDesejada == null
+                || localizacaoDesejada.isBlank()) {
+            return 0;
+        }
+
+        if (localizacaoSala == null || localizacaoSala.isBlank()) {
+            return 2;
+        }
+
+        String sala = normalizarLocalizacao(localizacaoSala);
+        String desejada = normalizarLocalizacao(localizacaoDesejada);
+
+        if (sala.equals(desejada)) {
+            return 0;
+        }
+
+        if (sala.contains(desejada) || desejada.contains(sala)) {
+            return 1;
+        }
+
+        return 2;
+    }
+
+    private String normalizarLocalizacao(String localizacao) {
+        return Normalizer.normalize(
+                        localizacao.trim(),
+                        Normalizer.Form.NFD
+                )
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("\\s+", " ");
+    }
+
 
     private String normalizarNome(String nome) {
         return nome.trim().replaceAll("\\s+", " ");
@@ -104,6 +203,11 @@ public class SalaService {
     }
 
     private PerfilUsuario perfilDoUsuario(String email) {
+        // Busca anônima: aplica o limite de duração do usuário comum sem consultar o banco.
+        if (email == null || email.isBlank()) {
+            return PerfilUsuario.USER;
+        }
+
         Usuario usuario = usuarioRepositoryPort.buscarUsuarioEmail(email)
                 .orElseThrow(UsuarioInexistenteException::new);
 

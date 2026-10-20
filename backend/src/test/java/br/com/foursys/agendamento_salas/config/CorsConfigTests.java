@@ -38,7 +38,7 @@ class CorsConfigTests {
 	void devePermitirMetodosEHeadersDaApi() {
 		CorsConfiguration configuration = buscarConfiguracao();
 		assertThat(configuration.getAllowedMethods())
-				.contains("GET", "POST", "PUT", "DELETE", "OPTIONS");
+				.contains("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
 		assertThat(configuration.getAllowedHeaders())
 				.contains("Authorization", "Content-Type", "Accept");
 	}

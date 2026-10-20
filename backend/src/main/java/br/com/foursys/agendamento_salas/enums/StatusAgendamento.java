@@ -1,6 +1,14 @@
 package br.com.foursys.agendamento_salas.enums;
 
 public enum StatusAgendamento {
+    RECEBENDO_SOLICITACAO,
+    INTERPRETANDO,
+    AGUARDANDO_INFORMACAO,
+    CONSULTANDO_DISPONIBILIDADE,
+    AGUARDANDO_ESCOLHA,
+    AGUARDANDO_CONFIRMACAO,
+    RESERVANDO,
     CONFIRMADO,
-    CANCELADO
+    CANCELADO,
+    ERRO
 }

@@ -1,0 +1,129 @@
+<section class="planta cartao" aria-label="Planta das salas">
+  <header class="planta__cabecalho">
+    <div class="planta__data">
+      <svg
+        viewBox="0 0 20 20"
+        width="20"
+        height="20"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        aria-hidden="true"
+      >
+        <rect x="1.5" y="3.5" width="17" height="15" rx="2.5" />
+        <path d="M1.5 8h17M6 1.5v4M14 1.5v4" />
+      </svg>
+      <span class="planta__dataTexto">
+        <span class="planta__dia">{{ rotuloDia() }}</span>
+        <strong>{{ rotuloData() }}</strong>
+      </span>
+    </div>
+
+    <p class="planta__disponibilidade">
+      <span class="planta__ponto" aria-hidden="true"></span>
+      {{ seloDisponibilidade() }}
+    </p>
+  </header>
+
+  <div class="planta__corpo">
+    @if (carregando()) {
+      <app-carregando texto="Verificando a planta..." />
+    } @else if (erro(); as mensagem) {
+      <app-erro
+        titulo="Não foi possível carregar a planta"
+        [mensagem]="mensagem"
+        (tentarNovamente)="tentarNovamente.emit()"
+      />
+    } @else if (livres() === 0) {
+      <app-vazio
+        titulo="Nenhuma sala livre neste horário"
+        mensagem="Ajuste o horário, a duração ou a quantidade de pessoas."
+      />
+    } @else {
+      <div class="planta__rolagem">
+        <div class="planta__grade">
+          <div class="faixa faixa--margem faixa--vertical" aria-hidden="true">
+            <span>Circulação</span>
+          </div>
+          <div class="faixa faixa--topo" aria-hidden="true"><span>Circulação</span></div>
+          <div class="faixa faixa--corredor faixa--vertical" aria-hidden="true">
+            <span>Circulação</span>
+          </div>
+          <div class="faixa faixa--janelas faixa--vertical" aria-hidden="true">
+            <span>Janelas</span>
+          </div>
+          <div class="faixa faixa--rodape" aria-hidden="true"><span>Mesas</span></div>
+
+          <div class="estrutural estrutural--servidor">
+            <span>Sala de servidores</span>
+          </div>
+          <div class="estrutural estrutural--suporte">
+            <span>Time do suporte</span>
+          </div>
+
+          <div class="sala sala--restrita">
+            <span class="sala__nome">Arena</span>
+            <span class="sala__capacidade">A definir</span>
+            <span class="sala__restricao dica" tabindex="0" aria-describedby="dica-auditorio">
+              Agendamento somente com um responsável
+              <span class="dica__caixa" id="dica-auditorio" role="tooltip">
+                Reserve com a equipe de Facilities
+              </span>
+            </span>
+          </div>
+
+          @for (sala of salas(); track sala.id) {
+            <button
+              type="button"
+              class="sala"
+              [style.grid-area]="sala.area"
+              [class.sala--ocupada]="sala.estado === 'ocupada'"
+              [class.sala--indisponivel]="sala.estado === 'indisponivel'"
+              [class.sala--selecionada]="selecionada() === sala.nome"
+              [attr.aria-pressed]="
+                sala.estado === 'disponivel' ? selecionada() === sala.nome : null
+              "
+              [attr.aria-disabled]="sala.estado === 'disponivel' ? null : true"
+              (click)="clicar(sala.nome)"
+            >
+              <span class="sala__nome">{{ sala.nome }}</span>
+              <span class="sala__capacidade">Até {{ sala.capacidade }}</span>
+              <span class="sala__dica" role="tooltip">{{ dicaDaSala(sala) }}</span>
+
+              @if (selecionada() === sala.nome) {
+                <span class="sala__marca" aria-hidden="true">
+                  <svg viewBox="0 0 12 12" width="10" height="10" x="10" y="3">
+                    <path
+                      d="M2 6.4 4.6 9 10 3.4"
+                      fill="none"
+                      stroke="#ffffff"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+              }
+            </button>
+          }
+        </div>
+      </div>
+
+      <app-lista-salas
+        [salas]="salas()"
+        [selecionada]="selecionada()"
+        (clique)="clicar($event)"
+      />
+    }
+  </div>
+
+  <footer class="planta__legenda">
+    <ul class="legenda__itens">
+      <li><span class="amostra amostra--disponivel"></span>Disponível</li>
+      <li><span class="amostra amostra--ocupada"></span>Ocupada</li>
+      <li><span class="amostra amostra--selecionada"></span>Selecionada</li>
+      <li><span class="amostra amostra--indisponivel"></span>Indisponível</li>
+      <li><span class="amostra amostra--restrita"></span>Restrito</li>
+    </ul>
+  </footer>
+</section>

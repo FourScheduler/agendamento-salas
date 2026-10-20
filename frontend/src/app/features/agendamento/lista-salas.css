@@ -1,0 +1,74 @@
+﻿.lista {
+  display: none;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lista__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--green-line);
+  border-radius: 4px;
+  background: var(--green-soft);
+  color: var(--navy);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lista__item--ocupada {
+  background: var(--red-soft);
+  border-color: var(--red-line);
+  color: var(--muted);
+}
+
+.lista__item--indisponivel {
+  background: repeating-linear-gradient(45deg, #fdecec 0 6px, #f8d6d6 6px 12px);
+  border-color: var(--red-line);
+  color: var(--muted);
+}
+
+.lista__item--selecionada {
+  background: #fffaf6;
+  border: 2px solid var(--orange-400);
+  color: var(--navy);
+}
+
+.lista__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.lista__nome {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.lista__capacidade {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.lista__estado {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .lista {
+    display: grid;
+  }
+}

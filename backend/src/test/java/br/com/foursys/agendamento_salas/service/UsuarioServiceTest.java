@@ -3,6 +3,7 @@ package br.com.foursys.agendamento_salas.service;
 import br.com.foursys.agendamento_salas.domain.Usuario;
 import br.com.foursys.agendamento_salas.dto.request.CriarUsuarioRequest;
 import br.com.foursys.agendamento_salas.enums.PerfilUsuario;
+import br.com.foursys.agendamento_salas.exception.UsuarioJaExisteException;
 import br.com.foursys.agendamento_salas.port.out.UsuarioRepositoryPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,15 +57,36 @@ class UsuarioServiceTest {
                 .thenReturn(Optional.of(new Usuario()));
         UsuarioService service = new UsuarioService(repository, passwordEncoder);
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        UsuarioJaExisteException exception = assertThrows(
+                UsuarioJaExisteException.class,
                 () -> service.criar(new CriarUsuarioRequest(
                         "maria@example.com", "Maria", "senha-segura", PerfilUsuario.USER
                 ))
         );
 
-        assertEquals("Username já cadastrado", exception.getMessage());
+        assertEquals("Já existe um usuário cadastrado com este e-mail.", exception.getMessage());
         verifyNoInteractions(passwordEncoder);
         verify(repository).buscarUsuarioEmail("maria@example.com");
+    }
+
+    @Test
+    void deveBuscarUsuarioPorId() {
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+        when(repository.buscarPorId(1L)).thenReturn(Optional.of(usuario));
+        UsuarioService service = new UsuarioService(repository, passwordEncoder);
+
+        assertSame(usuario, service.buscarPorId(1L));
+    }
+
+    @Test
+    void deveRejeitarBuscaPorIdInexistente() {
+        when(repository.buscarPorId(99L)).thenReturn(Optional.empty());
+        UsuarioService service = new UsuarioService(repository, passwordEncoder);
+
+        assertThrows(
+                br.com.foursys.agendamento_salas.exception.UsuarioInexistenteException.class,
+                () -> service.buscarPorId(99L)
+        );
     }
 }

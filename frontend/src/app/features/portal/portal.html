@@ -1,0 +1,44 @@
+<section class="portal" aria-label="Home do Portal">
+  <div class="portal__conteudo">
+    <div class="portal__hero">
+      <div class="portal__texto">
+        <div>
+          <p class="portal__titulo">
+          <span>Portal </span>
+          <span>Foursys</span>
+        </p>
+        <p class="portal__slogan">Juntos vamos mais longe.</p>
+        </div>
+      
+      </div>
+      <img class="portal__arte" src="apps/hero-home.svg" alt="" width="272" height="240" />
+    </div>
+
+    <ul class="portal__apps">
+      @for (aplicativo of aplicativos; track aplicativo.nome) {
+        <li class="portal__app">
+          @if (aplicativo.rota; as rota) {
+            <a [routerLink]="rota">
+              <span class="portal__caixa">
+                <img class="portal__icone" [src]="aplicativo.icone" alt="" />
+                <span class="portal__nome">{{ aplicativo.nome }}</span>
+              </span>
+            </a>
+          } @else {
+            <a [href]="aplicativo.href" target="_blank" rel="noopener noreferrer">
+              <span class="portal__caixa">
+                <img class="portal__icone" [src]="aplicativo.icone" alt="" />
+                <span class="portal__nome">{{ aplicativo.nome }}</span>
+              </span>
+            </a>
+          }
+        </li>
+      }
+    </ul>
+
+    <div class="portal__rodape">
+      <p class="portal__nota">* Esses links só podem ser acessados pela VPN.</p>
+      <p class="portal__versao">V.6.5.4</p>
+    </div>
+  </div>
+</section>

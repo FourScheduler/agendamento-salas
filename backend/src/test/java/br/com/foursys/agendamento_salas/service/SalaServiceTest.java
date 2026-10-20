@@ -1,9 +1,11 @@
 
 package br.com.foursys.agendamento_salas.service;
 
+import br.com.foursys.agendamento_salas.domain.Agendamento;
 import br.com.foursys.agendamento_salas.domain.Sala;
 import br.com.foursys.agendamento_salas.domain.Usuario;
 import br.com.foursys.agendamento_salas.dto.request.CriarSalaRequest;
+import br.com.foursys.agendamento_salas.dto.response.OcupacaoSalaResponse;
 import br.com.foursys.agendamento_salas.dto.response.SalaResponse;
 import br.com.foursys.agendamento_salas.enums.PerfilUsuario;
 import br.com.foursys.agendamento_salas.exception.SalaInexistenteException;
@@ -11,6 +13,7 @@ import br.com.foursys.agendamento_salas.exception.SalaJaExisteException;
 import br.com.foursys.agendamento_salas.exception.UsuarioInexistenteException;
 import br.com.foursys.agendamento_salas.exception.ValidacaoBuscaException;
 import br.com.foursys.agendamento_salas.mapper.SalaMapper;
+import br.com.foursys.agendamento_salas.port.out.AgendamentoRepositoryPort;
 import br.com.foursys.agendamento_salas.port.out.SalaRepositoryPort;
 import br.com.foursys.agendamento_salas.port.out.UsuarioRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +42,9 @@ class SalaServiceTest {
     @Mock
     private UsuarioRepositoryPort usuarioRepositoryPort;
 
+    @Mock
+    private AgendamentoRepositoryPort agendamentoRepositoryPort;
+
     private SalaService salaService;
 
     @BeforeEach
@@ -46,7 +52,8 @@ class SalaServiceTest {
         salaService = new SalaService(
                 salaRepositoryPort,
                 salaMapper,
-                usuarioRepositoryPort
+                usuarioRepositoryPort,
+                agendamentoRepositoryPort
         );
     }
 
@@ -130,29 +137,22 @@ class SalaServiceTest {
 
     @Test
     void deveBuscarSalaPorId() {
-        Long id = 1L;
-
         Sala sala = Sala.builder()
-                .nome("Sala 01")
+                .id(1L)
+                .nome("Sala de Reunião")
                 .disponivel(true)
-                .capacidade(10)
-                .localizacao("Andar 1")
+                .capacidade(5)
+                .localizacao("2º andar")
                 .build();
 
-        SalaResponse response = mock(SalaResponse.class);
-
-        when(salaRepositoryPort.buscarPorId(id))
+        when(salaRepositoryPort.buscarPorId(1L))
                 .thenReturn(Optional.of(sala));
 
-        when(salaMapper.entityToResponse(sala))
-                .thenReturn(response);
+        Sala resultado = salaService.buscarPorId(1L);
 
-        SalaResponse resultado = salaService.buscarPorId(id);
+        assertSame(sala, resultado);
 
-        assertSame(response, resultado);
-
-        verify(salaRepositoryPort).buscarPorId(id);
-        verify(salaMapper).entityToResponse(sala);
+        verify(salaRepositoryPort).buscarPorId(1L);
     }
 
     @Test
@@ -607,5 +607,70 @@ class SalaServiceTest {
         verifyNoInteractions(usuarioRepositoryPort);
         verify(salaRepositoryPort)
                 .buscarDisoniveis(data, inicio, fim, 5);
+    }
+
+    @Test
+    void deveListarOcupacoesDaData() {
+        LocalDate data = LocalDate.now().plusDays(1);
+
+        Agendamento primeiraReserva = Agendamento.builder()
+                .salaId(Sala.builder().id(2L).build())
+                .horaInicio(LocalTime.of(14, 0))
+                .horaFim(LocalTime.of(15, 0))
+                .build();
+
+        Agendamento segundaReserva = Agendamento.builder()
+                .salaId(Sala.builder().id(5L).build())
+                .horaInicio(LocalTime.of(16, 30))
+                .horaFim(LocalTime.of(17, 0))
+                .build();
+
+        when(agendamentoRepositoryPort.buscarPorData(data))
+                .thenReturn(List.of(primeiraReserva, segundaReserva));
+
+        List<OcupacaoSalaResponse> resultado = salaService.buscarOcupacoes(data);
+
+        assertEquals(2, resultado.size());
+        assertEquals(2L, resultado.get(0).salaId());
+        assertEquals(LocalTime.of(14, 0), resultado.get(0).horaInicio());
+        assertEquals(LocalTime.of(15, 0), resultado.get(0).horaFim());
+        assertEquals(5L, resultado.get(1).salaId());
+
+        verify(agendamentoRepositoryPort).buscarPorData(data);
+        verifyNoInteractions(salaRepositoryPort);
+        verifyNoInteractions(salaMapper);
+    }
+
+    @Test
+    void deveRetornarListaVaziaQuandoDataNaoTiverReservas() {
+        LocalDate data = LocalDate.now().plusDays(1);
+
+        when(agendamentoRepositoryPort.buscarPorData(data)).thenReturn(List.of());
+
+        List<OcupacaoSalaResponse> resultado = salaService.buscarOcupacoes(data);
+
+        assertTrue(resultado.isEmpty());
+
+        verify(agendamentoRepositoryPort).buscarPorData(data);
+    }
+
+    @Test
+    void deveRejeitarDataNulaNasOcupacoes() {
+        assertThrows(
+                ValidacaoBuscaException.class,
+                () -> salaService.buscarOcupacoes(null)
+        );
+
+        verifyNoInteractions(agendamentoRepositoryPort);
+    }
+
+    @Test
+    void deveRejeitarDataPassadaNasOcupacoes() {
+        assertThrows(
+                ValidacaoBuscaException.class,
+                () -> salaService.buscarOcupacoes(LocalDate.now().minusDays(1))
+        );
+
+        verifyNoInteractions(agendamentoRepositoryPort);
     }
 }

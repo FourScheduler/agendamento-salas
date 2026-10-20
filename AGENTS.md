@@ -31,31 +31,34 @@ O backend lê banco e autenticação de um arquivo `backend/.env`, que não é v
 
 ## Fluxo do MVP
 
-1. Usuário acessa o Portal.
-2. Seleciona **Agendamento de Salas**.
-3. Informa data, horário, duração e quantidade de pessoas.
-4. O sistema apresenta salas mockadas disponíveis.
-5. O usuário escolhe uma sala, revisa os dados e confirma a reserva.
-6. O sistema exibe uma confirmação visual. Nesta etapa, nenhuma reserva é criada no Outlook.
+1. Usuário abre a home mockada do Portal (`/portal`) e clica em **Agendamento de Salas**, o acesso logo depois de **Portal de Gestão Pessoal**.
+2. A tela do agendamento já é o mapa: ele informa data, horário, duração e quantidade de pessoas no painel de resumo.
+3. O sistema apresenta a planta com as salas mockadas e a situação de cada uma.
+4. O usuário escolhe uma sala livre e revisa o resumo da reserva; o seletor de pessoas respeita a capacidade da sala.
+5. A confirmação fica disponível após o login. Nesta etapa, nenhuma reserva é criada no Outlook.
 
 ## Salas mockadas
 
-- Sala Focus — Tamboré
-- Sala Comp 01 — Tamboré
-- Sala Comp 02 — Tamboré
-- Sala Comp 03 — Tamboré
-- Sala Comp 04 — Tamboré
-- Sala 01 — Tamboré
-- Sala 02 — Tamboré
-- Sala 03 — Tamboré
+- Sala Focus (Tamboré): 1 a 2 pessoas
+- Sala Comp 01 (Tamboré): 8 pessoas
+- Sala Comp 02 (Tamboré): 8 pessoas
+- Sala Comp 03 (Tamboré): 8 pessoas
+- Sala Comp 04 (Tamboré): 8 pessoas
+- Sala 01 (Tamboré): 4 pessoas
+- Sala 02 (Tamboré): 4 pessoas
+- Sala 03 (Tamboré): 4 pessoas
+
+Regras de grupo: Focus para 1 a 2 pessoas, Salas 01 a 03 até 4, Comp a partir de 5. Reuniões com mais de 10 pessoas integram salas, conforme disponibilidade. Equipamentos de reunião híbrida são solicitados à equipe de Facilities.
 
 ## Identidade visual
 
-- Barra superior azul-marinho, símbolo laranja à esquerda e texto `Portal`.
+- Os padrões obrigatórios de todas as telas estão em `docs/padroes-visuais.md`, com os tokens extraídos do portal oficial (`portal.app.foursys.com`).
+- Barra superior `#222239`, símbolo laranja à esquerda e texto `Portal` com divisória branca.
+- Ações principais em laranja `#ff5315`; detalhes, ícones de estado e avatar em `#ff892e`.
+- Fundo das telas `#f7f8fa`, cartões brancos com borda de 1px, fonte `Nunito`.
 - Não exibir o texto `CCH`.
-- Fundo branco; ações principais e detalhes em laranja.
 - Interface corporativa, limpa, minimalista e responsiva.
-- O acesso deve se chamar **Agendamento de Salas**, usar ícone de calendário e pode exibir a etiqueta `Novo`.
+- O acesso se chama **Agendamento de Salas**, usa ícone de calendário e exibe a etiqueta `Novo`.
 
 ## Comandos
 

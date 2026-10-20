@@ -1,0 +1,29 @@
+<div class="toast-container" aria-live="polite" aria-atomic="true">
+  @for (toast of toasts(); track toast.id) {
+    <div class="toast toast--{{ toast.tipo }}" role="status" (mouseenter)="pausar.set(true)" (mouseleave)="pausar.set(false)">
+      <svg class="toast__icone" viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+        <path [attr.d]="icone(toast.tipo)" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+
+      <div class="toast__conteudo">
+        <p class="toast__titulo">{{ toast.titulo }}</p>
+        @if (toast.mensagem) {
+          <p class="toast__mensagem">{{ toast.mensagem }}</p>
+        }
+      </div>
+
+      <button
+        type="button"
+        class="toast__fechar"
+        aria-label="Fechar notificação"
+        (click)="remover(toast.id)"
+      >
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <path d="M4 4l8 8M12 4l-8 8" stroke-linecap="round" />
+        </svg>
+      </button>
+
+      <div class="toast__barra" [style.animation-duration.ms]="toast.duracao ?? 4000" [class.pausada]="pausar()"></div>
+    </div>
+  }
+</div>

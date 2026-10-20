@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-10-08T08:36:46-0300",
+    date = "2026-10-16T08:38:08-0300",
     comments = "version: 1.6.3, compiler: javac, environment: Java 21.0.11 (Azul Systems, Inc.)"
 )
 @Component
@@ -19,20 +19,14 @@ public class SalaMapperImpl implements SalaMapper {
             return null;
         }
 
-        Long id = null;
-        String nome = null;
-        Boolean disponivel = null;
-        Integer capacidade = null;
-        String localizacao = null;
+        SalaResponse.SalaResponseBuilder salaResponse = SalaResponse.builder();
 
-        id = entity.getId();
-        nome = entity.getNome();
-        disponivel = entity.getDisponivel();
-        capacidade = entity.getCapacidade();
-        localizacao = entity.getLocalizacao();
+        salaResponse.id( entity.getId() );
+        salaResponse.nome( entity.getNome() );
+        salaResponse.disponivel( entity.getDisponivel() );
+        salaResponse.capacidade( entity.getCapacidade() );
+        salaResponse.localizacao( entity.getLocalizacao() );
 
-        SalaResponse salaResponse = new SalaResponse( id, nome, disponivel, capacidade, localizacao );
-
-        return salaResponse;
+        return salaResponse.build();
     }
 }

@@ -1,5 +1,38 @@
-.agendamento {
-  max-width: 960px;
+.pagina_agendamento {
+  width: min(95%, 1500px);
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2rem clamp(1.5rem, 4vw, 4rem) 4rem;
+  margin-left: 0px;
+}
+
+.agendamento__cabecalho {
+  max-width: 40rem;
+}
+
+.agendamento__aviso {
+  margin-top: 1rem;
+}
+
+.agendamento__corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 2.5rem;
+  align-items: start;
+  margin-top: 1.75rem;
+}
+
+.agendamento__corpo > * {
+  min-width: 0;
+}
+
+@media (min-width: 901px) {
+  .agendamento__corpo app-painel-reserva {
+    margin-top: -5.5rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .agendamento__corpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

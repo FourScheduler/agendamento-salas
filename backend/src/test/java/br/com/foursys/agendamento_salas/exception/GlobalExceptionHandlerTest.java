@@ -54,10 +54,10 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void deveConverterFaltaDePermissaoEmNotFound() {
+    void deveConverterFaltaDePermissaoEmForbidden() {
         var response = handler.handleUsuarioSemPermissao(new UsuarioSemPermissaoException());
 
-        assertEquals(404, response.getStatusCode().value());
+        assertEquals(403, response.getStatusCode().value());
         assertEquals("O usuário não tem pemissão para realizar essa ação.", response.getBody().message());
     }
 

@@ -1,9 +1,14 @@
+
 package br.com.foursys.agendamento_salas.controller;
 
+import br.com.foursys.agendamento_salas.domain.AgendamentoConversa;
 import br.com.foursys.agendamento_salas.dto.response.CampoInterpretado;
 import br.com.foursys.agendamento_salas.dto.response.InterpretarAgendamentoResponse;
 import br.com.foursys.agendamento_salas.security.JwtAuthenticationFilter;
+import br.com.foursys.agendamento_salas.security.AuthenticatedUser;
+import br.com.foursys.agendamento_salas.security.SecurityUtils;
 import br.com.foursys.agendamento_salas.service.OllamaService;
+import br.com.foursys.agendamento_salas.service.OrquestradorAgendamentoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -38,16 +43,27 @@ class OllamaControllerTest {
     @MockitoBean
     private OllamaService ollamaService;
 
+    @MockitoBean
+    private OrquestradorAgendamentoService orquestradorAgendamentoService;
+
+    @MockitoBean
+    private SecurityUtils securityUtils;
+
     @Test
     void deveInterpretarAgendamentoComSucesso() throws Exception {
 
         String mensagem =
                 "quero uma sala para hoje inicio as 14h e fim as 15h para cinco pessoas";
 
+        LocalDate dataConhecida = null;
+        LocalTime inicioConhecido = null;
+        LocalTime fimConhecido = null;
+        Integer quantidadePessoasConhecida = null;
+
         InterpretarAgendamentoResponse resposta =
                 new InterpretarAgendamentoResponse(
                         new CampoInterpretado<>(
-                                LocalDate.of(2026, 10, 7),
+                                LocalDate.of(2026, 10, 9),
                                 true
                         ),
                         new CampoInterpretado<>(
@@ -61,18 +77,46 @@ class OllamaControllerTest {
                         new CampoInterpretado<>(
                                 5,
                                 true
+                        ),
+                        new CampoInterpretado<>(
+                                "Tamboré",
+                                true
+                        ),
+                        new CampoInterpretado<>(
+                                null,
+                                false
                         )
                 );
 
-        when(ollamaService.interpretarAgendamento(mensagem))
-                .thenReturn(resposta);
+
+        AgendamentoConversa conversa = AgendamentoConversa.builder()
+                .id(1L)
+                .dataAgendamento(null)
+                .horaInicio(null)
+                .horaFim(null)
+                .qntdPessoas(null)
+                .build();
+
+        when(securityUtils.get()).thenReturn(new AuthenticatedUser(1L, "usuario@teste.com"));
+        when(orquestradorAgendamentoService.buscarConversaDoUsuario(1L, 1L))
+                .thenReturn(conversa);
+
+
+        when(ollamaService.interpretarAgendamento(
+                mensagem,
+                dataConhecida,
+                inicioConhecido,
+                fimConhecido,
+                quantidadePessoasConhecida,
+                conversa.getLocalizacao()
+        )).thenReturn(resposta);
 
         mockMvc.perform(
-                        get("/api/ollama/interpretar")
+                        get("/api/ollama/1/interpretar")
                                 .param("mensagem", mensagem)
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.valor").value("2026-10-07"))
+                .andExpect(jsonPath("$.data.valor").value("2026-10-09"))
                 .andExpect(jsonPath("$.data.informado").value(true))
                 .andExpect(jsonPath("$.inicio.valor").value("14:00:00"))
                 .andExpect(jsonPath("$.inicio.informado").value(true))
@@ -81,7 +125,16 @@ class OllamaControllerTest {
                 .andExpect(jsonPath("$.quantidadePessoas.valor").value(5))
                 .andExpect(jsonPath("$.quantidadePessoas.informado").value(true));
 
-        verify(ollamaService).interpretarAgendamento(mensagem);
+        verify(ollamaService).interpretarAgendamento(
+                mensagem,
+                dataConhecida,
+                inicioConhecido,
+                fimConhecido,
+                quantidadePessoasConhecida,
+                conversa.getLocalizacao()
+        );
+
+        verify(orquestradorAgendamentoService).buscarConversaDoUsuario(1L, 1L);
     }
 
     @Test
@@ -89,7 +142,7 @@ class OllamaControllerTest {
             throws Exception {
 
         mockMvc.perform(
-                        get("/api/ollama/interpretar")
+                        get("/api/ollama/1/interpretar")
                 )
                 .andExpect(status().isBadRequest());
     }

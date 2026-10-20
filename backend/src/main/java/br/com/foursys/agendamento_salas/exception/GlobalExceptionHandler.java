@@ -5,6 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -61,6 +64,19 @@ public class GlobalExceptionHandler {
 				));
 	}
 
+	@ExceptionHandler(ConversaNaoEncontradaException.class)
+	public ResponseEntity<ErrorResponse> handleSonversaNaoEncontrada(
+			ConversaNaoEncontradaException exception
+	) {
+		return ResponseEntity
+				.status(HttpStatus.NOT_FOUND)
+				.body(new ErrorResponse(
+						HttpStatus.NOT_FOUND.value(),
+						exception.getMessage(),
+						LocalDateTime.now()
+				));
+	}
+
 	@ExceptionHandler(SalaJaExisteException.class)
 	public ResponseEntity<ErrorResponse> handleSalaJaExiste(
 			SalaJaExisteException exception
@@ -90,14 +106,72 @@ public class GlobalExceptionHandler {
 			UsuarioSemPermissaoException exception
 	){
 		ErrorResponse error = new ErrorResponse(
-				HttpStatus.NOT_FOUND.value(),
+				HttpStatus.FORBIDDEN.value(),
 				exception.getMessage(),
 				LocalDateTime.now()
 		);
 
 		return ResponseEntity
-				.status(HttpStatus.NOT_FOUND)
+				.status(HttpStatus.FORBIDDEN)
 				.body(error);
+	}
+
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity<ErrorResponse> handleValidacaoDeArgumentos(
+			MethodArgumentNotValidException exception
+	) {
+		String mensagem = exception.getBindingResult().getFieldErrors().stream()
+				.map(FieldError::getDefaultMessage)
+				.findFirst()
+				.orElse("Dados da requisição inválidos.");
+
+		return ResponseEntity
+				.status(HttpStatus.BAD_REQUEST)
+				.body(new ErrorResponse(
+						HttpStatus.BAD_REQUEST.value(),
+						mensagem,
+						LocalDateTime.now()
+				));
+	}
+
+	@ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
+	public ResponseEntity<ErrorResponse> handleNaoAutenticado(
+			AuthenticationCredentialsNotFoundException exception
+	) {
+		return ResponseEntity
+				.status(HttpStatus.UNAUTHORIZED)
+				.body(new ErrorResponse(
+						HttpStatus.UNAUTHORIZED.value(),
+						"Token ausente ou inválido. Faça login novamente.",
+						LocalDateTime.now()
+				));
+	}
+
+	@ExceptionHandler(UsuarioJaExisteException.class)
+	public ResponseEntity<ErrorResponse> handleUsuarioJaExiste(
+			UsuarioJaExisteException exception
+	) {
+		return ResponseEntity
+				.status(HttpStatus.CONFLICT)
+				.body(new ErrorResponse(
+						HttpStatus.CONFLICT.value(),
+						exception.getMessage(),
+						LocalDateTime.now()
+				));
+	}
+
+	@ExceptionHandler(InterpretacaoIaException.class)
+	public ResponseEntity<ErrorResponse> handleInterpretacaoIa(
+			InterpretacaoIaException exception
+	) {
+		log.error("Falha ao interpretar solicitação com o serviço de IA", exception);
+		return ResponseEntity
+				.status(HttpStatus.SERVICE_UNAVAILABLE)
+				.body(new ErrorResponse(
+						HttpStatus.SERVICE_UNAVAILABLE.value(),
+						exception.getMessage(),
+						LocalDateTime.now()
+				));
 	}
 
 	@ExceptionHandler(SalaIndisponivelException.class)

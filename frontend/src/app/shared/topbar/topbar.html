@@ -1,0 +1,156 @@
+<header class="topbar">
+  <a class="topbar__marca" routerLink="/">
+    <img class="topbar__simbolo" src="logo-portal.png" alt="" width="32" height="18" />
+    <span class="topbar__texto">Portal</span>
+  </a>
+
+  @if (exibirLocalizacao()) {
+    <span class="topbar__localizacao">
+      <span>Tamboré</span>
+    </span>
+  }
+
+  @if (exibirAcoesPortal()) {
+    <div class="topbar__acoes">
+      <button
+        class="topbar__botao-icone topbar__notificacoes"
+        type="button"
+        aria-label="Notificações"
+      >
+        <svg
+          class="topbar__icone"
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          fill="#ffffff"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+          <path d="M10 21h4" />
+        </svg>
+
+        <span class="topbar__contador">13</span>
+      </button>
+
+      <button class="topbar__botao-icone" type="button" aria-label="Horário">
+        <svg
+          class="topbar__icone topbar__icone--relogio"
+          viewBox="0 0 24 24"
+          width="24"
+          height="24"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" fill="#ffffff" stroke="#d1d5db" stroke-width="1.2" />
+
+          <path
+            d="M12 6v6l4 2"
+            fill="none"
+            stroke="#222238"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+  }
+
+  @if (!exibirAcoesPortal()) {
+    <a class="topbar__reservas" routerLink="/minhas-reservas">
+      <svg
+        class="topbar__menuIcone"
+        viewBox="0 0 16 16"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.4"
+        aria-hidden="true"
+      >
+        <rect x="1" y="2.5" width="14" height="12.5" rx="2" />
+        <path d="M1 6.5h14M4.5 0.5v3M11.5 0.5v3" stroke-linecap="round" />
+      </svg>
+      <span>Minhas reservas</span>
+    </a>
+  }
+
+  @if (usuario()) {
+    <div class="topbar__usuario">
+      <div class="topbar__perfil">
+        <button
+          class="topbar__avatar"
+          type="button"
+          aria-label="Abrir menu do perfil"
+          aria-controls="menu-perfil"
+          [attr.aria-expanded]="menuPerfilAberto()"
+          (click)="alternarMenuPerfil()"
+          (keydown.escape)="fecharMenuPerfil()"
+        >
+          {{ iniciais() }}
+        </button>
+
+        @if (menuPerfilAberto()) {
+          <div class="topbar__menu-perfil" id="menu-perfil">
+            <div class="topbar__menu-perfil-cabecalho">
+              <span class="topbar__menu-perfil-avatar" aria-hidden="true">{{ iniciais() }}</span>
+              <p class="topbar__menu-perfil-nome">{{ usuario() }}</p>
+            </div>
+            <button class="topbar__menu-perfil-sair" type="button" (click)="sair()">Sair</button>
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <button class="topbar__entrar" type="button" (click)="abrirModal()">Entrar</button>
+  }
+</header>
+
+@if (modalAberto()) {
+  <div class="login-overlay" (click)="fecharModal()" (keydown.escape)="fecharModal()">
+    <div
+      class="login-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="login-titulo"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 class="login-modal__titulo" id="login-titulo">Entrar no Portal</h2>
+      <p class="login-modal__ajuda">
+        Use seu nome para a demonstração. O login real virá pelo SSO do portal.
+      </p>
+
+      <form class="login-modal__form" (submit)="$event.preventDefault(); entrar()">
+        <label class="login-modal__campo" for="login-nome">
+          <span class="campo__rotulo">Nome</span>
+          <input
+            #campoNome
+            id="login-nome"
+            name="nome"
+            class="login-modal__entrada"
+            type="text"
+            autocomplete="name"
+            [value]="nomeDigitado()"
+            (input)="nomeDigitado.set(campoNome.value)"
+          />
+        </label>
+
+        <div class="login-modal__acoes">
+          <button class="login-modal__cancelar" type="button" (click)="fecharModal()">
+            Cancelar
+          </button>
+          <button class="botao login-modal__entrar" type="submit" [disabled]="entrando()">
+            {{ entrando() ? 'Entrando...' : 'Entrar' }}
+          </button>
+        </div>
+
+        @if (erroLogin(); as falha) {
+          <p class="login-modal__erro campo__erro" role="alert">{{ falha }}</p>
+        }
+      </form>
+    </div>
+  </div>
+}

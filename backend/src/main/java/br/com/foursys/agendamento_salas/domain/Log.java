@@ -1,33 +1,37 @@
 package br.com.foursys.agendamento_salas.domain;
 
+import br.com.foursys.agendamento_salas.enums.StatusLog;
 import jakarta.persistence.*;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-@Builder
-@Getter
 @Entity
 @Table(name = "logs")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Log {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "usuario_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "agendamento_id", nullable = false)
+    private Agendamento agendamento;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
-    private LocalDate dataAgendamento;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private StatusLog status;
+
+    @Column(name = "data_criacao", nullable = false)
     private LocalDateTime dataCriacao;
-
-    @ManyToOne
-    @JoinColumn(name = "sala_agendamento")
-    private Sala salaAgendamento;
-
-    private LocalTime horaInicioAgendamento;
-    private LocalTime horaFimAgendamento;
 }

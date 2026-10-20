@@ -1,0 +1,260 @@
+.planta {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.planta__cabecalho,
+.planta__legenda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.planta__cabecalho {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.planta__data {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--orange);
+}
+
+.planta__dataTexto {
+  display: flex;
+  flex-direction: column;
+}
+
+.planta__dia {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.planta__dataTexto strong {
+  color: var(--navy);
+  font-size: 0.9375rem;
+}
+
+.planta__disponibilidade {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.planta__ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.planta__corpo {
+  flex: 1;
+  padding: 1.25rem;
+}
+
+.planta__rolagem {
+  overflow-x: auto;
+}
+
+.planta__grade {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 171fr) minmax(0, 410fr) minmax(0, 410fr) minmax(0, 410fr)
+    minmax(0, 150fr) minmax(0, 410fr) minmax(0, 410fr) minmax(0, 74fr);
+  grid-template-rows:
+    minmax(0, 160fr) minmax(0, 246fr) minmax(0, 303fr) minmax(0, 291fr)
+    minmax(0, 91fr);
+  grid-template-areas:
+    'margem topo    topo    topo    corredor audit   audit   janelas'
+    'margem sala01  sala02  sala03  corredor audit   audit   janelas'
+    'margem servidor suporte suporte corredor comp01  comp02  janelas'
+    'margem focus   suporte suporte corredor comp03  comp04  janelas'
+    'rodape rodape  rodape  rodape  rodape   rodape  rodape  rodape';
+  gap: 0.5rem;
+  min-width: 640px;
+  aspect-ratio: 2490 / 1091;
+}
+
+.faixa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-soft);
+}
+
+.faixa span {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.faixa--margem {
+  grid-area: margem;
+  border-right: 1px dashed var(--border);
+}
+
+.faixa--topo {
+  grid-area: topo;
+  border-bottom: 1px dashed var(--border);
+}
+
+.faixa--corredor {
+  grid-area: corredor;
+  border-right: 1px dashed var(--border);
+  border-left: 1px dashed var(--border);
+}
+
+.faixa--janelas {
+  grid-area: janelas;
+  border-left: 3px solid var(--border-soft);
+}
+
+.faixa--rodape {
+  grid-area: rodape;
+  border-top: 1px dashed var(--border);
+}
+
+.faixa--vertical span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.estrutural {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  background: var(--page-bg);
+  color: var(--muted-soft);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.estrutural--servidor {
+  grid-area: servidor;
+}
+
+.estrutural--suporte {
+  grid-area: suporte;
+}
+
+.sala {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border: 1px solid var(--green-line);
+  border-radius: 4px;
+  background: var(--green-soft);
+  color: var(--navy);
+  font-family: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.sala:hover {
+  border-color: var(--orange-400);
+}
+
+.sala__dica {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  max-width: 100%;
+  padding: 0.25rem 0.5rem;
+  transform: translate(-50%, -50%);
+  border-radius: 6px;
+  background: var(--navy);
+  color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.sala:hover .sala__dica,
+.sala:focus-visible .sala__dica {
+  visibility: visible;
+  opacity: 1;
+}
+
+.sala__nome {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.sala__capacidade {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.sala--ocupada,
+.sala--indisponivel {
+  border-color: var(--red-line);
+  color: var(--muted);
+}
+
+.sala--ocupada {
+  background: var(--red-soft);
+}
+
+.sala--indisponivel {
+  background: repeating-linear-gradient(45deg, #fdecec 0 6px, #f8d6d6 6px 12px);
+}
+
+.sala--selecionada {
+  background: #fffaf6;
+  border: 2px solid var(--orange-400);
+  color: var(--navy);
+}
+
+.sala__marca {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  background: var(--orange-400);
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+
+.sala--restrita {
+  grid-area: audit;
+  border-style: dashed;
+  background: var(--disabled);
+  color: var(--muted);
+  cursor: default;
+}
+
+.sala__restricao {
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--orange-soft);
+  color: var(--orange-dark);
+  font-size: 0.625rem;
+  font-weight: 700;
+  cursor: help;
+}
+
+.planta__legenda {
+  padding: 0.875rem 1.5rem;
+  border-top: 1px solid var(--border-soft);
+}
