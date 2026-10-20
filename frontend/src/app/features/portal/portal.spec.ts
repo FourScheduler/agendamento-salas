@@ -30,7 +30,7 @@ describe('Portal', () => {
     await fixture.whenStable();
 
     const itens = (fixture.nativeElement as HTMLElement).querySelectorAll('li.portal__app');
-    expect(itens.length).toBe(15);
+    expect(itens.length).toBe(14);
   });
 
   it('should place the room booking access after the personal management portal', async () => {
@@ -42,10 +42,8 @@ describe('Portal', () => {
     ).map((item) => item.textContent?.trim());
 
     const agendamento = nomes.indexOf('Agendamento de Salas');
-    const mesas = nomes.indexOf('Reserva de Mesas');
     expect(agendamento).toBeGreaterThan(nomes.indexOf('Portal de Gestão Pessoal'));
-    expect(mesas).toBe(agendamento + 1);
-    expect(mesas).toBe(nomes.length - 1);
+    expect(agendamento).toBe(nomes.length - 1);
   });
 
   it('should link the booking access to the map route', async () => {
@@ -57,16 +55,5 @@ describe('Portal', () => {
     );
     expect(link).toBeTruthy();
     expect(link?.textContent).toContain('Agendamento de Salas');
-  });
-
-  it('should link the desk map access to the mesas route', async () => {
-    const fixture = TestBed.createComponent(Portal);
-    await fixture.whenStable();
-
-    const link = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>(
-      'a[href="/mesas"]',
-    );
-    expect(link).toBeTruthy();
-    expect(link?.textContent).toContain('Reserva de Mesas');
   });
 });
