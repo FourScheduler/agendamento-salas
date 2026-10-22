@@ -30,6 +30,13 @@
   background: var(--page-bg);
 }
 
+/* Modo administrativo: pilha de salas escolhidas, cada uma como um bloco. */
+.resumo__salas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .resumo__marca {
   position: relative;
   flex: none;
@@ -119,6 +126,63 @@
   padding: 0 0 0.875rem 2rem;
 }
 
+.sugestoes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  max-height: 13rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.25rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: #ffffff;
+  list-style: none;
+}
+
+.sugestoes__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.5rem 0.625rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.sugestoes__item--ativo,
+.sugestoes__item:hover {
+  background: var(--orange-soft);
+}
+
+.sugestoes__nome {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--navy);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.sugestoes__selo {
+  padding: 0.0625rem 0.5rem;
+  border-radius: 999px;
+  background: var(--orange-soft);
+  color: var(--orange-dark);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.sugestoes__email {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.sugestoes__vazio {
+  padding: 0.5rem 0.625rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
 .linha--fixo {
   display: flex;
   align-items: center;
@@ -152,6 +216,51 @@
 .stepper:disabled {
   color: var(--muted-soft);
   cursor: not-allowed;
+}
+
+.duracao {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.duracao__valor {
+  flex: 1;
+  text-align: center;
+  color: var(--navy);
+  font-size: 0.9375rem;
+}
+
+.duracao__atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.duracao__atalho {
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.duracao__atalho:hover {
+  border-color: var(--orange-400);
+  color: var(--navy);
+}
+
+.duracao__atalho--ativo {
+  border-color: var(--orange-400);
+  background: var(--orange-soft);
+  color: var(--orange-dark);
 }
 
 .resumo__limite {

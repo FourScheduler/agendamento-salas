@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/usuarios")
 public class UsuarioController {
@@ -53,5 +55,18 @@ public class UsuarioController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(usuarioMapper.toResponse(usuario));
+    }
+
+    /**
+     * Lista os usuários cadastrados para o agendamento administrativo
+     * escolher o solicitante; restrito a ADMIN pelo SecurityConfig.
+     */
+    @GetMapping
+    public ResponseEntity<List<UsuarioResponse>> listar() {
+        List<UsuarioResponse> usuarios = usuarioService.listarTodos().stream()
+                .map(usuarioMapper::toResponse)
+                .toList();
+
+        return ResponseEntity.ok(usuarios);
     }
 }

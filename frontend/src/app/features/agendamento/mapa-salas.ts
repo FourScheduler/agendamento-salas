@@ -30,8 +30,18 @@ export class MapaSalas {
   readonly carregando = input(false);
   readonly erro = input<string | null>(null);
   readonly selecionada = input<string | null>(null);
+  /** Modo administrativo: várias salas escolhidas ao mesmo tempo. */
+  readonly multipla = input(false);
+  readonly selecionadas = input<string[]>([]);
+  /**
+   * A Arena é reserva de eventos exclusiva do ADMIN: no modo comum ela fica
+   * visível como sala restrita e não clicável.
+   */
+  readonly podeReservarRestritas = input(false);
 
   readonly selecionar = output<string>();
+  /** Clique em sala livre no modo múltiplo: pede para alternar a escolha. */
+  readonly alternar = output<string>();
   readonly tentarNovamente = output<void>();
 
   /** Sala que o selo do cabeçalho deve detalhar; nenhuma antes do primeiro clique. */
@@ -40,8 +50,28 @@ export class MapaSalas {
   readonly rotuloDia = computed(() => formatarDia(this.data()));
   readonly rotuloData = computed(() => formatarData(this.data()));
   readonly livres = computed(
-    () => this.salas().filter((sala) => sala.estado === 'disponivel').length,
+    () =>
+      this.salas().filter(
+        (sala) => sala.estado === 'disponivel' && !this.restritaParaUsuario(sala),
+      ).length,
   );
+
+  /** Salas da lista lateral: as restritas aparecem só para quem pode reservá-las. */
+  readonly salasLista = computed(() =>
+    this.podeReservarRestritas()
+      ? this.salas()
+      : this.salas().filter((sala) => !sala.restrito),
+  );
+
+  /** Sala restrita (Arena) vista por quem não tem perfil ADMIN. */
+  restritaParaUsuario(sala: SalaPlanta): boolean {
+    return sala.restrito && !this.podeReservarRestritas();
+  }
+
+  /** Capacidade em texto; a Arena é de eventos e não tem limite de pessoas. */
+  capacidadeTexto(sala: SalaPlanta): string {
+    return sala.capacidade === null ? 'Eventos' : `Até ${sala.capacidade}`;
+  }
 
   /** Selo verde do cabeçalho: genérico sem sala, específico depois de escolher uma. */
   readonly seloDisponibilidade = computed(() => {
@@ -58,8 +88,17 @@ export class MapaSalas {
     this.salaInformada.set(nome);
 
     if (sala?.estado === 'disponivel') {
-      this.selecionar.emit(nome);
+      if (this.multipla()) {
+        this.alternar.emit(nome);
+      } else {
+        this.selecionar.emit(nome);
+      }
     }
+  }
+
+  /** Sala está escolhida no mapa: única ou entre as múltiplas. */
+  estaSelecionada(nome: string): boolean {
+    return this.multipla() ? this.selecionadas().includes(nome) : this.selecionada() === nome;
   }
 
   /**
@@ -68,7 +107,7 @@ export class MapaSalas {
    * nomeando a sala em `dicaDaSala`.
    */
   dicaTooltip(sala: SalaPlanta): string {
-    if (sala.estado === 'disponivel' && sala.capacidade >= this.pessoas()) {
+    if (sala.estado === 'disponivel' && this.atendePessoas(sala)) {
       return 'Disponível';
     }
 
@@ -77,7 +116,7 @@ export class MapaSalas {
 
   /** Texto da dica do mouse e do selo: capacidade que não atende ou próximo horário livre. */
   dicaDaSala(sala: SalaPlanta): string {
-    if (sala.capacidade < this.pessoas()) {
+    if (!this.atendePessoas(sala)) {
       return `${sala.nome} · não atende ${this.pessoas()} pessoas (até ${sala.capacidade})`;
     }
 
@@ -135,11 +174,16 @@ export class MapaSalas {
    * inclusive quando clicou numa ocupada só para saber a próxima folga.
    */
   private salaDoSelo(): SalaPlanta | null {
-    const nome = this.salaInformada() ?? this.selecionada();
+    const nome = this.salaInformada() ?? this.selecionadas()[0] ?? this.selecionada();
     if (!nome) {
       return null;
     }
 
     return this.salas().find((sala) => sala.nome === nome) ?? null;
+  }
+
+  /** Arena (sem capacidade) atende qualquer quantidade; senão, compara com a sala. */
+  private atendePessoas(sala: SalaPlanta): boolean {
+    return sala.capacidade === null || sala.capacidade >= this.pessoas();
   }
 }

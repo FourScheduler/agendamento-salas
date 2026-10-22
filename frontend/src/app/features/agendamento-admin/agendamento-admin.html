@@ -1,0 +1,59 @@
+<section class="pagina_agendamento">
+  <header class="agendamento__cabecalho">
+    <p class="eyebrow">Acesso restrito a administradores</p>
+    <h1 class="titulo">Escolha as salas</h1>
+    <p class="subtitulo">
+      Selecione uma ou mais salas disponíveis na planta. Reserve acima de 2 horas e em nome de
+      outro colaborador.
+    </p>
+  </header>
+
+  @if (erroValidacao(); as falha) {
+    <p class="campo__erro agendamento__aviso" role="alert">{{ falha }}</p>
+  }
+
+  @if (erroConfirmacao(); as falha) {
+    <p class="campo__erro agendamento__aviso" role="alert">{{ falha }}</p>
+  }
+
+  <div class="agendamento__corpo">
+    <app-mapa-salas
+      [salas]="salas()"
+      [data]="data()"
+      [horaInicio]="horaInicio()"
+      [duracao]="duracao()"
+      [pessoas]="pessoas()"
+      [ocupacoes]="ocupacoes()"
+      [carregando]="carregando()"
+      [erro]="erroApi()"
+      [multipla]="true"
+      [selecionadas]="selecionadas()"
+      [podeReservarRestritas]="true"
+      (alternar)="alternarSala($event)"
+      (tentarNovamente)="buscar()"
+    />
+
+    <app-painel-reserva
+      [salas]="salasEscolhidas()"
+      [data]="data()"
+      [horaInicio]="horaInicio()"
+      [duracao]="duracao()"
+      [pessoas]="pessoas()"
+      [stepperDuracao]="true"
+      [duracaoMaxima]="duracaoMaxima()"
+      [equipamentos]="equipamentos()"
+      [autenticado]="autenticado()"
+      [solicitante]="usuario()"
+      [solicitantes]="usuarios()"
+      [solicitanteId]="solicitanteId()"
+      [confirmando]="confirmando()"
+      (dataAlterada)="atualizarData($event)"
+      (horaAlterada)="atualizarHora($event)"
+      (duracaoAlterada)="atualizarDuracao($event)"
+      (pessoasAlterada)="atualizarPessoas($event)"
+      (equipamentosAlterada)="equipamentos.set($event)"
+      (solicitanteAlterado)="selecionarSolicitante($event)"
+      (confirmar)="confirmar()"
+    />
+  </div>
+</section>

@@ -31,11 +31,11 @@ O backend lê banco e autenticação de um arquivo `backend/.env`, que não é v
 
 ## Fluxo do MVP
 
-1. Usuário abre a home mockada do Portal (`/portal`) e clica em **Agendamento de Salas**, o acesso logo depois de **Portal de Gestão Pessoal**.
-2. A tela do agendamento já é o mapa: ele informa data, horário, duração e quantidade de pessoas no painel de resumo.
+1. Usuário abre a home mockada do Portal (`/portal`) e, com a sessão ativa, clica em **Agendamento de Salas**, o acesso logo depois de **Portal de Gestão Pessoal**; sem login o clique abre o modal de login e, após autenticar, segue para a tela do perfil (`USER` → agendamento comum, `ADMIN` → administrativo). O login pela topbar permanece no portal.
+2. A tela do agendamento já é o mapa: ele informa data, horário, duração e quantidade de pessoas no painel de resumo. Na tela administrativa a duração usa um stepper de 30 em 30 minutos com atalhos até o **Dia inteiro**.
 3. O sistema apresenta a planta com as salas mockadas e a situação de cada uma.
-4. O usuário escolhe uma sala livre e revisa o resumo da reserva; o seletor de pessoas respeita a capacidade da sala.
-5. A confirmação fica disponível após o login. Nesta etapa, nenhuma reserva é criada no Outlook.
+4. O usuário escolhe uma sala livre e revisa o resumo da reserva; o seletor de pessoas respeita a capacidade da sala. A Arena (eventos, sem capacidade) aparece como sala restrita e só o administrador consegue reservá-la.
+5. A confirmação usa a sessão iniciada no login e **Sair** volta ao portal. Nesta etapa, nenhuma reserva é criada no Outlook.
 
 ## Salas mockadas
 
@@ -47,8 +47,9 @@ O backend lê banco e autenticação de um arquivo `backend/.env`, que não é v
 - Sala 01 (Tamboré): 4 pessoas
 - Sala 02 (Tamboré): 4 pessoas
 - Sala 03 (Tamboré): 4 pessoas
+- Arena (Tamboré): eventos, sem capacidade definida; reservável apenas pelo perfil `ADMIN`
 
-Regras de grupo: Focus para 1 a 2 pessoas, Salas 01 a 03 até 4, Comp a partir de 5. Reuniões com mais de 10 pessoas integram salas, conforme disponibilidade. Equipamentos de reunião híbrida são solicitados à equipe de Facilities.
+Regras de grupo: Focus para 1 a 2 pessoas, Salas 01 a 03 até 4, Comp a partir de 5. Reuniões com mais de 10 pessoas integram salas, conforme disponibilidade. A Arena é de eventos: não limita as pessoas, não aparece nas sugestões do assistente e o backend recusa usuário comum com `403`. Equipamentos de reunião híbrida são solicitados à equipe de Facilities.
 
 ## Identidade visual
 

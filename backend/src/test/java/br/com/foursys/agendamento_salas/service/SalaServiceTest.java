@@ -297,6 +297,50 @@ class SalaServiceTest {
     }
 
     @Test
+    void deveListarSalasSemCapacidadeSemErroDeOrdenacao() {
+        LocalDate data = LocalDate.now().plusDays(1);
+        LocalTime inicio = LocalTime.of(14, 0);
+        LocalTime fim = LocalTime.of(15, 0);
+
+        Sala arena = Sala.builder()
+                .nome("Arena")
+                .disponivel(true)
+                .capacidade(null)
+                .restrito(true)
+                .localizacao("Tamboré")
+                .build();
+
+        Sala salaComCapacidade = Sala.builder()
+                .nome("Sala 01")
+                .disponivel(true)
+                .capacidade(4)
+                .localizacao("Tamboré")
+                .build();
+
+        when(salaRepositoryPort.buscarDisoniveis(
+                data,
+                inicio,
+                fim,
+                5
+        )).thenReturn(List.of(arena, salaComCapacidade));
+
+        when(salaMapper.entityToResponse(arena))
+                .thenReturn(mock(SalaResponse.class));
+        when(salaMapper.entityToResponse(salaComCapacidade))
+                .thenReturn(mock(SalaResponse.class));
+
+        List<SalaResponse> resultado = salaService.buscarSalasDisponiveis(
+                data,
+                inicio,
+                fim,
+                5,
+                null
+        );
+
+        assertEquals(2, resultado.size());
+    }
+
+    @Test
     void deveRejeitarQuantidadeDePessoasMenorQueUm() {
         LocalDate data = LocalDate.now().plusDays(1);
         LocalTime inicio = LocalTime.of(14, 0);

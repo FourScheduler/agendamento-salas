@@ -61,57 +61,65 @@
             <span>Time do suporte</span>
           </div>
 
-          <div class="sala sala--restrita">
-            <span class="sala__nome">Arena</span>
-            <span class="sala__capacidade">A definir</span>
-            <span class="sala__restricao dica" tabindex="0" aria-describedby="dica-auditorio">
-              Agendamento somente com um responsável
-              <span class="dica__caixa" id="dica-auditorio" role="tooltip">
-                Reserve com a equipe de Facilities
-              </span>
-            </span>
-          </div>
-
           @for (sala of salas(); track sala.id) {
-            <button
-              type="button"
-              class="sala"
-              [style.grid-area]="sala.area"
-              [class.sala--ocupada]="sala.estado === 'ocupada'"
-              [class.sala--indisponivel]="sala.estado === 'indisponivel'"
-              [class.sala--selecionada]="selecionada() === sala.nome"
-              [attr.aria-pressed]="
-                sala.estado === 'disponivel' ? selecionada() === sala.nome : null
-              "
-              [attr.aria-disabled]="sala.estado === 'disponivel' ? null : true"
-              (click)="clicar(sala.nome)"
-            >
-              <span class="sala__nome">{{ sala.nome }}</span>
-              <span class="sala__capacidade">Até {{ sala.capacidade }}</span>
-              <span class="sala__dica" role="tooltip">{{ dicaTooltip(sala) }}</span>
-
-              @if (selecionada() === sala.nome) {
-                <span class="sala__marca" aria-hidden="true">
-                  <svg viewBox="0 0 12 12" width="10" height="10" x="10" y="3">
-                    <path
-                      d="M2 6.4 4.6 9 10 3.4"
-                      fill="none"
-                      stroke="#ffffff"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
+            @if (restritaParaUsuario(sala)) {
+              <div class="sala sala--restrita" [style.grid-area]="sala.area">
+                <span class="sala__nome">{{ sala.nome }}</span>
+                <span class="sala__capacidade">Eventos</span>
+                <span
+                  class="sala__restricao dica"
+                  tabindex="0"
+                  [attr.aria-describedby]="'dica-restrita-' + sala.id"
+                >
+                  Reserva somente com o Facilities.
+                  <span class="dica__caixa" [id]="'dica-restrita-' + sala.id" role="tooltip">
+                    Arena reservável apenas pelo Facilities.
+                  </span>
                 </span>
-              }
-            </button>
+              </div>
+            } @else {
+              <button
+                type="button"
+                class="sala"
+                [style.grid-area]="sala.area"
+                [class.sala--ocupada]="sala.estado === 'ocupada'"
+                [class.sala--indisponivel]="sala.estado === 'indisponivel'"
+                [class.sala--selecionada]="estaSelecionada(sala.nome)"
+                [attr.aria-pressed]="
+                  sala.estado === 'disponivel' ? estaSelecionada(sala.nome) : null
+                "
+                [attr.aria-disabled]="sala.estado === 'disponivel' ? null : true"
+                (click)="clicar(sala.nome)"
+              >
+                <span class="sala__nome">{{ sala.nome }}</span>
+                <span class="sala__capacidade">{{ capacidadeTexto(sala) }}</span>
+                <span class="sala__dica" role="tooltip">{{ dicaTooltip(sala) }}</span>
+
+                @if (estaSelecionada(sala.nome)) {
+                  <span class="sala__marca" aria-hidden="true">
+                    <svg viewBox="0 0 12 12" width="10" height="10" x="10" y="3">
+                      <path
+                        d="M2 6.4 4.6 9 10 3.4"
+                        fill="none"
+                        stroke="#ffffff"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                }
+              </button>
+            }
           }
         </div>
       </div>
 
       <app-lista-salas
-        [salas]="salas()"
+        [salas]="salasLista()"
         [selecionada]="selecionada()"
+        [selecionadas]="selecionadas()"
+        [multipla]="multipla()"
         (clique)="clicar($event)"
       />
     }

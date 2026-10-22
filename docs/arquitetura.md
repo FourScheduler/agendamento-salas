@@ -20,13 +20,14 @@ No futuro, apenas o backend poderá integrar IA e Microsoft Graph. O frontend co
 
 ## Segurança
 
-- `POST /auth/login`, `POST /auth/demo`, `GET /api/salas/disponiveis`, `GET /api/salas/ocupacoes` e `GET /api/salas/{id}` são públicos.
-- `POST /api/usuarios` e `POST /api/salas/admin/criar` exigem perfil `ADMIN`.
+- `POST /auth/login`, `GET /api/salas/disponiveis`, `GET /api/salas/ocupacoes` e `GET /api/salas/{id}` são públicos.
+- `GET /api/usuarios`, `POST /api/usuarios` e `POST /api/salas/admin/criar` exigem perfil `ADMIN`.
 - Qualquer outra rota (incluindo `/api/ollama/**` e `/api/agendamento/**`) exige token JWT válido.
 - Sem token ou com token inválido a resposta é `401`; sem perfil adequado é `403`, ambos no modelo de erro padrão.
 - O `JwtAuthenticationFilter` não autenta requisições com token inválido; a requisição segue a cadeia e cai no `401`.
 - Recursos por usuário (conversas, reservas) são resolvidos pelo **token**, não pelo corpo da requisição: o backend compara o dono do recurso com o usuário autenticado e responde `403` em caso de acesso alheio.
-- Após o login de demonstração, o frontend busca o nome real do usuário em `GET /api/usuarios/me`; se falhar, mantém o nome digitado no login.
+- Após o login (e-mail e senha), o frontend busca o nome real do usuário em `GET /api/usuarios/me`; se falhar, mantém o e-mail digitado no login. O login pela topbar **permanece na página** em que o usuário está: quem direciona é o acesso do portal — com sessão, o clique em `Agendamento de Salas` abre `/agendamento` (`USER`) ou `/agendamento-admin` (`ADMIN`); sem sessão, o clique abre o próprio login e segue para a tela do perfil após autenticar (`AuthService.abrirLogin` e `destinoLogin`).
+- As rotas de agendamento são protegidas por guards: `/agendamento` usa `authGuard` e `/agendamento-admin` usa `authGuard` + `adminGuard`; sem sessão o usuário volta ao `/portal`. O botão **Sair** limpa a sessão e também redireciona ao portal. Em `/minhas-reservas`, o botão de voltar segue o perfil (`ADMIN` → `/agendamento-admin`, `USER` → `/agendamento`).
 
 ## Estrutura do backend
 
@@ -66,7 +67,7 @@ O relatório HTML fica em `backend/target/site/jacoco/index.html`.
 
 ## Estrutura do frontend
 
-`frontend/src/app` segue `core/`, `shared/` e `features/` (ver `frontend/AGENTS.md`). A base atual cria a feature `features/agendamento` com rota padrão. Os ambientes ficam em `frontend/src/environments`, com troca via `fileReplacements` na build de produção.
+`frontend/src/app` segue `core/`, `shared/` e `features/` (ver `frontend/AGENTS.md`). As features atuais são `portal`, `agendamento` (planta + painel + assistente), `agendamento-admin` (mesma planta e mesmo painel, com seleção múltipla de salas, durações acima de 2 h e busca de solicitante, sem assistente — rota protegida pelo `adminGuard`) e `reservas`. Os ambientes ficam em `frontend/src/environments`, com troca via `fileReplacements` na build de produção.
 
 ## Evolução prevista
 

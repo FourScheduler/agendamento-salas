@@ -5,6 +5,7 @@ import br.com.foursys.agendamento_salas.infrastructure.persistence.repository.Us
 import br.com.foursys.agendamento_salas.port.out.UsuarioRepositoryPort;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -31,5 +32,9 @@ public class UsuarioRepositoryAdapter implements UsuarioRepositoryPort {
         return repository.findByEmail(email);
     }
 
+    @Override
+    public List<Usuario> buscarTodos() {
+        return repository.findAllByOrderByNomeAsc();
+    }
 
 }

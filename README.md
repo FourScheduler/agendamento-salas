@@ -7,7 +7,8 @@ MVP corporativo de agendamento de salas do Portal. A versão atual é demonstrá
 ## Estado atual
 
 - Planta das salas com situação (livre/ocupada) consultada na API
-- Login de demonstração pela topbar: nome digitado, token emitido pelo backend sem senha
+- Login pela topbar com e-mail e senha (`POST /auth/login`), permanecendo na página após entrar; quem direciona é o acesso **Agendamento de Salas** do portal, conforme o perfil: `USER` vai para o agendamento comum e `ADMIN` para o administrativo
+- Tela administrativa `/agendamento-admin`: várias salas por reserva, duração até o fim do dia via stepper com atalhos, escolha do solicitante e reserva da Arena (sala restrita de eventos, exclusiva de `ADMIN`) — a reserva aparece nos **Minhas reservas** da pessoa escolhida
 - Confirmação de reserva pelo backend real via `POST /api/agendamento`
 - Tela **Minhas reservas** com reservas futuras e passadas do usuário
 - Nenhuma reserva é criada no Outlook; não há chamadas ao Microsoft Graph ou a serviços de IA
@@ -41,7 +42,7 @@ copy .env.example .env   # preencha DB_USERNAME, DB_PASSWORD e JWT_SECRET
 .\mvnw.cmd spring-boot:run
 ```
 
-As migrations do Flyway criam o schema e o usuário de demonstração `usuario@teste.com`. O profile `dev` é o padrão e já habilita o login demo (`app.auth.demo-enabled`).
+As migrations do Flyway criam o schema e os usuários de demonstração (`admin@teste.com` e `usuario@teste.com`), todos com a senha de demonstração definida no seed.
 
 ### Frontend (http://localhost:4200)
 
@@ -58,7 +59,7 @@ O frontend consome somente a API do backend em `http://localhost:8080`.
 node mock\mock-api.js
 ```
 
-O mock responde em `http://localhost:8080` com a lista de salas para a tela de busca. Ele não implementa `/auth/demo` nem `/api/agendamento`: para testar login e confirmação de reserva, use o backend.
+O mock responde em `http://localhost:8080` com a lista de salas para a tela de busca. Ele não implementa `/auth/login` nem `/api/agendamento`: para testar login e confirmação de reserva, use o backend.
 
 ## Como testar
 
@@ -73,24 +74,26 @@ npm.cmd test -- --watch=false
 npm.cmd run build
 ```
 
-## Login de demonstração
+## Login
 
 1. Na topbar, clique em **Entrar**.
-2. Digite seu nome e confirme.
-3. O frontend chama `POST /auth/demo` e o backend emite um JWT do usuário do seed, sem senha.
+2. Informe o e-mail e a senha da conta e confirme.
+3. O frontend chama `POST /auth/login`; o backend emite um JWT e o nome e o perfil vêm de `GET /api/usuarios/me`.
 
-O fluxo com e-mail e senha (`POST /auth/login`) continua disponível no backend para o futuro.
+Os usuários criados pelas migrations compartilham a senha de demonstração definida no seed. O portal não tem acesso separado para administradores: com sessão ativa, o acesso **Agendamento de Salas** leva `ADMIN` para `/agendamento-admin` e `USER` para `/agendamento`; sem sessão, o clique abre o login e segue para a tela do perfil após autenticar.
+
+As telas de agendamento só abrem com sessão ativa: sem login, o guard devolve o usuário ao portal. O botão **Sair** encerra a sessão e redireciona para o portal.
 
 ## Fluxo do MVP
 
-1. Usuário acessa o Portal
-2. Seleciona **Agendamento de Salas**
+1. Usuário acessa o Portal e entra com e-mail e senha; o login pela topbar permanece no portal — quem direciona é o acesso **Agendamento de Salas**
+2. Seleciona **Agendamento de Salas** — com sessão, direciona para a tela do perfil (`USER` comum, `ADMIN` administrativa); sem sessão, o clique abre o login e segue para a mesma tela após autenticar
 3. A tela já exibe a planta: informe data, horário, duração e quantidade de pessoas no painel
 4. O sistema mostra as salas livres na planta
-5. Usuário escolhe uma sala livre e revisa o resumo
-6. A confirmação exige o login de demonstração
-7. A reserva é registrada pela API e a tela mostra a confirmação
-8. Em **Minhas reservas** (topbar) o usuário vê suas reservas
+5. Usuário escolhe uma sala livre e revisa o resumo; no modo administrativo escolhe várias salas, ajusta a duração com o stepper até o fim do dia e pode reservar a Arena (sala restrita de eventos, exclusiva de `ADMIN`)
+6. A reserva é registrada pela API e a tela mostra a confirmação
+7. Em **Minhas reservas** (topbar) o usuário vê suas reservas; as reservas que um administrador fez para outra pessoa aparecem nos Minhas reservas dessa pessoa
+8. **Sair** encerra a sessão e volta ao portal
 
 ## Documentação
 

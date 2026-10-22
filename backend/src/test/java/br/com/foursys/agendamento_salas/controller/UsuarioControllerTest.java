@@ -65,4 +65,25 @@ class UsuarioControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertSame(usuarioResponse, response.getBody());
     }
+
+    @Test
+    void deveListarUsuariosComOk() {
+        UsuarioService service = mock(UsuarioService.class);
+        UsuarioMapper mapper = mock(UsuarioMapper.class);
+        SecurityUtils securityUtils = mock(SecurityUtils.class);
+        UsuarioController controller = new UsuarioController(service, mapper, securityUtils);
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+        usuario.setEmail("admin@teste.com");
+        UsuarioResponse usuarioResponse = new UsuarioResponse(
+                1L, "admin@teste.com", "Administrador Principal", PerfilUsuario.ADMIN
+        );
+        when(service.listarTodos()).thenReturn(java.util.List.of(usuario));
+        when(mapper.toResponse(usuario)).thenReturn(usuarioResponse);
+
+        var response = controller.listar();
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(java.util.List.of(usuarioResponse), response.getBody());
+    }
 }

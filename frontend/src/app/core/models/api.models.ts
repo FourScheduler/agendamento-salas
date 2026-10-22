@@ -13,8 +13,11 @@ export interface Sala {
   id: number;
   nome: string;
   disponivel: boolean;
-  capacidade: number;
+  /** Capacidade em pessoas; nula na Arena, que é de eventos e não limita as pessoas. */
+  capacidade: number | null;
   localizacao: string;
+  /** Sala restrita (Arena): reservável apenas pelo perfil ADMIN. */
+  restrito?: boolean;
 }
 
 /** Janela ocupada por uma reserva confirmada em uma data. */
@@ -31,6 +34,15 @@ export interface BuscaSalasRequest {
   qntdPessoas: number;
 }
 
+export type PerfilUsuario = 'USER' | 'ADMIN';
+
+export interface Usuario {
+  id: number;
+  email: string;
+  nome: string;
+  perfilUsuario: PerfilUsuario;
+}
+
 export interface CriaAgendamentoRequest {
   salaId: { id: number }[];
   data: string;
@@ -38,6 +50,11 @@ export interface CriaAgendamentoRequest {
   horaFim: string;
   qntdPessoas: number;
   titulo: string;
+  /**
+   * Cria a reserva em nome de outro usuário; somente ADMIN pode informar.
+   * Nulo ou ausente usa o próprio usuário autenticado como solicitante.
+   */
+  usuarioIdSolicitante?: { id: number } | null;
 }
 
 export interface ConfirmacaoAgendamento {
@@ -70,7 +87,7 @@ export type StatusReserva =
 export interface ReservaSala {
   id: number;
   nome: string;
-  capacidade: number;
+  capacidade: number | null;
   localizacao: string;
 }
 

@@ -237,7 +237,6 @@
 }
 
 .sala--restrita {
-  grid-area: audit;
   border-style: dashed;
   background: var(--disabled);
   color: var(--muted);

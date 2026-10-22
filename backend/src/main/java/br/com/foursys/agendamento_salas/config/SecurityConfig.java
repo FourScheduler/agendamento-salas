@@ -56,10 +56,11 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/auth/login", "/auth/demo").permitAll()
+                        .requestMatchers("/auth/login").permitAll()
                         // Busca de salas é pública; o cadastro de salas é restrito a ADMIN.
                         .requestMatchers("/api/salas/disponiveis", "/api/salas/*").permitAll()
                         .requestMatchers("/api/salas/admin/criar").hasAnyRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/usuarios").hasAnyRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/usuarios").hasAnyRole("ADMIN")
                         .anyRequest().authenticated()
                 )

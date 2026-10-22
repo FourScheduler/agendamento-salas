@@ -117,7 +117,11 @@ public class SalaService {
                                                 localizacao
                                         )
                                 )
-                                .thenComparingInt(Sala::getCapacidade)
+                                .thenComparingInt(
+                                        sala -> sala.getCapacidade() == null
+                                                ? Integer.MAX_VALUE
+                                                : sala.getCapacidade()
+                                )
                 )
 
                 .map(salaMapper::entityToResponse)

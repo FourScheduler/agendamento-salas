@@ -108,6 +108,17 @@ class AgendamentoJpaRepositoryTests {
         assertThat(disponiveis).extracting(Sala::getId).contains(sala.getId());
     }
 
+    @Test
+    @DisplayName("Deve incluir a Arena (sem capacidade) para qualquer quantidade de pessoas")
+    void deveIncluirSalaSemCapacidadeParaQualquerQuantidade() {
+        List<Sala> disponiveis = salaJpaRepository.buscarSalasDisponiveis(
+                DATA, LocalTime.of(9, 0), LocalTime.of(10, 0), 80
+        );
+
+        // A Arena vem do seed V2 sem capacidade: eventos não limitam as pessoas.
+        assertThat(disponiveis).extracting(Sala::getId).contains(9L);
+    }
+
     private Agendamento agendamento(StatusAgendamento status, LocalTime inicio, LocalTime fim) {
         return Agendamento.builder()
                 .usuarioId(usuario)

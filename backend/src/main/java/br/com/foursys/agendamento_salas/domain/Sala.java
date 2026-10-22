@@ -24,4 +24,10 @@ public class Sala {
     private Boolean disponivel;
     private Integer capacidade;
     private String localizacao;
+    /**
+     * Salas restritas (Arena) são de reserva de eventos: sem capacidade
+     * definida e reserváveis apenas pelo perfil ADMIN.
+     */
+    @Builder.Default
+    private Boolean restrito = false;
 }

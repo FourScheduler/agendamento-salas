@@ -89,7 +89,8 @@ export class Agendamento implements OnInit {
     this.selecionada.set(nome);
     this.limparErroConfirmacao();
 
-    if (sala && this.pessoas() > sala.capacidade) {
+    // Sala sem capacidade (Arena, de eventos) não limita as pessoas.
+    if (sala && sala.capacidade !== null && this.pessoas() > sala.capacidade) {
       this.pessoas.set(sala.capacidade);
       this.buscar();
     }
