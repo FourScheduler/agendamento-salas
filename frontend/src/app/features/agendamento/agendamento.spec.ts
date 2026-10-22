@@ -8,20 +8,21 @@ import { authInterceptor } from '../../core/http/auth-interceptor';
 import { RespostaAssistente } from '../../shared/assistente-ia/assistente-ia';
 import { ToastService } from '../../shared/toast/toast';
 import { environment } from '../../../environments/environment';
-import { hojeIso } from '../../core/util/formatos';
+import { hojeIso, paraIso } from '../../core/util/formatos';
 
 function aguardarMicrotarefas(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-async function entrarDemo(httpMock: HttpTestingController): Promise<void> {
-  const login = TestBed.inject(AuthService).entrar('Kevin Miranda');
-  httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('token-jwt-123');
+async function entrarUsuarioComum(httpMock: HttpTestingController): Promise<void> {
+  const login = TestBed.inject(AuthService).entrar('usuario@teste.com', '123456');
+  httpMock.expectOne(`${environment.apiUrl}/auth/login`).flush('token-jwt-123');
   await aguardarMicrotarefas();
   httpMock.expectOne(`${environment.apiUrl}/api/usuarios/me`).flush({
     id: 3,
     nome: 'Usuario Teste Um',
     email: 'usuario@teste.com',
+    perfilUsuario: 'USER',
   });
   await login;
 }
@@ -171,7 +172,7 @@ describe('Agendamento', () => {
 
     fixture.componentInstance.selecionar('Sala 02');
 
-    await entrarDemo(httpMock);
+    await entrarUsuarioComum(httpMock);
 
     const promessa = fixture.componentInstance.confirmarReserva();
 
@@ -221,7 +222,7 @@ describe('Agendamento', () => {
     // Capacidade 8 do mapa: 5 pessoas não dispara a busca de ajuste da capacidade.
     componente.selecionar('Componivel 02');
 
-    await entrarDemo(httpMock);
+    await entrarUsuarioComum(httpMock);
 
     const promessa = componente.confirmarReserva();
 
@@ -255,7 +256,7 @@ describe('Agendamento', () => {
 
     fixture.componentInstance.selecionar('Sala 02');
 
-    await entrarDemo(httpMock);
+    await entrarUsuarioComum(httpMock);
 
     const promessa = fixture.componentInstance.confirmarReserva();
     httpMock.expectOne(`${environment.apiUrl}/api/agendamento`).flush({
@@ -290,7 +291,13 @@ describe('Agendamento', () => {
     responder([{ id: 2, nome: 'Sala 02' }]);
     await fixture.whenStable();
 
-    await entrarDemo(httpMock);
+    await entrarUsuarioComum(httpMock);
+
+    // Data relativa: uma data fixa no passado faria a busca ser recusada.
+    const amanha = new Date();
+    amanha.setDate(amanha.getDate() + 1);
+    const dataAmanha = paraIso(amanha);
+    const [ano, mes, dia] = dataAmanha.split('-');
 
     const promessa =
       fixture.componentInstance.processarMensagemAssistente('sala para 4 pessoas amanhã às 14h');
@@ -313,7 +320,7 @@ describe('Agendamento', () => {
       estado: 'AGUARDANDO_ESCOLHA',
       mensagem: 'Encontrei algumas salas disponíveis. Qual você prefere?',
       sugestoes: [{ salaId: 2, nome: 'Sala 02', capacidade: 4, localizacao: 'Tamboré' }],
-      data: '2026-10-20',
+      data: dataAmanha,
       horaInicio: '14:00:00',
       horaFim: '15:00:00',
       qntdPessoas: 4,
@@ -325,7 +332,7 @@ describe('Agendamento', () => {
     responderOcupacoes();
     responder([{ id: 2, nome: 'Sala 02' }]);
 
-    expect(fixture.componentInstance.data()).toBe('2026-10-20');
+    expect(fixture.componentInstance.data()).toBe(dataAmanha);
     expect(fixture.componentInstance.horaInicio()).toBe('14:00');
     expect(fixture.componentInstance.duracao()).toBe(60);
     expect(fixture.componentInstance.pessoas()).toBe(4);
@@ -344,7 +351,7 @@ describe('Agendamento', () => {
       estado: 'AGUARDANDO_CONFIRMACAO',
       mensagem: 'Você escolheu a sala Sala 02. Deseja confirmar o agendamento?',
       sugestoes: [],
-      data: '2026-10-20',
+      data: dataAmanha,
       horaInicio: '14:00:00',
       horaFim: '15:00:00',
       qntdPessoas: 4,
@@ -366,7 +373,7 @@ describe('Agendamento', () => {
         estado: 'CONFIRMADO',
         mensagem: 'Agendamento realizado com sucesso!',
         sugestoes: [],
-        data: '2026-10-20',
+        data: dataAmanha,
         horaInicio: '14:00:00',
         horaFim: '15:00:00',
         qntdPessoas: 4,
@@ -380,7 +387,7 @@ describe('Agendamento', () => {
 
     expect(respostaConfirmacao.texto).toContain('sucesso');
     const toast = TestBed.inject(ToastService).toasts()[0];
-    expect(toast.titulo).toBe('Reserva confirmada das 14:00 às 15:00 20/10/26');
+    expect(toast.titulo).toBe(`Reserva confirmada das 14:00 às 15:00 ${dia}/${mes}/${ano.slice(-2)}`);
     expect(toast.mensagem).toBeUndefined();
     await fixture.whenStable();
   });
@@ -390,7 +397,7 @@ describe('Agendamento', () => {
     responder([]);
     await fixture.whenStable();
 
-    await entrarDemo(httpMock);
+    await entrarUsuarioComum(httpMock);
 
     const promessa =
       fixture.componentInstance.processarMensagemAssistente('sala para 4 pessoas');

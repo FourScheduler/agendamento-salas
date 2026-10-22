@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { BuscaReservasRequest, Reserva, StatusReserva } from '../../core/models/api.models';
 import { mensagemDeErro } from '../../core/http/api-error';
+import { AuthService } from '../../core/services/auth.service';
 import { ReservasService } from '../../core/services/reservas.service';
 import { dataCurta, paraIso } from '../../core/util/formatos';
 import { ToastService } from '../../shared/toast/toast';
@@ -45,6 +46,7 @@ const OPCOES_STATUS: StatusReserva[] = ['CONFIRMADO', 'CANCELADO', 'AGUARDANDO_C
 })
 export class MinhasReservas implements OnInit {
   private readonly reservasService = inject(ReservasService);
+  private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
@@ -184,9 +186,11 @@ export class MinhasReservas implements OnInit {
     return this.statusFiltro() !== null || this.periodoPersonalizado();
   }
 
-  /** Volta para a tela de agendamento de salas. */
+  /** Volta para a tela de agendamento do perfil: admin volta para a administrativa. */
   voltarParaAgendamento(): void {
-    this.router.navigate(['/agendamento']);
+    void this.router.navigate([
+      this.auth.ehAdmin() ? '/agendamento-admin' : '/agendamento',
+    ]);
   }
 
   agendar(): void {

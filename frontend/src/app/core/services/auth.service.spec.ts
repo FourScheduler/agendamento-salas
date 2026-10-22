@@ -8,6 +8,26 @@ function aguardarMicrotarefas(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+/** Responde o POST /auth/login com o token de teste. */
+function responderLogin(httpMock: HttpTestingController, token = 'token-jwt-123') {
+  const chamada = httpMock.expectOne(`${environment.apiUrl}/auth/login`);
+  expect(chamada.request.method).toBe('POST');
+  chamada.flush(token);
+}
+
+/** Responde o GET /api/usuarios/me com o perfil informado. */
+function responderPerfil(
+  httpMock: HttpTestingController,
+  perfil: Record<string, unknown> = {
+    id: 3,
+    nome: 'Usuario Teste Um',
+    email: 'usuario@teste.com',
+    perfilUsuario: 'USER',
+  },
+) {
+  httpMock.expectOne(`${environment.apiUrl}/api/usuarios/me`).flush(perfil);
+}
+
 describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
@@ -30,33 +50,59 @@ describe('AuthService', () => {
     expect(service.autenticado()).toBe(false);
     expect(service.usuario()).toBeNull();
     expect(service.token()).toBeNull();
+    expect(service.perfil()).toBeNull();
+    expect(service.ehAdmin()).toBe(false);
   });
 
-  it('should authenticate through the demo endpoint and persist session', async () => {
-    const promessa = service.entrar('  Kevin Miranda  ');
+  it('should authenticate with email and password and persist the session', async () => {
+    const promessa = service.entrar(' usuario@teste.com ', '123456');
 
-    const chamada = httpMock.expectOne(`${environment.apiUrl}/auth/demo`);
-    expect(chamada.request.method).toBe('POST');
-    chamada.flush('token-jwt-123');
+    const login = httpMock.expectOne(`${environment.apiUrl}/auth/login`);
+    expect(login.request.body).toEqual({ email: 'usuario@teste.com', password: '123456' });
+    login.flush('token-jwt-123');
 
     await aguardarMicrotarefas();
-    const perfil = httpMock.expectOne(`${environment.apiUrl}/api/usuarios/me`);
-    perfil.flush({ id: 3, nome: 'Kevin Miranda (backend)', email: 'usuario@teste.com' });
+    responderPerfil(httpMock, {
+      id: 3,
+      nome: 'Usuario Teste Um',
+      email: 'usuario@teste.com',
+      perfilUsuario: 'USER',
+    });
 
     await promessa;
 
     expect(service.autenticado()).toBe(true);
-    expect(service.usuario()).toBe('Kevin Miranda (backend)');
+    expect(service.usuario()).toBe('Usuario Teste Um');
     expect(service.token()).toBe('token-jwt-123');
-    expect(window.localStorage.getItem('fourscheduler.usuario')).toBe('Kevin Miranda (backend)');
+    expect(service.perfil()).toBe('USER');
+    expect(window.localStorage.getItem('fourscheduler.usuario')).toBe('Usuario Teste Um');
     expect(window.localStorage.getItem('fourscheduler.token')).toBe('token-jwt-123');
   });
 
-  it('should fall back to the typed name when the profile cannot be loaded', async () => {
-    const promessa = service.entrar(' Kevin Miranda  ');
+  it('should store the ADMIN profile after a successful login', async () => {
+    const promessa = service.entrar('admin@teste.com', '123456');
 
-    httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('token-jwt-123');
+    responderLogin(httpMock, 'token-admin');
+    await aguardarMicrotarefas();
+    responderPerfil(httpMock, {
+      id: 1,
+      nome: 'Administrador Principal',
+      email: 'admin@teste.com',
+      perfilUsuario: 'ADMIN',
+    });
 
+    await promessa;
+
+    expect(service.usuario()).toBe('Administrador Principal');
+    expect(service.perfil()).toBe('ADMIN');
+    expect(service.ehAdmin()).toBe(true);
+    expect(window.localStorage.getItem('fourscheduler.perfil')).toBe('ADMIN');
+  });
+
+  it('should fall back to the typed email when the profile cannot be loaded', async () => {
+    const promessa = service.entrar('usuario@teste.com', '123456');
+
+    responderLogin(httpMock);
     await aguardarMicrotarefas();
     httpMock.expectOne(`${environment.apiUrl}/api/usuarios/me`).flush('erro', {
       status: 500,
@@ -66,17 +112,36 @@ describe('AuthService', () => {
     await promessa;
 
     expect(service.autenticado()).toBe(true);
-    expect(service.usuario()).toBe('Kevin Miranda');
+    expect(service.usuario()).toBe('usuario@teste.com');
+    // Sem perfil vindo do backend, a sessão não pode se passar por admin.
+    expect(service.ehAdmin()).toBe(false);
     expect(service.token()).toBe('token-jwt-123');
   });
 
-  it('should not authenticate when the demo endpoint fails', async () => {
-    const promessa = service.entrar('Kevin Miranda');
+  it('should default to the USER profile when the backend does not send one', async () => {
+    const promessa = service.entrar('usuario@teste.com', '123456');
 
-    httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('erro', {
-      status: 404,
-      statusText: 'Not Found',
+    responderLogin(httpMock, 'token-jwt');
+    await aguardarMicrotarefas();
+    httpMock.expectOne(`${environment.apiUrl}/api/usuarios/me`).flush({
+      id: 3,
+      nome: 'Usuario Teste Um',
+      email: 'usuario@teste.com',
     });
+
+    await promessa;
+
+    expect(service.perfil()).toBe('USER');
+    expect(service.ehAdmin()).toBe(false);
+  });
+
+  it('should keep the session untouched when the backend rejects the credentials', async () => {
+    const promessa = service.entrar('usuario@teste.com', 'senha-errada');
+
+    httpMock.expectOne(`${environment.apiUrl}/auth/login`).flush(
+      { status: 401, message: 'E-mail ou senha inválidos.' },
+      { status: 401, statusText: 'Unauthorized' },
+    );
 
     await expect(promessa).rejects.toThrow();
 
@@ -84,33 +149,34 @@ describe('AuthService', () => {
     expect(window.localStorage.getItem('fourscheduler.token')).toBeNull();
   });
 
-  it('should ignore blank names', async () => {
-    await service.entrar('   ');
+  it('should ignore blank email or password', async () => {
+    await service.entrar('   ', 'senha');
+    await service.entrar('admin@teste.com', '');
 
     expect(service.autenticado()).toBe(false);
+    httpMock.expectNone(`${environment.apiUrl}/auth/login`);
   });
 
   it('should sign out and clear storage', async () => {
-    const promessa = service.entrar('Kevin Miranda');
-    httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('token-jwt-123');
+    const promessa = service.entrar('usuario@teste.com', '123456');
+    responderLogin(httpMock);
     await aguardarMicrotarefas();
-    httpMock.expectOne(`${environment.apiUrl}/api/usuarios/me`).flush({
-      id: 3,
-      nome: 'Kevin Miranda',
-      email: 'usuario@teste.com',
-    });
+    responderPerfil(httpMock);
     await promessa;
 
     service.sair();
 
     expect(service.autenticado()).toBe(false);
+    expect(service.perfil()).toBeNull();
     expect(window.localStorage.getItem('fourscheduler.usuario')).toBeNull();
     expect(window.localStorage.getItem('fourscheduler.token')).toBeNull();
+    expect(window.localStorage.getItem('fourscheduler.perfil')).toBeNull();
   });
 
   it('should restore the saved session from storage', () => {
     window.localStorage.setItem('fourscheduler.usuario', 'Ana');
     window.localStorage.setItem('fourscheduler.token', 'token-antigo');
+    window.localStorage.setItem('fourscheduler.perfil', 'ADMIN');
 
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -121,5 +187,21 @@ describe('AuthService', () => {
     expect(novaSessao.usuario()).toBe('Ana');
     expect(novaSessao.token()).toBe('token-antigo');
     expect(novaSessao.autenticado()).toBe(true);
+    expect(novaSessao.ehAdmin()).toBe(true);
+  });
+
+  it('should ignore a corrupted saved profile', () => {
+    window.localStorage.setItem('fourscheduler.usuario', 'Ana');
+    window.localStorage.setItem('fourscheduler.token', 'token-antigo');
+    window.localStorage.setItem('fourscheduler.perfil', 'QUALQUER');
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const novaSessao = TestBed.inject(AuthService);
+
+    expect(novaSessao.perfil()).toBeNull();
+    expect(novaSessao.ehAdmin()).toBe(false);
   });
 });

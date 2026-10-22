@@ -3,23 +3,27 @@ export type EstadoSala = 'disponivel' | 'ocupada' | 'indisponivel';
 export interface SalaPlanta {
   id: number;
   nome: string;
-  capacidade: number;
+  /** Capacidade em pessoas; nula na Arena, que é de eventos e não limita as pessoas. */
+  capacidade: number | null;
   localizacao: string;
   area: string;
   estado: EstadoSala;
+  /** Sala restrita (Arena): reservável apenas pelo perfil ADMIN. */
+  restrito: boolean;
 }
 
 interface SalaBase {
   id: number;
   nome: string;
-  capacidade: number;
+  capacidade: number | null;
   area: string;
+  restrito?: boolean;
 }
 
 const LOCALIZACAO = 'Tamboré';
 
 /**
- * Espelho do seed Flyway (V1): ids, nomes e capacidades do banco.
+ * Espelho do seed Flyway (V1 e V2): ids, nomes e capacidades do banco.
  * O layout visual usa `area`; a disponibilidade vem da API por id.
  */
 const SALAS_BASE: SalaBase[] = [
@@ -31,6 +35,7 @@ const SALAS_BASE: SalaBase[] = [
   { id: 6, nome: 'Componivel 02', capacidade: 8, area: 'comp02' },
   { id: 7, nome: 'Componivel 03', capacidade: 8, area: 'comp03' },
   { id: 8, nome: 'Componivel 04', capacidade: 8, area: 'comp04' },
+  { id: 9, nome: 'Arena', capacidade: null, area: 'audit', restrito: true },
 ];
 
 export function resolverEstados(disponiveis: Array<{ id: number }>): SalaPlanta[] {
@@ -40,5 +45,6 @@ export function resolverEstados(disponiveis: Array<{ id: number }>): SalaPlanta[
     ...sala,
     localizacao: LOCALIZACAO,
     estado: livres.has(sala.id) ? 'disponivel' : 'ocupada',
+    restrito: sala.restrito ?? false,
   }));
 }

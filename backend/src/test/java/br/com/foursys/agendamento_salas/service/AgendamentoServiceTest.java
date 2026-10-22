@@ -119,7 +119,7 @@ class AgendamentoServiceTest {
         }
 
         @Test
-        @DisplayName("Deve permitir que administrador faça agendamento longo para outro usuário")
+        @DisplayName("Deve criar a reserva em nome do solicitante para os Minhas reservas dele")
         void deveCriarAgendamentoLongoParaSolicitanteQuandoAdmin() {
             Usuario admin = usuario(7L, PerfilUsuario.ADMIN);
             Usuario solicitante = usuario(8L, PerfilUsuario.USER);
@@ -136,8 +136,48 @@ class AgendamentoServiceTest {
             ArgumentCaptor<List<Agendamento>> agendamentoCaptor = ArgumentCaptor.forClass(List.class);
             verify(agendamentoRepositoryPort).salvar(agendamentoCaptor.capture());
             verify(logRepositoryPort).salvar(any(Log.class));
-            assertThat(agendamentoCaptor.getValue().get(0).getUsuarioIdSolicitante()).isEqualTo(solicitante);
+            Agendamento salvo = agendamentoCaptor.getValue().get(0);
+            // O dono é o solicitante: a busca de Minhas reservas filtra por ele.
+            assertThat(salvo.getUsuarioId()).isEqualTo(solicitante);
+            assertThat(salvo.getUsuarioIdSolicitante()).isEqualTo(solicitante);
+            // O log de auditoria continua registrando quem fez a reserva.
+            ArgumentCaptor<Log> logCaptor = ArgumentCaptor.forClass(Log.class);
+            verify(logRepositoryPort).salvar(logCaptor.capture());
+            assertThat(logCaptor.getValue().getUsuario()).isEqualTo(admin);
             assertThat(confirmacao.solicitante()).isEqualTo(usuarioResponse(solicitante));
+        }
+
+        @Test
+        @DisplayName("Deve impedir que usuário comum reserve a sala restrita")
+        void naoDevePermitirQueUsuarioComumReserveSalaRestrita() {
+            Usuario usuario = usuario(7L, PerfilUsuario.USER);
+            Sala arena = salaRestrita();
+            CriarAgendamentoRequest request = request(
+                    arena, null, LocalTime.of(9, 0), LocalTime.of(11, 0), 30
+            );
+            prepararCriacao(usuario, arena);
+
+            assertThrows(UsuarioSemPermissaoException.class, () -> service.criar(request, usuario.getId()));
+
+            verifyNoInteractions(agendamentoRepositoryPort, logRepositoryPort);
+        }
+
+        @Test
+        @DisplayName("Deve permitir que administrador reserve a Arena sem validar capacidade")
+        void devePermitirQueAdministradorReserveArenaSemCapacidade() {
+            Usuario admin = usuario(7L, PerfilUsuario.ADMIN);
+            Sala arena = salaRestrita();
+            CriarAgendamentoRequest request = request(
+                    arena, null, LocalTime.of(9, 0), LocalTime.of(23, 0), 80
+            );
+            prepararCriacao(admin, arena);
+            prepararSalvamento();
+
+            ConfimacaoAgendamentoResponse confirmacao = service.criar(request, admin.getId());
+
+            assertThat(confirmacao.id()).isEqualTo(99L);
+            verify(agendamentoRepositoryPort).salvar(anyList());
+            verify(logRepositoryPort).salvar(any(Log.class));
         }
 
         @Test
@@ -647,6 +687,17 @@ class AgendamentoServiceTest {
                 .build();
     }
 
+    /** Arena: sala restrita para eventos, sem capacidade definida. */
+    private Sala salaRestrita() {
+        return Sala.builder()
+                .id(9L)
+                .nome("Arena")
+                .disponivel(true)
+                .capacidade(null)
+                .restrito(true)
+                .build();
+    }
+
     private Agendamento agendamento(Long id) {
         return Agendamento.builder()
                 .id(id)
@@ -713,6 +764,7 @@ class AgendamentoServiceTest {
                 .disponivel(sala.getDisponivel())
                 .capacidade(sala.getCapacidade())
                 .localizacao(sala.getLocalizacao())
+                .restrito(Boolean.TRUE.equals(sala.getRestrito()))
                 .build();
     }
 

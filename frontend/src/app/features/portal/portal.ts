@@ -1,20 +1,24 @@
-import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 
 interface Aplicativo {
   readonly nome: string;
   readonly icone: string;
   readonly href?: string;
   readonly rota?: string;
+  /** Exibe a etiqueta "Novo" ao lado do nome do acesso. */
+  readonly novo?: boolean;
 }
 
 @Component({
   selector: 'app-portal',
-  imports: [RouterLink],
   templateUrl: './portal.html',
   styleUrl: './portal.css',
 })
 export class Portal {
+  private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
   readonly aplicativos: Aplicativo[] = [
     {
       nome: 'Portal de Gestão da Qualidade',
@@ -57,6 +61,29 @@ export class Portal {
       icone: 'apps/gestao-pessoal.svg',
       href: 'https://login.lg.com.br/login/bwg_foursys',
     },
-    { nome: 'Agendamento de Salas', icone: 'apps/agendamento.svg', rota: '/agendamento' },
+    {
+      nome: 'Agendamento de Salas',
+      icone: 'apps/agendamento.svg',
+      rota: '/agendamento',
+      novo: true,
+    },
   ];
+
+  /**
+   * Acesso ao agendamento: com sessão segue direto para a tela do perfil
+   * (USER → comum, ADMIN → administrativa); sem sessão abre o login e, depois
+   * de autenticar, segue para a mesma tela conforme o perfil.
+   */
+  async abrirAgendamento(): Promise<void> {
+    if (!this.auth.autenticado()) {
+      this.auth.abrirLogin('agendamento');
+      return;
+    }
+
+    await this.router.navigate([this.rotaDoAgendamento()]);
+  }
+
+  private rotaDoAgendamento(): string {
+    return this.auth.ehAdmin() ? '/agendamento-admin' : '/agendamento';
+  }
 }

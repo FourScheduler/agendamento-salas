@@ -8,6 +8,8 @@ import br.com.foursys.agendamento_salas.port.out.UsuarioRepositoryPort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class UsuarioService {
     private final UsuarioRepositoryPort usuarioRepositoryPort;
@@ -45,6 +47,11 @@ public class UsuarioService {
 
     public Usuario buscarPorId(Long id) {
         return usuarioRepositoryPort.buscarPorId(id).orElseThrow(UsuarioInexistenteException::new);
+    }
+
+    /** Usado pela listagem de solicitantes do agendamento administrativo (ADMIN). */
+    public List<Usuario> listarTodos() {
+        return usuarioRepositoryPort.buscarTodos();
     }
 
 }

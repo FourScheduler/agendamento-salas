@@ -33,4 +33,15 @@ class UsuarioRepositoryAdapterTest {
         verify(jpaRepository).findById(9L);
         verify(jpaRepository).findByEmail("ana@example.com");
     }
+
+    @Test
+    void deveListarTodosUsuariosOrdenadosPorNome() {
+        UsuarioJpaRepository jpaRepository = mock(UsuarioJpaRepository.class);
+        UsuarioRepositoryAdapter adapter = new UsuarioRepositoryAdapter(jpaRepository);
+        java.util.List<Usuario> usuarios = java.util.List.of(new Usuario(), new Usuario());
+        when(jpaRepository.findAllByOrderByNomeAsc()).thenReturn(usuarios);
+
+        assertEquals(usuarios, adapter.buscarTodos());
+        verify(jpaRepository).findAllByOrderByNomeAsc();
+    }
 }

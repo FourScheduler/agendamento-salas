@@ -86,18 +86,33 @@ describe('MapaSalas', () => {
     expect(compiled.querySelector('.sala[style*="focus"]')).toBeTruthy();
   });
 
-  it('should keep the auditorium restricted with capacity and booking tooltip', () => {
+  it('should keep the Arena restricted for regular users with an events tooltip', () => {
     const fixture = montar([{ id: 6 }]);
     const compiled = fixture.nativeElement as HTMLElement;
-    const auditorio = compiled.querySelector('.sala--restrita');
+    const arena = compiled.querySelector('.sala--restrita');
 
-    expect(auditorio).toBeTruthy();
-    expect(auditorio?.querySelector('.sala__capacidade')?.textContent).toContain('A definir');
-    expect(auditorio?.textContent).toContain('somente com um responsável');
-    expect(auditorio?.querySelector('[role="tooltip"]')?.textContent).toContain(
-      'Reserve com a equipe de Facilities',
+    expect(arena).toBeTruthy();
+    expect(arena?.querySelector('.sala__capacidade')?.textContent).toContain('Eventos');
+    expect(arena?.textContent).toContain('Reserva somente com o Facilities.');
+    expect(arena?.querySelector('[role="tooltip"]')?.textContent).toContain(
+      'Arena reservável apenas pelo Facilities.',
     );
-    expect(auditorio?.tagName).toBe('DIV');
+    expect(arena?.tagName).toBe('DIV');
+  });
+
+  it('should let the admin book the Arena when it is free', () => {
+    const fixture = TestBed.createComponent(MapaSalas);
+    fixture.componentRef.setInput('salas', resolverEstados([{ id: 9 }]));
+    fixture.componentRef.setInput('data', '2026-06-18');
+    fixture.componentRef.setInput('horaInicio', '14:00');
+    fixture.componentRef.setInput('podeReservarRestritas', true);
+    fixture.detectChanges();
+
+    const arena = botaoPorNome(fixture, 'Arena');
+
+    expect(arena).toBeTruthy();
+    expect(arena?.getAttribute('aria-disabled')).toBeNull();
+    expect(arena?.textContent).toContain('Eventos');
   });
 
   it('should show the empty state when every room is taken', () => {

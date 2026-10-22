@@ -80,6 +80,18 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void deveConverterCredenciaisInvalidasEmUnauthorized() {
+        var response = handler.handleCredenciaisInvalidas(
+                new org.springframework.security.authentication.BadCredentialsException("bad")
+        );
+
+        assertEquals(401, response.getStatusCode().value());
+        assertEquals(401, response.getBody().status());
+        assertEquals("E-mail ou senha inválidos.", response.getBody().message());
+        assertNotNull(response.getBody().timestamp());
+    }
+
+    @Test
     void deveConverterHorarioInvalidoEmBadRequest() {
         var response = handler.handleSalaIndisponivel(new HorarioAgendamentoInvalidoException());
 

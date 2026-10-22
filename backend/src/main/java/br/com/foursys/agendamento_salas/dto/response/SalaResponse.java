@@ -8,7 +8,12 @@ public record SalaResponse(
         String nome,
         Boolean disponivel,
         Integer capacidade,
-        String localizacao
+        String localizacao,
+        Boolean restrito
 ) {
 
+    /** Compatibilidade com chamadas que ainda não informam a restrição da sala. */
+    public SalaResponse(Long id, String nome, Boolean disponivel, Integer capacidade, String localizacao) {
+        this(id, nome, disponivel, capacidade, localizacao, false);
+    }
 }

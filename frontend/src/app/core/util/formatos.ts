@@ -101,3 +101,16 @@ function capitalizar(texto: string): string {
 export function normalizarNome(nome: string): string {
   return nome.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
+
+/** Rótulo legível de duração: `30 min`, `1 hora`, `2 horas e 30 min`... */
+export function rotuloDuracao(minutos: number): string {
+  if (minutos < 60) {
+    return `${minutos} min`;
+  }
+
+  const horas = Math.floor(minutos / 60);
+  const resto = minutos % 60;
+  const rotuloHoras = horas === 1 ? '1 hora' : `${horas} horas`;
+
+  return resto === 0 ? rotuloHoras : `${rotuloHoras} e ${resto} min`;
+}

@@ -28,11 +28,7 @@ Toda resposta de erro da API usa o mesmo formato, definido por `dto/response/Err
 
 ### POST /auth/login — implementado
 
-Body `{ "email": "...", "password": "..." }`. Resposta `200` com o token JWT como texto puro (`text/plain`).
-
-### POST /auth/demo — implementado (MVP apenas)
-
-Emite token do usuário de teste (`usuario@teste.com`) sem senha, quando `app.auth.demo-enabled=true`. Resposta `200` com o token como texto puro; se desabilitado, `404`. Será removido quando o SSO do portal entrar.
+Body `{ "email": "...", "password": "..." }`. Resposta `200` com o token JWT como texto puro (`text/plain`); credenciais erradas respondem `401` com `"E-mail ou senha inválidos."`. É o login usado pelo modal da topbar (único caminho de autenticação) e o acesso dos administradores.
 
 ### GET /api/usuarios/me — implementado
 
@@ -42,7 +38,18 @@ Exige `Authorization: Bearer <token>`. Devolve o perfil do próprio usuário aut
 { "id": 3, "email": "usuario@teste.com", "nome": "Usuario Teste", "perfilUsuario": "USER" }
 ```
 
-Consumido pelo frontend logo após o login de demonstração para exibir o nome real; em caso de falha o login segue com o nome digitado.
+Consumido pelo frontend logo após o login (e-mail e senha) para exibir o nome real e o perfil (`perfilUsuario`); em caso de falha o login segue com o e-mail digitado, sem perfil de admin.
+
+### GET /api/usuarios — implementado
+
+Exige `Authorization: Bearer <token>` de um usuário com perfil `ADMIN` (sem sessão responde `401`; com perfil `USER` responde `403`). Lista os usuários cadastrados, ordenados por nome, para a tela de agendamento administrativo escolher o solicitante da reserva. A resposta não expõe senhas:
+
+```json
+[
+  { "id": 1, "email": "admin@teste.com", "nome": "Administrador Principal", "perfilUsuario": "ADMIN" },
+  { "id": 3, "email": "usuario@teste.com", "nome": "Usuario Teste Um", "perfilUsuario": "USER" }
+]
+```
 
 ## Endpoints
 
@@ -65,11 +72,18 @@ Resposta `200`:
 
 ```json
 [
-  { "id": "focus", "nome": "Sala Focus", "local": "Tamboré", "capacidade": 2 }
+  {
+    "id": 4,
+    "nome": "Sala Focus",
+    "disponivel": true,
+    "capacidade": 2,
+    "localizacao": "Tamboré",
+    "restrito": false
+  }
 ]
 ```
 
-Salas com capacidade inferior a `pessoas` são filtradas; a resposta pode ser uma lista vazia.
+Salas com capacidade inferior a `pessoas` são filtradas; a Arena (id 9) vem com `capacidade: null` — é de eventos, não limita as pessoas — e é marcada com `restrito: true` por ser de reserva exclusiva do perfil `ADMIN`. A resposta pode ser uma lista vazia.
 
 ### GET /api/salas/ocupacoes — implementado
 
@@ -143,7 +157,11 @@ Exige autenticação. Request (`CriarAgendamentoRequest`, com Bean Validation no
 }
 ```
 
-Cada sala gera uma reserva independente, vinculada ao mesmo usuário, horário e título. Para uma reunião integrada, a capacidade é a soma das capacidades das salas selecionadas; a confirmação é atômica: se uma sala for inválida, indisponível ou tiver conflito, nenhuma reserva é criada. Salas repetidas e lista vazia são rejeitadas. A resposta conserva os campos da reserva principal por compatibilidade e inclui todos os registros criados:
+O campo opcional `usuarioIdSolicitante` (`{"id": 3}`) cria a reserva em nome de outro usuário cadastrado; somente `ADMIN` pode informá-lo (um usuário comum recebe `403`). Quando ausente ou nulo, o solicitante é o próprio usuário autenticado. A reserva fica com o solicitante como **dono** (`usuarioId`), então ela aparece nos *Minhas reservas* do solicitante (`GET /api/agendamento/busca` filtra por esse dono) e não nos do administrador; o log de auditoria registra quem fez o registro. A tela de agendamento administrativo usa `GET /api/usuarios` para buscar o solicitante da reserva digitando nome ou e-mail.
+
+Salas com `restrito: true` (a Arena, de eventos) só podem ser reservadas por perfil `ADMIN`; um usuário comum recebe `403`. Salas sem capacidade (`capacidade: null`) não limitam a quantidade de pessoas.
+
+Cada sala gera uma reserva independente, vinculada ao mesmo usuário, horário e título. Para uma reunião integrada, a capacidade é a soma das capacidades das salas selecionadas (salas sem capacidade não participam da soma e não limitam as pessoas); a confirmação é atômica: se uma sala for inválida, indisponível ou tiver conflito, nenhuma reserva é criada. Salas repetidas e lista vazia são rejeitadas. A resposta conserva os campos da reserva principal por compatibilidade e inclui todos os registros criados:
 
 ```json
 {
