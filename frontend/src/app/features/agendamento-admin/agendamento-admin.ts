@@ -44,7 +44,7 @@ export class AgendamentoAdmin implements OnInit {
   private readonly toast = inject(ToastService);
 
   /**
-   * Durações de 30 em 30 minutos cobrindo o dia inteiro (o limite de 120 min
+   * Durações de 15 em 15 minutos (o limite de 120 min
    * vale apenas para USER). O fim precisa ficar antes das 24:00, então a
    * opção máxima respeita o horário inicial escolhido.
    */
@@ -390,7 +390,7 @@ export class AgendamentoAdmin implements OnInit {
 }
 
 /** Passo das opções de duração e limite do dia (fim antes das 24:00). */
-const PASSO_DURACAO = 30;
+const PASSO_DURACAO = 15;
 const MINUTOS_NO_DIA = 24 * 60;
 
 function horaFinal(inicio: string, duracao: number): string {

@@ -110,6 +110,26 @@ describe('Agendamento', () => {
   });
 
   it.each([
+    [15, '09:15'],
+    [45, '09:45'],
+    [75, '10:15'],
+    [90, '10:30'],
+    [105, '10:45'],
+  ])('should search rooms for %i minutes in USER mode', (duracao, fim) => {
+    const fixture = iniciar();
+    responder([]);
+    expect(fixture.componentInstance.duracoes).toEqual([15, 30, 45, 60, 75, 90, 105, 120]);
+
+    fixture.componentInstance.atualizarDuracao(duracao);
+
+    const chamada = chamadaDeBusca();
+    expect(chamada.request.params.get('horaInicio')).toBe('09:00');
+    expect(chamada.request.params.get('horaFim')).toBe(fim);
+    chamada.flush([]);
+    expect(fixture.componentInstance.erroValidacao()).toBeNull();
+  });
+
+  it.each([
     ['2026-11-21T10:15:00', '2026-11-23', '08:00'],
     ['2026-11-22T23:45:00', '2026-11-23', '08:00'],
     ['2026-01-31T23:45:00', '2026-02-02', '08:00'],

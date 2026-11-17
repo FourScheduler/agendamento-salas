@@ -165,12 +165,14 @@ describe('AgendamentoAdmin', () => {
     responder([]);
     await fixture.whenStable();
 
-    // Início fixo em 09:00: o dia tem opções até 23:30 e nada que passe da meia-noite.
+    // Início fixo em 09:00: o dia tem opções até 23:45 e nada que passe da meia-noite.
     const opcoes = fixture.componentInstance.duracoes();
+    expect(opcoes).toEqual(Array.from({ length: 59 }, (_, indice) => (indice + 1) * 15));
     expect(opcoes).toContain(180);
     expect(opcoes).toContain(240);
     expect(opcoes).toContain(720); // 12 horas
     expect(opcoes).toContain(870); // 09:00 + 870 min = 23:30
+    expect(fixture.componentInstance.duracaoMaxima()).toBe(885);
     expect(opcoes).not.toContain(900); // 09:00 + 900 min = 24:00, fora do dia
   });
 
@@ -184,8 +186,37 @@ describe('AgendamentoAdmin', () => {
     componente.atualizarHora('16:00');
     responder([]);
 
-    expect(componente.duracao()).toBe(450); // 16:00 + 450 min = 23:30
+    expect(componente.duracao()).toBe(465); // 16:00 + 465 min = 23:45
     expect(componente.erroValidacao()).toBeNull();
+  });
+
+  it.each([
+    ['23:00', [15, 30, 45], 45],
+    ['23:30', [15], 15],
+    ['23:45', [], null],
+  ])('should keep durations before midnight at %s', (inicio, opcoes, maxima) => {
+    const componente = TestBed.createComponent(AgendamentoAdmin).componentInstance;
+    componente.horaInicio.set(inicio);
+
+    expect(componente.duracoes()).toEqual(opcoes);
+    expect(componente.duracaoMaxima()).toBe(maxima);
+  });
+
+  it.each([
+    [15, '09:15'],
+    [45, '09:45'],
+    [90, '10:30'],
+  ])('should search rooms for %i minutes in ADMIN mode', (duracao, fim) => {
+    const fixture = iniciar();
+    responder([]);
+
+    fixture.componentInstance.atualizarDuracao(duracao);
+
+    const chamada = chamadaDeBusca();
+    expect(chamada.request.params.get('horaInicio')).toBe('09:00');
+    expect(chamada.request.params.get('horaFim')).toBe(fim);
+    chamada.flush([]);
+    expect(fixture.componentInstance.erroValidacao()).toBeNull();
   });
 
   it('should show the empty state when no room is free', async () => {

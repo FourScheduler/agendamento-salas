@@ -207,9 +207,9 @@
               <button
                 type="button"
                 class="stepper"
-                aria-label="Diminuir 30 minutos"
+                aria-label="Diminuir 15 minutos"
                 [disabled]="duracaoMinima()"
-                (click)="mudarDuracao(-30)"
+                (click)="mudarDuracao(-15)"
               >
                 <span aria-hidden="true">−</span>
               </button>
@@ -219,9 +219,9 @@
               <button
                 type="button"
                 class="stepper"
-                aria-label="Aumentar 30 minutos"
+                aria-label="Aumentar 15 minutos"
                 [disabled]="duracaoNoMaximo()"
-                (click)="mudarDuracao(30)"
+                (click)="mudarDuracao(15)"
               >
                 <span aria-hidden="true">+</span>
               </button>

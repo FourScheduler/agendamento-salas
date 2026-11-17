@@ -66,6 +66,11 @@ Busca salas mockadas compatíveis com a necessidade. Os filtros vão na **query 
 
 \* `horaFim` é obrigatório na prática: sem ele o backend responde `400` pedindo o horário final.
 
+A duração é representada pelo intervalo entre `horaInicio` e `horaFim`, sem alterar o contrato.
+O painel oferece 15, 30, 45, 60, 75, 90, 105 e 120 minutos para USER e ADMIN. USER não pode ultrapassar
+120 minutos; ADMIN mantém intervalos maiores, com término dentro do mesmo dia. A criação
+da reserva aplica as mesmas regras de duração.
+
 Exemplo: `GET /api/salas/disponiveis?data=2026-10-20&horaInicio=14:00&horaFim=15:00&qntdPessoas=4`
 
 Resposta `200`:

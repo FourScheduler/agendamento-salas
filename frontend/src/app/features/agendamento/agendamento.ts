@@ -41,7 +41,7 @@ export class Agendamento implements OnInit {
   private conversaId: number | null = null;
   private readonly dataAssistenteInvalida = signal(false);
 
-  readonly duracoes = [30, 60, 90, 120];
+  readonly duracoes = [15, 30, 45, 60, 75, 90, 105, 120];
   readonly hoje = hojeIso();
 
   readonly data = signal(
