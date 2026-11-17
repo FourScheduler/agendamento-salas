@@ -167,6 +167,7 @@ describe('AgendamentoAdmin', () => {
 
     // Início fixo em 09:00: o dia tem opções até 23:30 e nada que passe da meia-noite.
     const opcoes = fixture.componentInstance.duracoes();
+    expect(opcoes.slice(0, 6)).toEqual([15, 30, 45, 60, 90, 120]);
     expect(opcoes).toContain(180);
     expect(opcoes).toContain(240);
     expect(opcoes).toContain(720); // 12 horas
@@ -186,6 +187,35 @@ describe('AgendamentoAdmin', () => {
 
     expect(componente.duracao()).toBe(450); // 16:00 + 450 min = 23:30
     expect(componente.erroValidacao()).toBeNull();
+  });
+
+  it.each([
+    ['23:00', [15, 30, 45], 45],
+    ['23:30', [15], 15],
+    ['23:45', [], null],
+  ])('should keep durations before midnight at %s', (inicio, opcoes, maxima) => {
+    const componente = TestBed.createComponent(AgendamentoAdmin).componentInstance;
+    componente.horaInicio.set(inicio);
+
+    expect(componente.duracoes()).toEqual(opcoes);
+    expect(componente.duracaoMaxima()).toBe(maxima);
+  });
+
+  it.each([
+    [15, '09:15'],
+    [45, '09:45'],
+    [90, '10:30'],
+  ])('should search rooms for %i minutes in ADMIN mode', (duracao, fim) => {
+    const fixture = iniciar();
+    responder([]);
+
+    fixture.componentInstance.atualizarDuracao(duracao);
+
+    const chamada = chamadaDeBusca();
+    expect(chamada.request.params.get('horaInicio')).toBe('09:00');
+    expect(chamada.request.params.get('horaFim')).toBe(fim);
+    chamada.flush([]);
+    expect(fixture.componentInstance.erroValidacao()).toBeNull();
   });
 
   it('should show the empty state when no room is free', async () => {

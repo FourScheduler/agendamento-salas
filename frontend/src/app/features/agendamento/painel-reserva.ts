@@ -18,8 +18,7 @@ import { CalendarioData } from '../../shared/calendario-data/calendario-data';
 type CampoAberto = 'data' | 'horario' | 'duracao' | 'solicitante' | null;
 
 const FIM_DO_DIA = 24 * 60;
-/** Passo e mínimo do stepper de duração (admin). */
-const PASSO_DURACAO = 30;
+const DURACAO_MINIMA = 15;
 /** Máximo de sugestões mostradas na busca de solicitante. */
 const LIMITE_SUGESTOES = 8;
 
@@ -51,7 +50,7 @@ export class PainelReserva {
   readonly horaInicio = input<string>('');
   readonly duracao = input<number>(60);
   readonly pessoas = input<number>(1);
-  readonly duracoes = input<number[]>([30, 60, 90, 120]);
+  readonly duracoes = input<number[]>([15, 30, 45, 60, 90, 120]);
   /** Modo stepper (admin): −/+ de 30 em 30 min em vez da lista de opções. */
   readonly stepperDuracao = input(false);
   /** Maior duração possível para o horário inicial; nulo quando não há limite. */
@@ -104,7 +103,7 @@ export class PainelReserva {
     return limite !== null && this.pessoas() >= limite;
   });
 
-  readonly duracaoMinima = computed(() => this.duracao() <= PASSO_DURACAO);
+  readonly duracaoMinima = computed(() => this.duracao() <= DURACAO_MINIMA);
 
   readonly duracaoNoMaximo = computed(() => {
     const maximo = this.duracaoMaxima();
@@ -114,7 +113,7 @@ export class PainelReserva {
   /** Atalhos do stepper: durações redondas até o máximo do dia. */
   readonly atalhosDuracao = computed(() => {
     const maximo = this.duracaoMaxima();
-    const valores = [30, 60, 120, 240].filter(
+    const valores = [15, 30, 45, 60, 90, 120, 240].filter(
       (minutos) => maximo === null || minutos < maximo,
     );
 
@@ -272,7 +271,7 @@ export class PainelReserva {
   mudarDuracao(delta: number): void {
     const maximo = this.duracaoMaxima();
     const alvo = this.duracao() + delta;
-    const valor = Math.max(PASSO_DURACAO, maximo === null ? alvo : Math.min(alvo, maximo));
+    const valor = Math.max(DURACAO_MINIMA, maximo === null ? alvo : Math.min(alvo, maximo));
 
     if (valor !== this.duracao()) {
       this.duracaoAlterada.emit(valor);

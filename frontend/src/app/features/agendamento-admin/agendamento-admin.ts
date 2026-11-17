@@ -44,18 +44,18 @@ export class AgendamentoAdmin implements OnInit {
   private readonly toast = inject(ToastService);
 
   /**
-   * Durações de 30 em 30 minutos cobrindo o dia inteiro (o limite de 120 min
+   * Durações de 15 e 45 min e de 30 em 30 minutos (o limite de 120 min
    * vale apenas para USER). O fim precisa ficar antes das 24:00, então a
    * opção máxima respeita o horário inicial escolhido.
    */
   readonly duracoes = computed(() => {
     const inicio = paraMinutos(this.horaInicio()) ?? 0;
     const maximo = Math.floor((MINUTOS_NO_DIA - 1 - inicio) / PASSO_DURACAO) * PASSO_DURACAO;
-    const opcoes: number[] = [];
+    const opcoes = [15, 45].filter((minutos) => inicio + minutos < MINUTOS_NO_DIA);
     for (let minutos = PASSO_DURACAO; minutos <= maximo; minutos += PASSO_DURACAO) {
       opcoes.push(minutos);
     }
-    return opcoes;
+    return opcoes.sort((a, b) => a - b);
   });
   readonly hoje = hojeIso();
 

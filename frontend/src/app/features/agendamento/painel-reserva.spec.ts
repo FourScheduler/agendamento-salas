@@ -70,7 +70,7 @@ describe('PainelReserva', () => {
     const compilado = fixture.nativeElement as HTMLElement;
     // O seletor dá lugar ao stepper de 30 em 30 minutos com atalhos.
     expect(compilado.querySelector('select#resumo-duracao')).toBeNull();
-    expect(compilado.querySelectorAll('.duracao__atalho').length).toBe(4);
+    expect(compilado.querySelectorAll('.duracao__atalho').length).toBe(7);
 
     compilado
       .querySelector<HTMLButtonElement>('button[aria-label="Aumentar 30 minutos"]')
@@ -83,6 +83,70 @@ describe('PainelReserva', () => {
     ).find((botao) => botao.textContent?.trim() === 'Dia inteiro');
     diaInteiro?.click();
     expect(duracaoEmitida).toBe(240);
+  });
+
+  it.each([
+    [15, '15 min', '14:15'],
+    [45, '45 min', '14:45'],
+    [90, '1 hora e 30 min', '15:30'],
+  ])('should select %i minutes and show the final time in USER mode', (minutos, rotulo, fim) => {
+    const fixture = montar();
+    fixture.componentInstance.alternar('duracao');
+    fixture.detectChanges();
+    const select = (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLSelectElement>('#resumo-duracao')!;
+    expect(Array.from(select.options).map((opcao) => Number(opcao.value)))
+      .toEqual([15, 30, 45, 60, 90, 120]);
+    expect(Array.from(select.options).find((opcao) => Number(opcao.value) === minutos)?.textContent)
+      .toContain(rotulo);
+    let emitida = 0;
+    fixture.componentInstance.duracaoAlterada.subscribe((valor) => (emitida = valor));
+
+    select.value = String(minutos);
+    select.dispatchEvent(new Event('change'));
+    fixture.componentRef.setInput('duracao', emitida);
+    fixture.detectChanges();
+
+    expect(emitida).toBe(minutos);
+    expect(fixture.componentInstance.horaFim()).toBe(fim);
+  });
+
+  it.each([
+    [15, '15 min'],
+    [45, '45 min'],
+    [90, '1 hora e 30 min'],
+  ])('should apply the %i minute quick duration in ADMIN mode', (minutos, rotulo) => {
+    const fixture = montar();
+    fixture.componentRef.setInput('stepperDuracao', true);
+    fixture.componentRef.setInput('duracaoMaxima', 570);
+    fixture.componentInstance.alternar('duracao');
+    fixture.detectChanges();
+    let emitida = 0;
+    fixture.componentInstance.duracaoAlterada.subscribe((valor) => (emitida = valor));
+    const botao = Array.from((fixture.nativeElement as HTMLElement)
+      .querySelectorAll<HTMLButtonElement>('.duracao__atalho'))
+      .find((item) => item.textContent?.trim() === rotulo)!;
+
+    botao.click();
+    fixture.componentRef.setInput('duracao', emitida);
+    fixture.detectChanges();
+
+    expect(emitida).toBe(minutos);
+    expect(fixture.componentInstance.duracaoMinima()).toBe(minutos === 15);
+  });
+
+  it('should clamp the admin stepper to 15 minutes and to the end of day', () => {
+    const fixture = montar();
+    fixture.componentRef.setInput('duracao', 30);
+    fixture.componentRef.setInput('duracaoMaxima', 45);
+    let emitida = 0;
+    fixture.componentInstance.duracaoAlterada.subscribe((valor) => (emitida = valor));
+
+    fixture.componentInstance.mudarDuracao(-30);
+    expect(emitida).toBe(15);
+    fixture.componentInstance.mudarDuracao(30);
+    expect(emitida).toBe(45);
+    expect(fixture.componentInstance.atalhosDuracao()).toEqual([15, 30, 45]);
   });
 
   it('should show the selected room and the final time', async () => {

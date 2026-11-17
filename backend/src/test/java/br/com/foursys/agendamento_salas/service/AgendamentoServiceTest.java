@@ -29,6 +29,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -80,6 +82,28 @@ class AgendamentoServiceTest {
     @Nested
     @DisplayName("Criação de agendamentos")
     class CreateBooking {
+
+        @ParameterizedTest
+        @CsvSource({"USER,15", "USER,45", "USER,90", "ADMIN,15", "ADMIN,45", "ADMIN,90"})
+        @DisplayName("Deve preservar duracoes de 15, 45 e 90 minutos para USER e ADMIN")
+        void deveCriarAgendamentoComNovasDuracoes(PerfilUsuario perfil, int minutos) {
+            Usuario usuario = usuario(7L, perfil);
+            Sala sala = sala(12L);
+            LocalTime inicio = LocalTime.of(9, 0);
+            LocalTime fim = inicio.plusMinutes(minutos);
+            CriarAgendamentoRequest request = request(sala, null, inicio, fim, 4);
+            prepararCriacao(usuario, sala);
+            prepararSalvamento();
+
+            ConfimacaoAgendamentoResponse confirmacao = service.criar(request, usuario.getId());
+
+            ArgumentCaptor<List<Agendamento>> captor = ArgumentCaptor.forClass(List.class);
+            verify(agendamentoRepositoryPort).salvar(captor.capture());
+            assertThat(confirmacao.inicio()).isEqualTo(inicio);
+            assertThat(confirmacao.fim()).isEqualTo(fim);
+            assertThat(captor.getValue().get(0).getHoraInicio()).isEqualTo(inicio);
+            assertThat(captor.getValue().get(0).getHoraFim()).isEqualTo(fim);
+        }
 
         @Test
         @DisplayName("Deve rejeitar sábado e domingo para USER e ADMIN sem persistir")

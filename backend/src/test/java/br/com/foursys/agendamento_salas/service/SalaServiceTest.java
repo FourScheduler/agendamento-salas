@@ -19,6 +19,8 @@ import br.com.foursys.agendamento_salas.port.out.UsuarioRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -265,6 +267,27 @@ class SalaServiceTest {
         verify(salaMapper).entityToResponse(sala);
 
         verifyNoInteractions(usuarioRepositoryPort);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {15, 45, 90})
+    void deveBuscarDisponibilidadeComNovasDuracoes(int minutos) {
+        LocalDate data = LocalDate.now()
+                .with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
+        LocalTime inicio = LocalTime.of(9, 0);
+        LocalTime fim = inicio.plusMinutes(minutos);
+        Sala sala = Sala.builder().id(1L).nome("Sala 01").capacidade(4).disponivel(true).build();
+        SalaResponse resposta = mock(SalaResponse.class);
+        when(salaRepositoryPort.buscarDisoniveis(data, inicio, fim, 4))
+                .thenReturn(List.of(sala));
+        when(salaMapper.entityToResponse(sala)).thenReturn(resposta);
+
+        List<SalaResponse> resultado = salaService.buscarSalasDisponiveis(
+                data, inicio, fim, 4, null
+        );
+
+        assertEquals(List.of(resposta), resultado);
+        verify(salaRepositoryPort).buscarDisoniveis(data, inicio, fim, 4);
     }
 
     @Test

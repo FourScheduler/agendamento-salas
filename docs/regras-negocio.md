@@ -38,6 +38,8 @@ A busca recebe data, horário inicial, horário final (ou duração) e quantidad
   não um novo limite mínimo. Nos dias úteis, permanece a sugestão da próxima hora cheia do dia atual.
 - Não há limite máximo de antecedência para a data do agendamento.
 - O horário final deve ser posterior ao horário inicial e precisa ficar dentro do mesmo dia.
+- USER e ADMIN podem selecionar durações de 15 min, 30 min, 45 min, 1 h, 1h30 e 2 h.
+  USER continua limitado a duas horas; ADMIN mantém as durações maiores dentro do mesmo dia.
 - A capacidade da sala deve ser igual ou superior à quantidade de pessoas.
 - Com sala selecionada, o seletor de pessoas trava na capacidade da sala e mostra
   `Esta sala comporta até N pessoas.`; se a seleção exceder a capacidade, a quantidade é reduzida
@@ -52,7 +54,7 @@ A tela `/agendamento-admin` é restrita a usuários com perfil `ADMIN` (guard de
 A tela administrativa usa o mesmo layout da tela comum (planta de salas + painel de resumo), sem assistente. Em relação à tela comum:
 
 - Pode selecionar mais de uma sala por reserva, clicando em cada sala na planta; a capacidade considerada é a soma das salas escolhidas (a Arena, sem capacidade, não limita as pessoas).
-- Pode agendar até o dia inteiro: a duração usa um stepper de 30 em 30 minutos do horário inicial até o fim do dia, com atalhos `30 min`, `1 h`, `2 h`, `4 h` e `Dia inteiro` (o limite de 120 minutos vale apenas para `USER`). Ao trocar o horário inicial, uma duração que passaria da meia-noite é reduzida para a última opção válida.
+- Pode agendar até o dia inteiro: a duração usa um stepper de 30 em 30 minutos, com mínimo de 15 min, do horário inicial até o fim do dia, com atalhos `15 min`, `30 min`, `45 min`, `1 h`, `1h30`, `2 h`, `4 h` e `Dia inteiro` (o limite de 120 minutos vale apenas para `USER`). Os atalhos respeitam o tempo restante no dia. Ao trocar o horário inicial, uma duração que passaria da meia-noite é reduzida para a última opção válida.
 - Pode escolher quem é o solicitante da reserva em outro usuário, pela busca de nome ou e-mail sobre
   `GET /api/usuarios`; por padrão o solicitante é o próprio administrador, que aparece uma única vez,
   como primeiro item da lista com o selo `(eu mesmo)` — buscando o próprio nome ele também é
