@@ -38,7 +38,7 @@ A busca recebe data, horário inicial, horário final (ou duração) e quantidad
   não um novo limite mínimo. Nos dias úteis, permanece a sugestão da próxima hora cheia do dia atual.
 - Não há limite máximo de antecedência para a data do agendamento.
 - O horário final deve ser posterior ao horário inicial e precisa ficar dentro do mesmo dia.
-- USER e ADMIN podem selecionar durações de 15 min, 30 min, 45 min, 1 h, 1h30 e 2 h.
+- USER e ADMIN podem selecionar durações de 15 min, 30 min, 45 min, 1 h, 1h15, 1h30, 1h45 e 2 h.
   USER continua limitado a duas horas; ADMIN mantém as durações maiores dentro do mesmo dia.
 - A capacidade da sala deve ser igual ou superior à quantidade de pessoas.
 - Com sala selecionada, o seletor de pessoas trava na capacidade da sala e mostra

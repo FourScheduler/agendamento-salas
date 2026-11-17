@@ -50,7 +50,7 @@ export class PainelReserva {
   readonly horaInicio = input<string>('');
   readonly duracao = input<number>(60);
   readonly pessoas = input<number>(1);
-  readonly duracoes = input<number[]>([15, 30, 45, 60, 90, 120]);
+  readonly duracoes = input<number[]>([15, 30, 45, 60, 75, 90, 105, 120]);
   /** Modo stepper (admin): −/+ de 15 em 15 min em vez da lista de opções. */
   readonly stepperDuracao = input(false);
   /** Maior duração possível para o horário inicial; nulo quando não há limite. */

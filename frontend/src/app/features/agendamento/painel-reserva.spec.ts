@@ -88,7 +88,9 @@ describe('PainelReserva', () => {
   it.each([
     [15, '15 min', '14:15'],
     [45, '45 min', '14:45'],
+    [75, '1 hora e 15 min', '15:15'],
     [90, '1 hora e 30 min', '15:30'],
+    [105, '1 hora e 45 min', '15:45'],
   ])('should select %i minutes and show the final time in USER mode', (minutos, rotulo, fim) => {
     const fixture = montar();
     fixture.componentInstance.alternar('duracao');
@@ -96,7 +98,7 @@ describe('PainelReserva', () => {
     const select = (fixture.nativeElement as HTMLElement)
       .querySelector<HTMLSelectElement>('#resumo-duracao')!;
     expect(Array.from(select.options).map((opcao) => Number(opcao.value)))
-      .toEqual([15, 30, 45, 60, 90, 120]);
+      .toEqual([15, 30, 45, 60, 75, 90, 105, 120]);
     expect(Array.from(select.options).find((opcao) => Number(opcao.value) === minutos)?.textContent)
       .toContain(rotulo);
     let emitida = 0;
