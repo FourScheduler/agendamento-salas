@@ -313,6 +313,12 @@
       </p>
     }
 
+    @if (solicitarCadeira()) {
+      <p class="resumo__aviso-cadeira" role="status">
+        Para cinco pessoas nesta sala, solicite uma cadeira à equipe de Facilities.
+      </p>
+    }
+
     @if (solicitantes().length > 0) {
       <div class="linha">
         <button

@@ -73,6 +73,24 @@ describe('MapaSalas', () => {
     expect(escolhida).toBe('Componivel 02');
   });
 
+  it.each(['Sala 01', 'Sala 02', 'Sala 03'])(
+    'should display capacity five and allow selecting %s for five participants',
+    (nome) => {
+      const fixture = montar([{ id: 1 }, { id: 2 }, { id: 3 }]);
+      fixture.componentRef.setInput('pessoas', 5);
+      fixture.detectChanges();
+      let escolhida = '';
+      fixture.componentInstance.selecionar.subscribe((valor) => (escolhida = valor));
+      const botao = botaoPorNome(fixture, nome)!;
+
+      expect(botao.textContent).toContain('Até 5');
+      expect(botao.getAttribute('aria-disabled')).not.toBe('true');
+      botao.click();
+
+      expect(escolhida).toBe(nome);
+    },
+  );
+
   it('should render the floor plan areas of the reference drawing', () => {
     const fixture = montar([{ id: 6 }]);
     const compiled = fixture.nativeElement as HTMLElement;

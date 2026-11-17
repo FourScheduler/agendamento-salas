@@ -23,13 +23,13 @@ interface SalaBase {
 const LOCALIZACAO = 'Tamboré';
 
 /**
- * Espelho do seed Flyway (V1 e V2): ids, nomes e capacidades do banco.
+ * Espelho das migrations Flyway: ids, nomes e capacidades do banco.
  * O layout visual usa `area`; a disponibilidade vem da API por id.
  */
 const SALAS_BASE: SalaBase[] = [
-  { id: 1, nome: 'Sala 01', capacidade: 4, area: 'sala01' },
-  { id: 2, nome: 'Sala 02', capacidade: 4, area: 'sala02' },
-  { id: 3, nome: 'Sala 03', capacidade: 4, area: 'sala03' },
+  { id: 1, nome: 'Sala 01', capacidade: 5, area: 'sala01' },
+  { id: 2, nome: 'Sala 02', capacidade: 5, area: 'sala02' },
+  { id: 3, nome: 'Sala 03', capacidade: 5, area: 'sala03' },
   { id: 4, nome: 'Sala Focus', capacidade: 2, area: 'focus' },
   { id: 5, nome: 'Componivel 01', capacidade: 8, area: 'comp01' },
   { id: 6, nome: 'Componivel 02', capacidade: 8, area: 'comp02' },

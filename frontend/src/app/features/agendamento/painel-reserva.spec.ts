@@ -380,14 +380,72 @@ describe('PainelReserva', () => {
   });
 
   it('should block the stepper at the room capacity', async () => {
-    const fixture = montar(4);
+    const fixture = montar(5);
     await fixture.whenStable();
 
     const compiled = fixture.nativeElement as HTMLElement;
     const botoes = compiled.querySelectorAll<HTMLButtonElement>('.stepper');
 
     expect(botoes[1].disabled).toBe(true);
-    expect(compiled.textContent).toContain('Esta sala comporta até 4 pessoas.');
+    expect(compiled.textContent).toContain('Esta sala comporta até 5 pessoas.');
+  });
+
+  it('should allow increasing participants from four to five', () => {
+    const fixture = montar(4);
+    let pessoas = 0;
+    fixture.componentInstance.pessoasAlterada.subscribe((valor) => (pessoas = valor));
+    const aumentar = (fixture.nativeElement as HTMLElement)
+      .querySelectorAll<HTMLButtonElement>('.stepper')[1];
+
+    expect(aumentar.disabled).toBe(false);
+    aumentar.click();
+
+    expect(pessoas).toBe(5);
+  });
+
+  it.each([1, 2, 3])('should advise borrowing a chair for five people in room %i', (id) => {
+    const fixture = montar(5, { autenticado: true });
+    fixture.componentRef.setInput('sala', resolverEstados([{ id }]).find((sala) => sala.id === id));
+    fixture.detectChanges();
+
+    const elemento = fixture.nativeElement as HTMLElement;
+    expect(elemento.querySelector('.resumo__aviso-cadeira[role="status"]')?.textContent?.trim())
+      .toBe('Para cinco pessoas nesta sala, solicite uma cadeira à equipe de Facilities.');
+    expect(elemento.querySelector<HTMLButtonElement>('.resumo__confirmar')?.disabled).toBe(false);
+  });
+
+  it('should update the chair advice when changing participants or rooms', () => {
+    const fixture = montar(5);
+    const elemento = fixture.nativeElement as HTMLElement;
+    expect(elemento.querySelector('[role="status"]')).toBeTruthy();
+
+    fixture.componentRef.setInput('pessoas', 4);
+    fixture.detectChanges();
+    expect(elemento.querySelector('[role="status"]')).toBeNull();
+
+    fixture.componentRef.setInput('pessoas', 5);
+    fixture.componentRef.setInput('sala', resolverEstados([{ id: 5 }]).find((sala) => sala.id === 5));
+    fixture.detectChanges();
+    expect(elemento.querySelector('[role="status"]')).toBeNull();
+
+    fixture.componentRef.setInput('sala', null);
+    fixture.detectChanges();
+    expect(elemento.querySelector('[role="status"]')).toBeNull();
+  });
+
+  it('should show chair advice in ADMIN mode for five people and an applicable room', () => {
+    const fixture = montar(5, { autenticado: true });
+    const salas = resolverEstados([{ id: 2 }, { id: 5 }]);
+    fixture.componentRef.setInput('sala', null);
+    fixture.componentRef.setInput('salas', salas.filter((sala) => [2, 5].includes(sala.id)));
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('[role="status"]')?.textContent)
+      .toContain('solicite uma cadeira à equipe de Facilities.');
+
+    fixture.componentRef.setInput('salas', salas.filter((sala) => sala.id === 5));
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('[role="status"]')).toBeNull();
   });
 
   it('should emit the equipment request flag', async () => {

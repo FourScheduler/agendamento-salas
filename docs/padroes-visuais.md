@@ -164,7 +164,7 @@ com a disposição espelhada do desenho de referência do escritório:
   e cor `--muted-soft`; as verticais usam `writing-mode: vertical-rl`.
 - Cada sala é um `<button>` posicionado por `grid-area`, com os estados da seção 9.
 - A célula da sala mostra só o nome e a capacidade máxima no formato curto `Até N` (Focus 2, Salas 01
-  a 03 com 4, Comp 01 a 04 com 8); a Arena, sem capacidade, mostra `Eventos`. As regras de grupo
+  a 03 com 5, Comp 01 a 04 com 8); a Arena, sem capacidade, mostra `Eventos`. As regras de grupo
   ficam fora da planta, na nota `legenda__regras` do rodapé do cartão.
 - Em telas estreitas a planta mantém `min-width: 640px` e o corpo do cartão ganha rolagem
   horizontal. A rolagem fica só na `.planta__rolagem`, para a lista de baixo não acompanhar o

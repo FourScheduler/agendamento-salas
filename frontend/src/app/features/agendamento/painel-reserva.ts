@@ -103,6 +103,18 @@ export class PainelReserva {
     return limite !== null && this.pessoas() >= limite;
   });
 
+  readonly solicitarCadeira = computed(() => {
+    if (this.pessoas() !== 5) {
+      return false;
+    }
+
+    const salaUnica = this.sala();
+    const escolhidas = this.salas().length > 0
+      ? this.salas()
+      : salaUnica ? [salaUnica] : [];
+    return escolhidas.some((sala) => [1, 2, 3].includes(sala.id));
+  });
+
   readonly duracaoMinima = computed(() => this.duracao() <= DURACAO_MINIMA);
 
   readonly duracaoNoMaximo = computed(() => {

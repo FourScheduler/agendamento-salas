@@ -41,6 +41,25 @@ class AgendamentoJpaRepositoryTests {
     private Usuario usuario;
     private Sala sala;
 
+    @Test
+    @DisplayName("Deve aplicar capacidade cinco nas salas 01 a 03 e filtrar seis participantes")
+    void deveEncontrarSalasAteCincoParticipantesAposMigration() {
+        assertThat(salaJpaRepository.findAllById(List.of(1L, 2L, 3L)))
+                .hasSize(3)
+                .allSatisfy(salaAtualizada -> assertThat(salaAtualizada.getCapacidade()).isEqualTo(5));
+
+        assertThat(salaJpaRepository.buscarSalasDisponiveis(
+                DATA, LocalTime.of(9, 0), LocalTime.of(10, 0), 5
+        )).extracting(Sala::getId).contains(1L, 2L, 3L);
+
+        assertThat(salaJpaRepository.buscarSalasDisponiveis(
+                DATA, LocalTime.of(9, 0), LocalTime.of(10, 0), 6
+        )).extracting(Sala::getId).doesNotContain(1L, 2L, 3L);
+
+        assertThat(salaJpaRepository.findById(4L).orElseThrow().getCapacidade()).isEqualTo(2);
+        assertThat(salaJpaRepository.findById(5L).orElseThrow().getCapacidade()).isEqualTo(8);
+    }
+
     @BeforeEach
     void setUp() {
         usuario = usuarioJpaRepository.save(usuario());

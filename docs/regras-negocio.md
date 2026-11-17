@@ -9,11 +9,16 @@ A busca recebe data, horário inicial, horário final (ou duração) e quantidad
 | Grupo    | Salas             | Capacidade               |
 | -------- | ----------------- | ------------------------ |
 | Foco     | Sala Focus        | 1 a 2 pessoas            |
-| Tamboré  | Salas 01, 02 e 03 | até 4 pessoas            |
+| Tamboré  | Salas 01, 02 e 03 | até 5 pessoas            |
 | Comp     | Salas 01 a 04     | 5 pessoas ou mais        |
 | Restrito | Arena             | eventos (sem capacidade) |
 
 - Reuniões com mais de 10 pessoas podem integrar salas, conforme disponibilidade.
+- Com cinco participantes, Salas 01, 02 e 03 e as Comp podem ser encontradas e selecionadas,
+  conforme disponibilidade. A partir de seis, Salas 01, 02 e 03 não atendem à capacidade.
+- Ao selecionar Sala 01, 02 ou 03 para cinco pessoas, o resumo exibe em destaque vermelho:
+  `Para cinco pessoas nesta sala, solicite uma cadeira à equipe de Facilities.`
+  A orientação vale para USER e ADMIN, sem bloquear a reserva.
 - A célula da sala na planta mostra só a capacidade máxima (`Até N`); as regras de grupo ficam na
   nota da legenda.
 - A Arena é de eventos e não tem capacidade definida: não limita a quantidade de pessoas e não
