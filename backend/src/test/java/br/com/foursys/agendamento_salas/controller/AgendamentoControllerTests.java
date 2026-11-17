@@ -47,7 +47,7 @@ class AgendamentoControllerTests {
                         new CriarAgendamentoRequest.SalaRef(12L),
                         new CriarAgendamentoRequest.SalaRef(13L)
                 ),
-                LocalDate.now().plusDays(1),
+                LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)),
                 LocalTime.of(9, 0),
                 LocalTime.of(10, 0),
                 4,
@@ -162,7 +162,7 @@ class AgendamentoControllerTests {
         return new AgendamentoResponse(
                 1L,
                 sala,
-                LocalDate.now().plusDays(1),
+                LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)),
                 LocalDateTime.now(),
                 LocalTime.of(9, 0),
                 LocalTime.of(10, 0),

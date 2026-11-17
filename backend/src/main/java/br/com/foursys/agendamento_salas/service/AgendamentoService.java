@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -252,6 +253,9 @@ public class AgendamentoService {
     private void validarDataAgendamento(LocalDate data) {
         if (data == null || data.isBefore(LocalDate.now())) {
             throw new ValidacaoBuscaException("A data não pode estar no passado.");
+        }
+        if (data.getDayOfWeek() == DayOfWeek.SATURDAY || data.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            throw new ValidacaoBuscaException("Agendamentos são permitidos apenas de segunda a sexta.");
         }
     }
 

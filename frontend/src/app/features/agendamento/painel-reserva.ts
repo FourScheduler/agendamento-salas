@@ -13,6 +13,7 @@ import {
 import { Usuario } from '../../core/models/api.models';
 import { SalaPlanta } from '../../core/data/mapa-mock';
 import { dataCurta, paraHora, paraMinutos, rotuloDuracao as formatarDuracao } from '../../core/util/formatos';
+import { CalendarioData } from '../../shared/calendario-data/calendario-data';
 
 type CampoAberto = 'data' | 'horario' | 'duracao' | 'solicitante' | null;
 
@@ -37,6 +38,7 @@ function normalizar(texto: string): string {
 
 @Component({
   selector: 'app-painel-reserva',
+  imports: [CalendarioData],
   templateUrl: './painel-reserva.html',
   styleUrl: './painel-reserva.css',
 })
@@ -45,6 +47,7 @@ export class PainelReserva {
   /** Modo administrativo: várias salas escolhidas; vazio no modo comum. */
   readonly salas = input<SalaPlanta[]>([]);
   readonly data = input<string>('');
+  readonly dataMinima = input<string>('');
   readonly horaInicio = input<string>('');
   readonly duracao = input<number>(60);
   readonly pessoas = input<number>(1);

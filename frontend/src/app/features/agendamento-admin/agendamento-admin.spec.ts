@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { apiErrorInterceptor } from '../../core/http/api-error';
 import { authInterceptor } from '../../core/http/auth-interceptor';
 import { environment } from '../../../environments/environment';
+import { vi } from 'vitest';
 
 function aguardarMicrotarefas(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
@@ -42,6 +43,7 @@ describe('AgendamentoAdmin', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     httpMock.verify();
     window.localStorage.clear();
   });
@@ -93,6 +95,55 @@ describe('AgendamentoAdmin', () => {
     const fixture = iniciar();
     expect(fixture.componentInstance).toBeTruthy();
     expect(chamadaDeBusca().request.method).toBe('GET');
+  });
+
+  it.each([
+    ['2026-11-21T10:15:00', '2026-11-23', '08:00'],
+    ['2026-11-22T23:45:00', '2026-11-23', '08:00'],
+    ['2026-01-31T23:45:00', '2026-02-02', '08:00'],
+    ['2023-12-31T23:45:00', '2024-01-01', '08:00'],
+    ['2026-11-23T10:15:00', '2026-11-23', '11:00'],
+    ['2026-11-20T10:00:00', '2026-11-20', '10:00'],
+  ])('should initialize availability opened at %s for %s at %s', (agora, data, horaInicio) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(agora));
+    const fixture = TestBed.createComponent(AgendamentoAdmin);
+
+    fixture.detectChanges();
+
+    const componente = fixture.componentInstance;
+    expect(componente.data()).toBe(data);
+    expect(componente.horaInicio()).toBe(horaInicio);
+    expect(componente.duracao()).toBe(60);
+    expect(componente.pessoas()).toBe(1);
+    expect(componente.erroValidacao()).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-painel-reserva')?.textContent)
+      .toContain(horaInicio);
+    const busca = chamadaDeBusca();
+    expect(busca.request.params.get('data')).toBe(data);
+    expect(busca.request.params.get('horaInicio')).toBe(horaInicio);
+    expect(busca.request.params.get('horaFim')).toBe(
+      `${String(Number(horaInicio.slice(0, 2)) + 1).padStart(2, '0')}:00`,
+    );
+    busca.flush([]);
+    const ocupacoes = chamadaDeOcupacoes();
+    expect(ocupacoes.request.params.get('data')).toBe(data);
+    ocupacoes.flush([]);
+    chamadaDeUsuarios().flush([]);
+  });
+
+  it('should reject a weekend date update without searching availability', () => {
+    const fixture = iniciar();
+    responder([]);
+    const componente = fixture.componentInstance;
+    const dataInicial = componente.data();
+
+    componente.atualizarData('2026-11-21');
+
+    expect(componente.data()).toBe(dataInicial);
+    expect(componente.erroValidacao()).toContain('segunda a sexta');
+    expect(httpMock.match((requisicao) => requisicao.url.includes('/api/salas/disponiveis')))
+      .toHaveLength(0);
   });
 
   it('should render the same map and panel layout of the common screen', async () => {

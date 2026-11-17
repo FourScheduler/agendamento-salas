@@ -80,13 +80,23 @@
       @if (campoAberto() === 'data') {
         <div class="linha__editor">
           <label class="campo__rotulo" for="resumo-data">Data da reserva</label>
-          <input
-            class="campo__entrada"
-            id="resumo-data"
-            type="date"
-            [value]="data()"
-            (input)="dataAlterada.emit(valorDoCampo($event))"
-          />
+          <app-calendario-data
+            [data]="data()"
+            [minima]="dataMinima()"
+            [desabilitado]="confirmando()"
+            (dataSelecionada)="dataAlterada.emit($event)"
+          >
+            <input
+              class="campo__entrada"
+              id="resumo-data"
+              type="date"
+              [value]="data()"
+              [min]="dataMinima()"
+              [disabled]="confirmando()"
+              readonly
+              aria-haspopup="dialog"
+            />
+          </app-calendario-data>
         </div>
       }
     </div>

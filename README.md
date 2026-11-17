@@ -44,6 +44,19 @@ copy .env.example .env   # preencha DB_USERNAME, DB_PASSWORD e JWT_SECRET
 
 As migrations do Flyway criam o schema e os usuários de demonstração (`admin@teste.com` e `usuario@teste.com`), todos com a senha de demonstração definida no seed.
 
+#### Build no IntelliJ (MapStruct)
+
+Importe `backend\pom.xml` como projeto Maven e use JDK 21 no SDK do projeto e no Maven Runner. Em **Settings > Build, Execution, Deployment > Build Tools > Maven > Runner**, habilite **Delegate IDE build/run actions to Maven**.
+
+As implementações `*MapperImpl.java` são geradas pelo MapStruct em `backend\target\generated-sources\annotations`; não devem ser copiadas para os fontes nem versionadas. A pasta `target` na raiz também é ignorada para evitar artefatos de uma configuração antiga da IDE.
+
+Se ocorrer `FilerException: Attempt to recreate a file ...MapperImpl`, remova qualquer marcação de **Sources/Generated Sources Root** do `target` da raiz em **Project Structure > Modules**, execute **Reload All Maven Projects** e compile novamente:
+
+```powershell
+cd backend
+.\mvnw.cmd clean test
+```
+
 ### Frontend (http://localhost:4200)
 
 ```powershell

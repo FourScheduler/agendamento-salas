@@ -11,10 +11,12 @@ import { SalaPlanta, resolverEstados } from '../../core/data/mapa-mock';
 import {
   dataCurta,
   fimDeJornada,
+  ehFimDeSemana,
   hojeIso,
   normalizarNome,
   paraHora,
   paraMinutos,
+  proximoDiaUtilIso,
   proximaHoraCheia,
 } from '../../core/util/formatos';
 import { MapaSalas } from '../agendamento/mapa-salas';
@@ -57,8 +59,10 @@ export class AgendamentoAdmin implements OnInit {
   });
   readonly hoje = hojeIso();
 
-  readonly data = signal(this.hoje);
-  readonly horaInicio = signal(proximaHoraCheia());
+  readonly data = signal(
+    ehFimDeSemana(this.hoje) ? proximoDiaUtilIso(this.hoje) : this.hoje,
+  );
+  readonly horaInicio = signal(ehFimDeSemana(this.hoje) ? '08:00' : proximaHoraCheia());
   readonly duracao = signal(60);
   readonly pessoas = signal(1);
   readonly equipamentos = signal(false);
@@ -144,6 +148,11 @@ export class AgendamentoAdmin implements OnInit {
   }
 
   atualizarData(valor: string): void {
+    if (ehFimDeSemana(valor)) {
+      this.erroValidacao.set('Agendamentos são permitidos apenas de segunda a sexta.');
+      return;
+    }
+
     this.data.set(valor);
     this.limparErroConfirmacao();
     this.buscar();
@@ -230,6 +239,12 @@ export class AgendamentoAdmin implements OnInit {
       return;
     }
 
+    const falha = this.validar();
+    if (falha) {
+      this.erroValidacao.set(falha);
+      return;
+    }
+
     const horaFim = horaFinal(this.horaInicio(), this.duracao());
     this.confirmando.set(true);
     this.limparErroConfirmacao();
@@ -312,7 +327,8 @@ export class AgendamentoAdmin implements OnInit {
    * A data é recalculada no momento porque `hoje` é fixo desde a abertura da tela.
    */
   private reiniciarPainel(): void {
-    this.data.set(hojeIso());
+    const hoje = hojeIso();
+    this.data.set(ehFimDeSemana(hoje) ? proximoDiaUtilIso(hoje) : hoje);
     this.pessoas.set(1);
     // A reserva nova muda as ocupações do dia, então as antigas não valem mais.
     this.ocupacoesSalvas.set(null);
@@ -351,6 +367,10 @@ export class AgendamentoAdmin implements OnInit {
 
     if (this.data() < this.hoje) {
       return 'A data não pode estar no passado.';
+    }
+
+    if (ehFimDeSemana(this.data())) {
+      return 'Agendamentos são permitidos apenas de segunda a sexta.';
     }
 
     if (paraMinutos(this.horaInicio()) === null) {

@@ -9,9 +9,21 @@ import { RespostaAssistente } from '../../shared/assistente-ia/assistente-ia';
 import { ToastService } from '../../shared/toast/toast';
 import { environment } from '../../../environments/environment';
 import { hojeIso, paraIso } from '../../core/util/formatos';
+import { vi } from 'vitest';
 
 function aguardarMicrotarefas(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function proximaDataDeFimDeSemana(dia: 0 | 6): string {
+  const data = new Date();
+  do {
+    data.setDate(data.getDate() + 1);
+  } while (data.getDay() !== dia);
+
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const diaDoMes = String(data.getDate()).padStart(2, '0');
+  return `${data.getFullYear()}-${mes}-${diaDoMes}`;
 }
 
 async function entrarUsuarioComum(httpMock: HttpTestingController): Promise<void> {
@@ -44,6 +56,7 @@ describe('Agendamento', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     httpMock.verify();
     window.localStorage.clear();
   });
@@ -94,6 +107,40 @@ describe('Agendamento', () => {
     const fixture = iniciar();
     expect(fixture.componentInstance).toBeTruthy();
     expect(chamadaDeBusca().request.method).toBe('GET');
+  });
+
+  it.each([
+    ['2026-11-21T10:15:00', '2026-11-23', '08:00'],
+    ['2026-11-22T23:45:00', '2026-11-23', '08:00'],
+    ['2026-01-31T23:45:00', '2026-02-02', '08:00'],
+    ['2023-12-31T23:45:00', '2024-01-01', '08:00'],
+    ['2026-11-23T10:15:00', '2026-11-23', '11:00'],
+    ['2026-11-20T10:00:00', '2026-11-20', '10:00'],
+  ])('should initialize availability opened at %s for %s at %s', (agora, data, horaInicio) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(agora));
+    const fixture = TestBed.createComponent(Agendamento);
+
+    fixture.detectChanges();
+
+    const componente = fixture.componentInstance;
+    expect(componente.data()).toBe(data);
+    expect(componente.horaInicio()).toBe(horaInicio);
+    expect(componente.duracao()).toBe(60);
+    expect(componente.pessoas()).toBe(1);
+    expect(componente.erroValidacao()).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-painel-reserva')?.textContent)
+      .toContain(horaInicio);
+    const busca = chamadaDeBusca();
+    expect(busca.request.params.get('data')).toBe(data);
+    expect(busca.request.params.get('horaInicio')).toBe(horaInicio);
+    expect(busca.request.params.get('horaFim')).toBe(
+      `${String(Number(horaInicio.slice(0, 2)) + 1).padStart(2, '0')}:00`,
+    );
+    busca.flush([]);
+    const ocupacoes = chamadaDeOcupacoes();
+    expect(ocupacoes.request.params.get('data')).toBe(data);
+    ocupacoes.flush([]);
   });
 
   it('should render the page title', async () => {
@@ -163,6 +210,33 @@ describe('Agendamento', () => {
 
     expect(texto).toContain('Faça login');
     expect(httpMock.match(`${environment.apiUrl}/api/agendamento`).length).toBe(0);
+  });
+
+  it('should reject a weekend date update without searching availability', () => {
+    const fixture = iniciar();
+    responder([]);
+    const componente = fixture.componentInstance;
+    const dataInicial = componente.data();
+
+    componente.atualizarData(proximaDataDeFimDeSemana(6));
+
+    expect(componente.data()).toBe(dataInicial);
+    expect(componente.erroValidacao()).toContain('segunda a sexta');
+    expect(httpMock.match((requisicao) => requisicao.url.includes('/api/salas/disponiveis')))
+      .toHaveLength(0);
+  });
+
+  it('should reject a restored weekend date before searching availability', () => {
+    const fixture = iniciar();
+    responder([]);
+    const componente = fixture.componentInstance;
+    componente.data.set(proximaDataDeFimDeSemana(0));
+    componente.buscar();
+
+    expect(componente.erroValidacao()).toContain('segunda a sexta');
+    expect(httpMock.match(`${environment.apiUrl}/api/agendamento`)).toHaveLength(0);
+    expect(httpMock.match((requisicao) => requisicao.url.includes('/api/salas/disponiveis')))
+      .toHaveLength(0);
   });
 
   it('should create the reservation when authenticated and refresh the map', async () => {
