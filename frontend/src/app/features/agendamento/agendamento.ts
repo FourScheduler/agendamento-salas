@@ -47,7 +47,7 @@ export class Agendamento implements OnInit {
   readonly data = signal(
     ehFimDeSemana(this.hoje) ? proximoDiaUtilIso(this.hoje) : this.hoje,
   );
-  readonly horaInicio = signal(proximaHoraCheia());
+  readonly horaInicio = signal(ehFimDeSemana(this.hoje) ? '08:00' : proximaHoraCheia());
   readonly duracao = signal(60);
   readonly pessoas = signal(1);
   readonly equipamentos = signal(false);
