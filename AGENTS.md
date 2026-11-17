@@ -32,7 +32,7 @@ O backend lê banco e autenticação de um arquivo `backend/.env`, que não é v
 ## Fluxo do MVP
 
 1. Usuário abre a home mockada do Portal (`/portal`) e, com a sessão ativa, clica em **Agendamento de Salas**, o acesso logo depois de **Portal de Gestão Pessoal**; sem login o clique abre o modal de login e, após autenticar, segue para a tela do perfil (`USER` → agendamento comum, `ADMIN` → administrativo). O login pela topbar permanece no portal.
-2. A tela do agendamento já é o mapa: ele informa data, horário, duração e quantidade de pessoas no painel de resumo. Na tela administrativa a duração usa um stepper de 30 em 30 minutos com atalhos até o **Dia inteiro**.
+2. A tela do agendamento já é o mapa: ele informa data, horário, duração e quantidade de pessoas no painel de resumo. Na tela administrativa a duração usa um stepper de 15 em 15 minutos com atalhos até o **Dia inteiro**.
 3. O sistema apresenta a planta com as salas mockadas e a situação de cada uma.
 4. O usuário escolhe uma sala livre e revisa o resumo da reserva; o seletor de pessoas respeita a capacidade da sala. A Arena (eventos, sem capacidade) aparece como sala restrita e só o administrador consegue reservá-la.
 5. A confirmação usa a sessão iniciada no login e **Sair** volta ao portal. Nesta etapa, nenhuma reserva é criada no Outlook.

@@ -68,14 +68,14 @@ describe('PainelReserva', () => {
     fixture.detectChanges();
 
     const compilado = fixture.nativeElement as HTMLElement;
-    // O seletor dá lugar ao stepper de 30 em 30 minutos com atalhos.
+    // O seletor dá lugar ao stepper de 15 em 15 minutos com atalhos.
     expect(compilado.querySelector('select#resumo-duracao')).toBeNull();
     expect(compilado.querySelectorAll('.duracao__atalho').length).toBe(7);
 
     compilado
-      .querySelector<HTMLButtonElement>('button[aria-label="Aumentar 30 minutos"]')
+      .querySelector<HTMLButtonElement>('button[aria-label="Aumentar 15 minutos"]')
       ?.click();
-    expect(duracaoEmitida).toBe(90);
+    expect(duracaoEmitida).toBe(75);
 
     // "Dia inteiro" aplica a maior duração possível a partir do início.
     const diaInteiro = Array.from(
@@ -142,11 +142,44 @@ describe('PainelReserva', () => {
     let emitida = 0;
     fixture.componentInstance.duracaoAlterada.subscribe((valor) => (emitida = valor));
 
-    fixture.componentInstance.mudarDuracao(-30);
+    fixture.componentInstance.mudarDuracao(-15);
     expect(emitida).toBe(15);
-    fixture.componentInstance.mudarDuracao(30);
+    fixture.componentInstance.mudarDuracao(15);
     expect(emitida).toBe(45);
     expect(fixture.componentInstance.atalhosDuracao()).toEqual([15, 30, 45]);
+  });
+
+  it('should navigate admin durations in 15-minute steps and disable the limits', () => {
+    const fixture = montar();
+    fixture.componentRef.setInput('stepperDuracao', true);
+    fixture.componentRef.setInput('duracao', 15);
+    fixture.componentRef.setInput('duracaoMaxima', 135);
+    fixture.componentInstance.alternar('duracao');
+    fixture.componentInstance.duracaoAlterada.subscribe((valor) => {
+      fixture.componentRef.setInput('duracao', valor);
+    });
+    fixture.detectChanges();
+
+    const elemento = fixture.nativeElement as HTMLElement;
+    const aumentar = elemento.querySelector<HTMLButtonElement>(
+      'button[aria-label="Aumentar 15 minutos"]',
+    )!;
+    const diminuir = elemento.querySelector<HTMLButtonElement>(
+      'button[aria-label="Diminuir 15 minutos"]',
+    )!;
+    expect(diminuir.disabled).toBe(true);
+
+    for (const minutos of [30, 45, 60, 75, 90, 105, 120, 135]) {
+      aumentar.click();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.duracao()).toBe(minutos);
+    }
+
+    expect(aumentar.disabled).toBe(true);
+    diminuir.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.duracao()).toBe(120);
+    expect(aumentar.disabled).toBe(false);
   });
 
   it('should show the selected room and the final time', async () => {

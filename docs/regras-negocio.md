@@ -54,7 +54,7 @@ A tela `/agendamento-admin` é restrita a usuários com perfil `ADMIN` (guard de
 A tela administrativa usa o mesmo layout da tela comum (planta de salas + painel de resumo), sem assistente. Em relação à tela comum:
 
 - Pode selecionar mais de uma sala por reserva, clicando em cada sala na planta; a capacidade considerada é a soma das salas escolhidas (a Arena, sem capacidade, não limita as pessoas).
-- Pode agendar até o dia inteiro: a duração usa um stepper de 30 em 30 minutos, com mínimo de 15 min, do horário inicial até o fim do dia, com atalhos `15 min`, `30 min`, `45 min`, `1 h`, `1h30`, `2 h`, `4 h` e `Dia inteiro` (o limite de 120 minutos vale apenas para `USER`). Os atalhos respeitam o tempo restante no dia. Ao trocar o horário inicial, uma duração que passaria da meia-noite é reduzida para a última opção válida.
+- Pode agendar até o dia inteiro: a duração usa um stepper de 15 em 15 minutos, com mínimo de 15 min, do horário inicial até o fim do dia, com atalhos `15 min`, `30 min`, `45 min`, `1 h`, `1h30`, `2 h`, `4 h` e `Dia inteiro` (o limite de 120 minutos vale apenas para `USER`). Os atalhos respeitam o tempo restante no dia. Ao trocar o horário inicial, uma duração que passaria da meia-noite é reduzida para a última opção válida.
 - Pode escolher quem é o solicitante da reserva em outro usuário, pela busca de nome ou e-mail sobre
   `GET /api/usuarios`; por padrão o solicitante é o próprio administrador, que aparece uma única vez,
   como primeiro item da lista com o selo `(eu mesmo)` — buscando o próprio nome ele também é

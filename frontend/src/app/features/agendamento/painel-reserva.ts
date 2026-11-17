@@ -51,7 +51,7 @@ export class PainelReserva {
   readonly duracao = input<number>(60);
   readonly pessoas = input<number>(1);
   readonly duracoes = input<number[]>([15, 30, 45, 60, 90, 120]);
-  /** Modo stepper (admin): −/+ de 30 em 30 min em vez da lista de opções. */
+  /** Modo stepper (admin): −/+ de 15 em 15 min em vez da lista de opções. */
   readonly stepperDuracao = input(false);
   /** Maior duração possível para o horário inicial; nulo quando não há limite. */
   readonly duracaoMaxima = input<number | null>(null);
@@ -267,7 +267,7 @@ export class PainelReserva {
     }
   }
 
-  /** Passo do stepper de duração: +/− 30 minutos, respeitando o fim do dia. */
+  /** Passo do stepper de duração: +/− 15 minutos, respeitando o fim do dia. */
   mudarDuracao(delta: number): void {
     const maximo = this.duracaoMaxima();
     const alvo = this.duracao() + delta;

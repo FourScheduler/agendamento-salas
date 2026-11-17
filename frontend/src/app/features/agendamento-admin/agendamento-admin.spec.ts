@@ -165,13 +165,14 @@ describe('AgendamentoAdmin', () => {
     responder([]);
     await fixture.whenStable();
 
-    // Início fixo em 09:00: o dia tem opções até 23:30 e nada que passe da meia-noite.
+    // Início fixo em 09:00: o dia tem opções até 23:45 e nada que passe da meia-noite.
     const opcoes = fixture.componentInstance.duracoes();
-    expect(opcoes.slice(0, 6)).toEqual([15, 30, 45, 60, 90, 120]);
+    expect(opcoes).toEqual(Array.from({ length: 59 }, (_, indice) => (indice + 1) * 15));
     expect(opcoes).toContain(180);
     expect(opcoes).toContain(240);
     expect(opcoes).toContain(720); // 12 horas
     expect(opcoes).toContain(870); // 09:00 + 870 min = 23:30
+    expect(fixture.componentInstance.duracaoMaxima()).toBe(885);
     expect(opcoes).not.toContain(900); // 09:00 + 900 min = 24:00, fora do dia
   });
 
@@ -185,7 +186,7 @@ describe('AgendamentoAdmin', () => {
     componente.atualizarHora('16:00');
     responder([]);
 
-    expect(componente.duracao()).toBe(450); // 16:00 + 450 min = 23:30
+    expect(componente.duracao()).toBe(465); // 16:00 + 465 min = 23:45
     expect(componente.erroValidacao()).toBeNull();
   });
 
