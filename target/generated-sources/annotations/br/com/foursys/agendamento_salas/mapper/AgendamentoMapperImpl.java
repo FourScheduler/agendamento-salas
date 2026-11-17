@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-10-16T08:38:08-0300",
+    date = "2026-11-17T06:41:45-0300",
     comments = "version: 1.6.3, compiler: javac, environment: Java 21.0.11 (Azul Systems, Inc.)"
 )
 @Component
@@ -31,6 +31,7 @@ public class AgendamentoMapperImpl implements AgendamentoMapper {
             return null;
         }
 
+        Long id = null;
         SalaResponse salaId = null;
         LocalDate dataAgendamento = null;
         LocalDateTime dataCriacao = null;
@@ -41,6 +42,7 @@ public class AgendamentoMapperImpl implements AgendamentoMapper {
         UsuarioResponse usuarioIdSolicitante = null;
         StatusAgendamento status = null;
 
+        id = entity.getId();
         salaId = salaMapper.entityToResponse( entity.getSalaId() );
         dataAgendamento = entity.getDataAgendamento();
         dataCriacao = entity.getDataCriacao();
@@ -51,7 +53,7 @@ public class AgendamentoMapperImpl implements AgendamentoMapper {
         usuarioIdSolicitante = usuarioMapper.toResponse( entity.getUsuarioIdSolicitante() );
         status = entity.getStatus();
 
-        AgendamentoResponse agendamentoResponse = new AgendamentoResponse( salaId, dataAgendamento, dataCriacao, horaInicio, horaFim, qntdPessoas, titulo, usuarioIdSolicitante, status );
+        AgendamentoResponse agendamentoResponse = new AgendamentoResponse( id, salaId, dataAgendamento, dataCriacao, horaInicio, horaFim, qntdPessoas, titulo, usuarioIdSolicitante, status );
 
         return agendamentoResponse;
     }

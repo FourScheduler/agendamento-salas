@@ -31,6 +31,9 @@ A busca recebe data, horário inicial, horário final (ou duração) e quantidad
 ## Validações
 
 - A data não pode estar no passado.
+- Agendamentos só podem ocorrer de segunda a sexta; sábados e domingos são bloqueados na seleção,
+  nas consultas e na confirmação, inclusive quando a data vem de estado restaurado ou do assistente.
+- Não há limite máximo de antecedência para a data do agendamento.
 - O horário final deve ser posterior ao horário inicial e precisa ficar dentro do mesmo dia.
 - A capacidade da sala deve ser igual ou superior à quantidade de pessoas.
 - Com sala selecionada, o seletor de pessoas trava na capacidade da sala e mostra

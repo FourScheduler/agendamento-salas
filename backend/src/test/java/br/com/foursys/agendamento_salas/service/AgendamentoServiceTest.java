@@ -33,6 +33,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -79,6 +80,45 @@ class AgendamentoServiceTest {
     @Nested
     @DisplayName("Criação de agendamentos")
     class CreateBooking {
+
+        @Test
+        @DisplayName("Deve rejeitar sábado e domingo para USER e ADMIN sem persistir")
+        void deveRejeitarFimDeSemanaParaTodosOsPerfis() {
+            LocalDate sabado = LocalDate.now()
+                    .with(java.time.temporal.TemporalAdjusters.next(DayOfWeek.SATURDAY));
+            LocalDate domingo = LocalDate.now()
+                    .with(java.time.temporal.TemporalAdjusters.next(DayOfWeek.SUNDAY));
+
+            for (PerfilUsuario perfil : List.of(PerfilUsuario.USER, PerfilUsuario.ADMIN)) {
+                Usuario usuario = usuario(perfil == PerfilUsuario.USER ? 71L : 72L, perfil);
+                Sala sala = sala(12L);
+                when(usuarioRepositoryPort.buscarPorId(usuario.getId()))
+                        .thenReturn(Optional.of(usuario));
+
+                for (LocalDate data : List.of(sabado, domingo)) {
+                    CriarAgendamentoRequest request = request(
+                            sala,
+                            null,
+                            LocalTime.of(9, 0),
+                            LocalTime.of(10, 0),
+                            4,
+                            data
+                    );
+
+                    assertThrows(
+                            ValidacaoBuscaException.class,
+                            () -> service.criar(request, usuario.getId())
+                    );
+                }
+            }
+
+            verifyNoInteractions(
+                    agendamentoRepositoryPort,
+                    logRepositoryPort,
+                    salaRepositoryPort,
+                    agendamentoMapper
+            );
+        }
 
         @Test
         @DisplayName("Deve salvar o agendamento, registrar log e retornar confirmação para usuário comum")
@@ -191,7 +231,7 @@ class AgendamentoServiceTest {
                             new CriarAgendamentoRequest.SalaRef(segundaSala.getId()),
                             new CriarAgendamentoRequest.SalaRef(primeiraSala.getId())
                     ),
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)),
                     LocalTime.of(9, 0),
                     LocalTime.of(10, 0),
                     8,
@@ -241,7 +281,7 @@ class AgendamentoServiceTest {
                             new CriarAgendamentoRequest.SalaRef(12L),
                             new CriarAgendamentoRequest.SalaRef(13L)
                     ),
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)),
                     LocalTime.of(9, 0),
                     LocalTime.of(10, 0),
                     8,
@@ -269,7 +309,7 @@ class AgendamentoServiceTest {
                             new CriarAgendamentoRequest.SalaRef(primeiraSala.getId()),
                             new CriarAgendamentoRequest.SalaRef(segundaSala.getId())
                     ),
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)),
                     LocalTime.of(9, 0),
                     LocalTime.of(10, 0),
                     7,
@@ -300,7 +340,7 @@ class AgendamentoServiceTest {
                             new CriarAgendamentoRequest.SalaRef(12L),
                             new CriarAgendamentoRequest.SalaRef(12L)
                     ),
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)),
                     LocalTime.of(9, 0),
                     LocalTime.of(10, 0),
                     4,
@@ -332,7 +372,7 @@ class AgendamentoServiceTest {
                             new CriarAgendamentoRequest.SalaRef(primeiraSala.getId()),
                             new CriarAgendamentoRequest.SalaRef(segundaSala.getId())
                     ),
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)),
                     LocalTime.of(9, 0),
                     LocalTime.of(10, 0),
                     8,
@@ -703,7 +743,7 @@ class AgendamentoServiceTest {
                 .id(id)
                 .usuarioId(usuario(7L, PerfilUsuario.USER))
                 .salaId(sala(12L))
-                .dataAgendamento(LocalDate.now().plusDays(1))
+                .dataAgendamento(LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)))
                 .dataCriacao(LocalDateTime.now())
                 .horaInicio(LocalTime.of(9, 0))
                 .horaFim(LocalTime.of(10, 0))
@@ -717,7 +757,7 @@ class AgendamentoServiceTest {
         return new AgendamentoResponse(
                 1L,
                 salaResponse(sala(12L)),
-                LocalDate.now().plusDays(1),
+                LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)),
                 LocalDateTime.now(),
                 LocalTime.of(9, 0),
                 LocalTime.of(10, 0),
@@ -744,9 +784,20 @@ class AgendamentoServiceTest {
             LocalTime fim,
             int quantidadePessoas
     ) {
+        return request(sala, solicitante, inicio, fim, quantidadePessoas, proximoDiaUtil());
+    }
+
+    private CriarAgendamentoRequest request(
+            Sala sala,
+            Usuario solicitante,
+            LocalTime inicio,
+            LocalTime fim,
+            int quantidadePessoas,
+            LocalDate data
+    ) {
         return new CriarAgendamentoRequest(
                 List.of(new CriarAgendamentoRequest.SalaRef(sala.getId())),
-                LocalDate.now().plusDays(1),
+                data,
                 inicio,
                 fim,
                 quantidadePessoas,
@@ -755,6 +806,14 @@ class AgendamentoServiceTest {
                         : null,
                 "Alinhamento"
         );
+    }
+
+    private LocalDate proximoDiaUtil() {
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
+        while (data.getDayOfWeek() == DayOfWeek.SATURDAY || data.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            data = data.plusDays(1);
+        }
+        return data;
     }
 
     private SalaResponse salaResponse(Sala sala) {

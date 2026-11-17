@@ -95,6 +95,20 @@ describe('AgendamentoAdmin', () => {
     expect(chamadaDeBusca().request.method).toBe('GET');
   });
 
+  it('should reject a weekend date update without searching availability', () => {
+    const fixture = iniciar();
+    responder([]);
+    const componente = fixture.componentInstance;
+    const dataInicial = componente.data();
+
+    componente.atualizarData('2026-11-21');
+
+    expect(componente.data()).toBe(dataInicial);
+    expect(componente.erroValidacao()).toContain('segunda a sexta');
+    expect(httpMock.match((requisicao) => requisicao.url.includes('/api/salas/disponiveis')))
+      .toHaveLength(0);
+  });
+
   it('should render the same map and panel layout of the common screen', async () => {
     const fixture = iniciar();
     responder([]);

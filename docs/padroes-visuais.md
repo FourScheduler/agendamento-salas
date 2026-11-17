@@ -177,6 +177,10 @@ com a disposição espelhada do desenho de referência do escritório:
 
 ## 13. Painel de resumo
 
+- Todos os campos de data usam o componente compartilhado de calendário
+  (`app-calendario-data`), com navegação mensal e seleção acessível de dias. O chamador define os
+  limites conforme o contexto: fins de semana são sempre bloqueados; agendamentos também bloqueiam
+  datas passadas, sem data máxima.
 - Seletor de pessoas em stepper `-` / `+`. Com sala selecionada o `+` trava na capacidade da sala
   (classe `naCapacidade`) e a linha `resumo__limite` mostra `Esta sala comporta até N pessoas.`
 - Duração: no modo comum, um `<select>` com 30, 60, 90 e 120 minutos; no modo administrativo, um

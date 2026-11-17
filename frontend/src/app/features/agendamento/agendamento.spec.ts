@@ -14,6 +14,17 @@ function aguardarMicrotarefas(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+function proximaDataDeFimDeSemana(dia: 0 | 6): string {
+  const data = new Date();
+  do {
+    data.setDate(data.getDate() + 1);
+  } while (data.getDay() !== dia);
+
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const diaDoMes = String(data.getDate()).padStart(2, '0');
+  return `${data.getFullYear()}-${mes}-${diaDoMes}`;
+}
+
 async function entrarUsuarioComum(httpMock: HttpTestingController): Promise<void> {
   const login = TestBed.inject(AuthService).entrar('usuario@teste.com', '123456');
   httpMock.expectOne(`${environment.apiUrl}/auth/login`).flush('token-jwt-123');
@@ -163,6 +174,33 @@ describe('Agendamento', () => {
 
     expect(texto).toContain('Faça login');
     expect(httpMock.match(`${environment.apiUrl}/api/agendamento`).length).toBe(0);
+  });
+
+  it('should reject a weekend date update without searching availability', () => {
+    const fixture = iniciar();
+    responder([]);
+    const componente = fixture.componentInstance;
+    const dataInicial = componente.data();
+
+    componente.atualizarData(proximaDataDeFimDeSemana(6));
+
+    expect(componente.data()).toBe(dataInicial);
+    expect(componente.erroValidacao()).toContain('segunda a sexta');
+    expect(httpMock.match((requisicao) => requisicao.url.includes('/api/salas/disponiveis')))
+      .toHaveLength(0);
+  });
+
+  it('should reject a restored weekend date before searching availability', () => {
+    const fixture = iniciar();
+    responder([]);
+    const componente = fixture.componentInstance;
+    componente.data.set(proximaDataDeFimDeSemana(0));
+    componente.buscar();
+
+    expect(componente.erroValidacao()).toContain('segunda a sexta');
+    expect(httpMock.match(`${environment.apiUrl}/api/agendamento`)).toHaveLength(0);
+    expect(httpMock.match((requisicao) => requisicao.url.includes('/api/salas/disponiveis')))
+      .toHaveLength(0);
   });
 
   it('should create the reservation when authenticated and refresh the map', async () => {

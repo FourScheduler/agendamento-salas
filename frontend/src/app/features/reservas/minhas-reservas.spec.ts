@@ -2,17 +2,30 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter, Router } from '@angular/router';
 import { MinhasReservas } from './minhas-reservas';
 import { Reserva } from '../../core/models/api.models';
 import { apiErrorInterceptor } from '../../core/http/api-error';
 import { authInterceptor } from '../../core/http/auth-interceptor';
 import { ToastService } from '../../shared/toast/toast';
+import { CalendarioData } from '../../shared/calendario-data/calendario-data';
 import { environment } from '../../../environments/environment';
 
 /** Rota usada apenas para o teste do botão de voltar. */
 @Component({ template: '' })
 class TelaAgendamentoStub {}
+
+function proximaDataDeFimDeSemana(dia: 0 | 6): string {
+  const data = new Date();
+  do {
+    data.setDate(data.getDate() + 1);
+  } while (data.getDay() !== dia);
+
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const diaDoMes = String(data.getDate()).padStart(2, '0');
+  return `${data.getFullYear()}-${mes}-${diaDoMes}`;
+}
 
 describe('MinhasReservas', () => {
   let httpMock: HttpTestingController;
@@ -93,6 +106,37 @@ describe('MinhasReservas', () => {
     expect(compilado.textContent).toContain('Tamboré');
     expect(compilado.querySelector('.minhas-reservas__cabecalho .eyebrow')).toBeNull();
     expect(compilado.textContent).toContain('Confirmada');
+  });
+
+  it('should use the shared calendar for both custom date filters', async () => {
+    const fixture = criarFixture();
+    await fixture.whenStable();
+    esperarBusca().flush([]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const calendarios = fixture.debugElement.queryAll(By.directive(CalendarioData));
+    expect(calendarios).toHaveLength(2);
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('input[type="date"][readonly]'),
+    ).toHaveLength(2);
+  });
+
+  it('should reject weekend filters and prevent searches when restored state has a weekend', async () => {
+    const fixture = criarFixture();
+    const componente = fixture.componentInstance;
+    await fixture.whenStable();
+    esperarBusca().flush([]);
+    await fixture.whenStable();
+
+    componente.trocarData('inicio', proximaDataDeFimDeSemana(6));
+    expect(componente.periodoFiltro().inicio).toBeNull();
+    expect(componente.dataFiltroFimDeSemana()).toBe(true);
+
+    componente.periodoFiltro.set({ inicio: proximaDataDeFimDeSemana(0), fim: null });
+    componente.buscar();
+    expect(componente.periodoComFimDeSemana()).toBe(true);
+    expect(httpMock.match((requisicao) => requisicao.url === urlBusca)).toHaveLength(0);
   });
 
   it('should show time, people and location in a single meta line', async () => {
@@ -330,11 +374,11 @@ describe('MinhasReservas', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    componente.trocarData('inicio', { target: { value: '2026-11-01' } } as unknown as Event);
+    componente.trocarData('inicio', '2026-11-02');
     await fixture.whenStable();
 
     const chamada = esperarBusca();
-    expect(chamada.request.params.get('dataInicio')).toBe('2026-11-01');
+    expect(chamada.request.params.get('dataInicio')).toBe('2026-11-02');
     expect(chamada.request.params.get('dataFinal')).toBeNull();
     // Uma reserva passada volta porque o backend é quem recorta por data.
     chamada.flush([reservaPassada]);
@@ -353,6 +397,28 @@ describe('MinhasReservas', () => {
     expect(compilado.querySelector('.minhas-reservas__ordem')).toBeNull();
   });
 
+  it('should clear one custom date filter without clearing the other', async () => {
+    const fixture = criarFixture();
+    const componente = fixture.componentInstance;
+    await fixture.whenStable();
+    esperarBusca().flush([]);
+    await fixture.whenStable();
+
+    componente.periodoFiltro.set({ inicio: '2026-11-02', fim: '2026-11-30' });
+    fixture.detectChanges();
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('[aria-label="Remover data inicial"]')
+      ?.click();
+    await fixture.whenStable();
+
+    expect(componente.periodoFiltro()).toEqual({ inicio: null, fim: '2026-11-30' });
+    const chamada = esperarBusca();
+    expect(chamada.request.params.get('dataInicio')).toBeNull();
+    expect(chamada.request.params.get('dataFinal')).toBe('2026-11-30');
+    chamada.flush([]);
+    await fixture.whenStable();
+  });
+
   it('should keep the cancel button for future reservations inside a custom period', async () => {
     const fixture = criarFixture();
     const componente = fixture.componentInstance;
@@ -360,7 +426,7 @@ describe('MinhasReservas', () => {
     esperarBusca().flush([]);
     await fixture.whenStable();
 
-    componente.trocarData('inicio', { target: { value: '2099-01-01' } } as unknown as Event);
+    componente.trocarData('inicio', '2099-01-01');
     await fixture.whenStable();
     esperarBusca().flush([reservaFutura]);
     await fixture.whenStable();
@@ -379,12 +445,12 @@ describe('MinhasReservas', () => {
     esperarBusca().flush([]);
     await fixture.whenStable();
 
-    componente.trocarData('inicio', { target: { value: '2026-12-31' } } as unknown as Event);
+    componente.trocarData('inicio', '2026-12-31');
     await fixture.whenStable();
     esperarBusca().flush([]);
     await fixture.whenStable();
 
-    componente.trocarData('fim', { target: { value: '2026-01-01' } } as unknown as Event);
+    componente.trocarData('fim', '2026-01-01');
     fixture.detectChanges();
 
     expect(componente.periodoInvalido()).toBe(true);
