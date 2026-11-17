@@ -44,12 +44,12 @@ O backend lê banco e autenticação de um arquivo `backend/.env`, que não é v
 - Sala Comp 02 (Tamboré): 8 pessoas
 - Sala Comp 03 (Tamboré): 8 pessoas
 - Sala Comp 04 (Tamboré): 8 pessoas
-- Sala 01 (Tamboré): 4 pessoas
-- Sala 02 (Tamboré): 4 pessoas
-- Sala 03 (Tamboré): 4 pessoas
+- Sala 01 (Tamboré): 5 pessoas
+- Sala 02 (Tamboré): 5 pessoas
+- Sala 03 (Tamboré): 5 pessoas
 - Arena (Tamboré): eventos, sem capacidade definida; reservável apenas pelo perfil `ADMIN`
 
-Regras de grupo: Focus para 1 a 2 pessoas, Salas 01 a 03 até 4, Comp a partir de 5. Reuniões com mais de 10 pessoas integram salas, conforme disponibilidade. A Arena é de eventos: não limita as pessoas, não aparece nas sugestões do assistente e o backend recusa usuário comum com `403`. Equipamentos de reunião híbrida são solicitados à equipe de Facilities.
+Regras de grupo: Focus para 1 a 2 pessoas, Salas 01 a 03 até 5, Comp a partir de 5. Reuniões com mais de 10 pessoas integram salas, conforme disponibilidade. A Arena é de eventos: não limita as pessoas, não aparece nas sugestões do assistente e o backend recusa usuário comum com `403`. Equipamentos de reunião híbrida são solicitados à equipe de Facilities.
 
 ## Identidade visual
 

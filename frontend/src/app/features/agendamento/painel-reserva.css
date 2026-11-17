@@ -263,6 +263,16 @@
   color: var(--orange-dark);
 }
 
+.resumo__aviso-cadeira {
+  padding: 0.75rem;
+  border: 1px solid var(--red-line);
+  border-radius: var(--radius);
+  background: var(--red-soft);
+  color: #b91c1c;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
 .resumo__limite {
   padding: 0.5rem 0 0.75rem;
   color: var(--muted);

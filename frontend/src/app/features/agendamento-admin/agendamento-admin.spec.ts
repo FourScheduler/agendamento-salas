@@ -231,8 +231,8 @@ describe('AgendamentoAdmin', () => {
   it('should toggle multiple rooms in the summary', async () => {
     const fixture = iniciar();
     responder([
-      { id: 1, nome: 'Sala 01', capacidade: 4 },
-      { id: 2, nome: 'Sala 02', capacidade: 4 },
+      { id: 1, nome: 'Sala 01', capacidade: 5 },
+      { id: 2, nome: 'Sala 02', capacidade: 5 },
       { id: 5, nome: 'Componivel 01', capacidade: 8 },
     ]);
     await fixture.whenStable();
@@ -244,7 +244,7 @@ describe('AgendamentoAdmin', () => {
 
     expect(componente.selecionadas()).toEqual(['Sala 01', 'Componivel 01']);
     expect(componente.salasEscolhidas().length).toBe(2);
-    expect(componente.capacidadeTotal()).toBe(12);
+    expect(componente.capacidadeTotal()).toBe(13);
 
     // Clicar de novo na sala escolhida devolve o estado anterior.
     componente.alternarSala('Sala 01');

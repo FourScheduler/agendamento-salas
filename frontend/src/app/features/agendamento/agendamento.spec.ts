@@ -110,6 +110,28 @@ describe('Agendamento', () => {
   });
 
   it.each([
+    [1, 'Sala 01'],
+    [2, 'Sala 02'],
+    [3, 'Sala 03'],
+  ])('should find room %i and keep five participants when selecting %s', (id, nome) => {
+    const fixture = iniciar();
+    responder([]);
+    const componente = fixture.componentInstance;
+
+    componente.atualizarPessoas(5);
+    const busca = chamadaDeBusca();
+    expect(busca.request.params.get('qntdPessoas')).toBe('5');
+    busca.flush([{ id, nome, capacidade: 5, disponivel: true, localizacao: 'Tamboré' }]);
+    componente.selecionar(nome);
+
+    expect(componente.selecionada()).toBe(nome);
+    expect(componente.salaEscolhida()?.capacidade).toBe(5);
+    expect(componente.pessoas()).toBe(5);
+    expect(componente.erroValidacao()).toBeNull();
+    httpMock.expectNone((requisicao) => requisicao.url.includes('/api/salas/disponiveis'));
+  });
+
+  it.each([
     [15, '09:15'],
     [45, '09:45'],
     [75, '10:15'],
