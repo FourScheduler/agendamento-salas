@@ -217,3 +217,15 @@ com a disposição espelhada do desenho de referência do escritório:
   criado para o projeto.
 - Rodapé com `* Esses links só podem ser acessados pela VPN.` e a versão `V.6.5.4`.
 - Os links oficiais abrem em nova aba (`target="_blank"` e `rel="noopener noreferrer"`).
+
+## 15. Aviso de Facilities
+
+Ao entrar em `/agendamento`, o perfil `USER` vê o cartaz de Facilities. A moldura segue o
+raio dos cartões do portal. O conteúdo reproduz a arte revisada da issue #191, com foto em
+diagonal, ícones originais, títulos em azul-marinho e divisórias laranja. As oito regras usam
+quatro colunas no desktop e passam para duas ou uma em telas menores.
+
+A leitura tem rolagem própria e o botão de fechar fica ao alcance mesmo no fim do cartaz.
+O X ou a tecla Esc devolvem o foco ao título da página. Fechar o aviso registra a leitura
+na sessão da aba. Atualizar a página ou voltar de Minhas Reservas mantém o aviso fechado.
+Um novo login ou uma nova aba independente volta a apresentar o cartaz ao usuário comum.

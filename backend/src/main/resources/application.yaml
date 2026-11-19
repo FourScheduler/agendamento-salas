@@ -36,6 +36,6 @@ ollama:
   keep-alive-seconds: -1
   max-output-tokens: 120
   connect-timeout-ms: 5000
-  read-timeout-ms: 60000
+  read-timeout-ms: 120000
   warmup:
     enabled: true

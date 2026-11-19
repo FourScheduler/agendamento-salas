@@ -97,6 +97,13 @@ describe('AgendamentoAdmin', () => {
     expect(chamadaDeBusca().request.method).toBe('GET');
   });
 
+  it('abre a tela administrativa sem o aviso de regras de Facilities', async () => {
+    await entrarComoAdmin(httpMock);
+    const fixture = iniciar();
+    responder([]);
+    expect(fixture.nativeElement.querySelector('app-aviso-regras-salas')).toBeNull();
+  });
+
   it.each([
     ['2026-11-21T10:15:00', '2026-11-23', '08:00'],
     ['2026-11-22T23:45:00', '2026-11-23', '08:00'],
