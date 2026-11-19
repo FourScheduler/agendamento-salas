@@ -5,9 +5,9 @@
   </div>
 
   <div class="resumo__blocos">
-    @if (salas().length > 0) {
+    @if (temSala()) {
       <div class="resumo__salas">
-        @for (escolhida of salas(); track escolhida.id) {
+        @for (escolhida of salasDoResumo(); track escolhida.id) {
           <div class="resumo__sala">
             <span class="resumo__marca" aria-hidden="true"></span>
             <div>
@@ -17,19 +17,15 @@
                 {{ escolhida.localizacao }} - {{ rotuloCapacidade(escolhida) }}
               </p>
             </div>
+            <button
+              type="button"
+              class="resumo__remover"
+              [attr.aria-label]="'Remover sala ' + escolhida.nome"
+              [disabled]="confirmando()"
+              (click)="salaRemovida.emit(escolhida.nome)"
+            >×</button>
           </div>
         }
-      </div>
-    } @else if (sala(); as escolhida) {
-      <div class="resumo__sala">
-        <span class="resumo__marca" aria-hidden="true"></span>
-        <div>
-          <p class="campo__rotulo">Sala selecionada</p>
-          <p class="resumo__salaNome">{{ escolhida.nome }}</p>
-          <p class="resumo__salaMeta">
-            {{ escolhida.localizacao }} - {{ rotuloCapacidade(escolhida) }}
-          </p>
-        </div>
       </div>
     } @else {
       <p class="resumo__semSala">Selecione uma sala na planta para continuar.</p>
