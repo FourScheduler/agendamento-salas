@@ -1,6 +1,6 @@
 <section class="pagina_agendamento">
   <header class="agendamento__cabecalho">
-    <h1 class="titulo">Escolha uma sala</h1>
+    <h1 #titulo class="titulo" tabindex="-1">Escolha uma sala</h1>
     <p class="subtitulo">Selecione uma sala disponível na planta para continuar.</p>
   </header>
 
@@ -49,4 +49,7 @@
   </div>
 
   <app-assistente-ia [processarMensagem]="processarMensagemAssistente" />
+  @if (autenticado() && perfil() === 'USER' && !avisoFechado()) {
+    <app-aviso-regras-salas (fechado)="avisoFechado.set(true); titulo.focus()" />
+  }
 </section>

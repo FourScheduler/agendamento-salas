@@ -22,10 +22,11 @@ import { MapaSalas } from './mapa-salas';
 import { PainelReserva } from './painel-reserva';
 import { AssistenteIa, RespostaAssistente } from '../../shared/assistente-ia/assistente-ia';
 import { ToastService } from '../../shared/toast/toast';
+import { AvisoRegrasSalas } from '../../shared/aviso-regras-salas/aviso-regras-salas';
 
 @Component({
   selector: 'app-agendamento',
-  imports: [MapaSalas, PainelReserva, AssistenteIa],
+  imports: [MapaSalas, PainelReserva, AssistenteIa, AvisoRegrasSalas],
   templateUrl: './agendamento.html',
   styleUrl: './agendamento.css',
 })
@@ -66,6 +67,8 @@ export class Agendamento implements OnInit {
   readonly erroApi = signal<string | null>(null);
   readonly erroValidacao = signal<string | null>(null);
   readonly autenticado = this.auth.autenticado;
+  protected readonly perfil = this.auth.perfil;
+  protected readonly avisoFechado = signal(false);
   readonly usuario = this.auth.usuario;
   readonly confirmando = signal(false);
   readonly erroConfirmacao = signal<string | null>(null);

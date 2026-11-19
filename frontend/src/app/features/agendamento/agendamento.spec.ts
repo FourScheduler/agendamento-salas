@@ -42,6 +42,16 @@ async function entrarUsuarioComum(httpMock: HttpTestingController): Promise<void
 describe('Agendamento', () => {
   let httpMock: HttpTestingController;
 
+  // O jsdom ainda não implementa a abertura modal nativa do navegador.
+  beforeAll(() => {
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+      configurable: true,
+      value(this: HTMLDialogElement) { this.open = true; },
+    });
+  });
+
+  afterAll(() => Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal'));
+
   beforeEach(async () => {
     window.localStorage.clear();
     await TestBed.configureTestingModule({
@@ -107,6 +117,41 @@ describe('Agendamento', () => {
     const fixture = iniciar();
     expect(fixture.componentInstance).toBeTruthy();
     expect(chamadaDeBusca().request.method).toBe('GET');
+  });
+
+  it('exibe as oito regras ao USER uma vez por entrada no agendamento', async () => {
+    await entrarUsuarioComum(httpMock);
+    const fixture = iniciar();
+    const salas = [{ id: 2, nome: 'Sala 02' }];
+    responder(salas);
+    await fixture.whenStable();
+    const pagina = fixture.nativeElement as HTMLElement;
+    const aviso = pagina.querySelector<HTMLDialogElement>('dialog[open]')!;
+    expect(aviso.querySelectorAll('li')).toHaveLength(8);
+    expect(aviso.textContent).toContain('Não é permitido comer nas salas de reunião (exceto em eventos, com aviso prévio à equipe de Facilities).');
+    fixture.componentInstance.selecionar('Sala 02');
+    aviso.dispatchEvent(new Event('close'));
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(pagina.querySelector('h1'));
+    expect(fixture.componentInstance.selecionada()).toBe('Sala 02');
+    fixture.componentInstance.atualizarPessoas(2);
+    responder(salas);
+    fixture.detectChanges();
+    expect(pagina.querySelector('app-aviso-regras-salas')).toBeNull();
+    fixture.destroy();
+
+    const retorno = iniciar();
+    responder([]);
+    await retorno.whenStable();
+    expect(retorno.nativeElement.querySelector('dialog[open]')).toBeTruthy();
+  });
+
+  it('omite o aviso quando um ADMIN acessa a tela comum', () => {
+    window.localStorage.setItem('fourscheduler.token', 'token-teste');
+    window.localStorage.setItem('fourscheduler.perfil', 'ADMIN');
+    const fixture = iniciar();
+    responder([]);
+    expect(fixture.nativeElement.querySelector('app-aviso-regras-salas')).toBeNull();
   });
 
   it.each([
