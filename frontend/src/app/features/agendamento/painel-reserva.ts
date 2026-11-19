@@ -69,6 +69,7 @@ export class PainelReserva {
   readonly pessoasAlterada = output<number>();
   readonly equipamentosAlterada = output<boolean>();
   readonly solicitanteAlterado = output<number>();
+  readonly salaRemovida = output<string>();
   readonly confirmar = output<void>();
 
   readonly campoAberto = signal<CampoAberto>(null);
@@ -82,6 +83,11 @@ export class PainelReserva {
   private readonly campoBusca = viewChild<ElementRef<HTMLInputElement>>('campoBusca');
 
   readonly rotuloData = computed(() => dataCurta(this.data()));
+  readonly salasDoResumo = computed(() => {
+    if (this.salas().length) return this.salas();
+    const unica = this.sala();
+    return unica ? [unica] : [];
+  });
 
   /** Capacidade considerada: soma das salas no modo múltiplo, senão a sala única. */
   readonly maximo = computed(() => {
@@ -108,11 +114,7 @@ export class PainelReserva {
       return false;
     }
 
-    const salaUnica = this.sala();
-    const escolhidas = this.salas().length > 0
-      ? this.salas()
-      : salaUnica ? [salaUnica] : [];
-    return escolhidas.some((sala) => [1, 2, 3].includes(sala.id));
+    return this.salasDoResumo().some((sala) => [1, 2, 3].includes(sala.id));
   });
 
   readonly duracaoMinima = computed(() => this.duracao() <= DURACAO_MINIMA);
@@ -136,7 +138,7 @@ export class PainelReserva {
     return valores;
   });
 
-  readonly temSala = computed(() => this.sala() !== null || this.salas().length > 0);
+  readonly temSala = computed(() => this.salasDoResumo().length > 0);
 
   readonly podeConfirmar = computed(
     () => this.autenticado() && this.temSala() && !this.confirmando(),

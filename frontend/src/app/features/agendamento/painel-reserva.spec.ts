@@ -54,6 +54,25 @@ describe('PainelReserva', () => {
     expect(componente.rotuloDuracao(120)).toBe('2 horas');
   });
 
+  it('emite a sala do cartão administrativo e bloqueia o X durante o envio', () => {
+    const fixture = montar();
+    const painel = fixture.nativeElement as HTMLElement;
+    expect(painel.querySelector('.resumo__remover')).toBeTruthy();
+    const salas = resolverEstados([{ id: 5 }, { id: 9 }]).filter(s => [5, 9].includes(s.id));
+    fixture.componentRef.setInput('salas', salas);
+    fixture.detectChanges();
+    const removidas: string[] = [];
+    fixture.componentInstance.salaRemovida.subscribe(nome => removidas.push(nome));
+    const arena = painel.querySelector<HTMLButtonElement>('button[aria-label="Remover sala Arena"]')!;
+    expect(painel.querySelectorAll('.resumo__remover')).toHaveLength(2);
+    arena.click();
+    fixture.componentRef.setInput('confirmando', true);
+    fixture.detectChanges();
+    expect(arena.disabled).toBe(true);
+    arena.click();
+    expect(removidas).toEqual(['Arena']);
+  });
+
   it('should offer a stepper with quick durations in admin mode', () => {
     const fixture = TestBed.createComponent(PainelReserva);
     fixture.componentRef.setInput('stepperDuracao', true);

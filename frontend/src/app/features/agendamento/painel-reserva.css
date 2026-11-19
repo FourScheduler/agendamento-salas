@@ -30,7 +30,6 @@
   background: var(--page-bg);
 }
 
-/* Modo administrativo: pilha de salas escolhidas, cada uma como um bloco. */
 .resumo__salas {
   display: flex;
   flex-direction: column;
@@ -60,6 +59,29 @@
   color: var(--navy);
   font-size: 1rem;
   font-weight: 700;
+}
+
+.resumo__remover {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted);
+  font: 1.375rem/1 var(--font);
+  cursor: pointer;
+}
+
+.resumo__remover:hover:enabled {
+  background: var(--orange-soft);
+  color: var(--navy);
+}
+
+.resumo__remover:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .resumo__salaMeta {

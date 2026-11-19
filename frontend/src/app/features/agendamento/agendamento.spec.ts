@@ -121,6 +121,56 @@ describe('Agendamento', () => {
     expect(chamadaDeBusca().request.method).toBe('GET');
   });
 
+  it('permite ao USER retirar a sala pelo X e mantém os filtros para a próxima escolha', async () => {
+    await entrarUsuarioComum(httpMock);
+    TestBed.inject(AuthService).fecharAvisoRegras();
+    const fixture = iniciar();
+    responder([{ id: 2, nome: 'Sala 02' }]);
+    const componente = fixture.componentInstance;
+    componente.duracao.set(45);
+    componente.pessoas.set(3);
+    componente.equipamentos.set(true);
+    fixture.detectChanges();
+    const pagina = fixture.nativeElement as HTMLElement;
+    const sala = pagina.querySelector<HTMLButtonElement>('button.sala[aria-pressed="false"]')!;
+    const confirmar = pagina.querySelector<HTMLButtonElement>('.resumo__confirmar')!;
+    sala.click();
+    fixture.detectChanges();
+    expect(confirmar.disabled).toBe(false);
+    const data = componente.data();
+    const hora = componente.horaInicio();
+    pagina.querySelector<HTMLButtonElement>('button[aria-label="Remover sala Sala 02"]')!.click();
+    fixture.detectChanges();
+    expect(sala.getAttribute('aria-pressed')).toBe('false');
+    expect(pagina.querySelector('.resumo__semSala')).toBeTruthy();
+    expect(confirmar.disabled).toBe(true);
+    expect([componente.data(), componente.horaInicio(), componente.duracao(), componente.pessoas(), componente.equipamentos()])
+      .toEqual([data, hora, 45, 3, true]);
+    sala.click();
+    fixture.detectChanges();
+    expect(confirmar.disabled).toBe(false);
+    expect(pagina.querySelector('.resumo__salaNome')?.textContent).toBe('Sala 02');
+  });
+
+  it('descarta a confirmação pendente no assistente quando o USER remove a sala', async () => {
+    await entrarUsuarioComum(httpMock);
+    const fixture = iniciar();
+    responder([{ id: 2, nome: 'Sala 02' }]);
+    const componente = fixture.componentInstance;
+    componente.selecionar('Sala 02');
+    const conversa = componente.processarMensagemAssistente('Reservar Sala 02');
+    httpMock.expectOne(`${environment.apiUrl}/api/agendamento/conversas`).flush({ conversaId: 7 });
+    await aguardarMicrotarefas();
+    httpMock.expectOne(`${environment.apiUrl}/api/agendamento/conversas/mensagens`).flush({
+      conversaId: 7, estado: 'AGUARDANDO_CONFIRMACAO', mensagem: 'Confirmar?', sugestoes: [],
+    });
+    const confirmar = (await conversa).acoes!.find(acao => acao.rotulo === 'Confirmar agendamento')!;
+    componente.removerSala('Sala 02');
+    const resposta = await confirmar.aoClicar!() as RespostaAssistente;
+    expect(resposta.texto).toContain('Escolha uma sala');
+    httpMock.expectNone(`${environment.apiUrl}/api/agendamento/conversas/7/confirmar`);
+  });
+
   it('mantém as oito regras fechadas quando o USER retorna ao agendamento na mesma aba', async () => {
     await entrarUsuarioComum(httpMock);
     const fixture = iniciar();

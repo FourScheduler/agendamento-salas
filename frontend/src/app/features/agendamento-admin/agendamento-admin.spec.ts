@@ -85,7 +85,7 @@ describe('AgendamentoAdmin', () => {
     return fixture;
   }
 
-  function responder(salas: { id: number; nome: string; capacidade: number }[]) {
+  function responder(salas: { id: number; nome: string; capacidade: number | null }[]) {
     chamadaDeBusca().flush(
       salas.map((sala) => ({ ...sala, disponivel: true, localizacao: 'Tamboré' })),
     );
@@ -283,6 +283,46 @@ describe('AgendamentoAdmin', () => {
     expect(fixture.componentInstance.selecionadas().length).toBe(2);
   });
 
+  it('remove pelo cartão, sincroniza a planta e ajusta a capacidade após retirar a Arena', async () => {
+    await entrarComoAdmin(httpMock);
+    const fixture = iniciar();
+    const salas = [
+      { id: 1, nome: 'Sala 01', capacidade: 5 },
+      { id: 5, nome: 'Componivel 01', capacidade: 8 },
+      { id: 9, nome: 'Arena', capacidade: null },
+    ];
+    responder(salas);
+    fixture.detectChanges();
+    const pagina = fixture.nativeElement as HTMLElement;
+    const mapa = Array.from(pagina.querySelectorAll<HTMLButtonElement>('button.sala'));
+    const botaoMapa = (nome: string) =>
+      mapa.find(botao => botao.querySelector('.sala__nome')?.textContent === nome)!;
+    const remover = (nome: string) => {
+      pagina.querySelector<HTMLButtonElement>(`button[aria-label="Remover sala ${nome}"]`)!.click();
+      fixture.detectChanges();
+    };
+    for (const sala of salas) {
+      botaoMapa(sala.nome).click();
+      fixture.detectChanges();
+    }
+    const componente = fixture.componentInstance;
+    componente.pessoas.set(12);
+    remover('Componivel 01');
+    expect(botaoMapa('Componivel 01').getAttribute('aria-pressed')).toBe('false');
+    expect(componente.selecionadas()).toEqual(['Sala 01', 'Arena']);
+    expect(componente.pessoas()).toBe(12);
+    remover('Arena');
+    responder(salas);
+    fixture.detectChanges();
+    expect(componente.capacidadeTotal()).toBe(5);
+    expect(componente.pessoas()).toBe(5);
+    expect(pagina.querySelector('.resumo__salaNome')?.textContent).toBe('Sala 01');
+    remover('Sala 01');
+    expect(pagina.querySelector('.resumo__semSala')).toBeTruthy();
+    expect(pagina.querySelector('button.sala[aria-pressed="true"]')).toBeNull();
+    expect(pagina.querySelector<HTMLButtonElement>('.resumo__confirmar')!.disabled).toBe(true);
+  });
+
   it('should offer a requester search that filters by name or email', async () => {
     const fixture = iniciar([
       { id: 1, nome: 'Administrador Principal', email: 'admin@teste.com', perfilUsuario: 'ADMIN' },
@@ -321,6 +361,7 @@ describe('AgendamentoAdmin', () => {
     ]);
     responder([
       { id: 1, nome: 'Sala 01', capacidade: 4 },
+      { id: 2, nome: 'Sala 02', capacidade: 5 },
       { id: 5, nome: 'Componivel 01', capacidade: 8 },
     ]);
     await fixture.whenStable();
@@ -329,6 +370,9 @@ describe('AgendamentoAdmin', () => {
     componente.alternarSala('Sala 01');
     componente.alternarSala('Componivel 01');
     componente.duracao.set(180);
+    componente.alternarSala('Sala 02');
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('button[aria-label="Remover sala Sala 02"]').click();
     componente.selecionarSolicitante(3);
 
     await entrarComoAdmin(httpMock);

@@ -135,9 +135,22 @@ export class AgendamentoAdmin implements OnInit {
 
   /** Liga/desliga uma sala entre as escolhidas, mantendo a capacidade válida. */
   alternarSala(nome: string): void {
-    this.selecionadas.update((nomes) =>
-      nomes.includes(nome) ? nomes.filter((item) => item !== nome) : [...nomes, nome],
-    );
+    if (this.selecionadas().includes(nome)) {
+      this.removerSala(nome);
+    } else {
+      this.definirSalasSelecionadas([...this.selecionadas(), nome]);
+    }
+  }
+
+  removerSala(nome: string): void {
+    this.definirSalasSelecionadas(this.selecionadas().filter((sala) => sala !== nome));
+  }
+
+  private definirSalasSelecionadas(nomes: string[]): void {
+    if (this.confirmando()) {
+      return;
+    }
+    this.selecionadas.set(nomes);
     this.limparErroConfirmacao();
 
     const total = this.capacidadeTotal();
