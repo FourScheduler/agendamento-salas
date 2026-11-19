@@ -5,7 +5,3 @@ spring:
 logging:
   level:
     br.com.foursys: DEBUG
-
-app:
-  auth:
-    demo-enabled: true

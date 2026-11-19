@@ -10,20 +10,23 @@ import { ConversasService } from '../../core/services/conversas.service';
 import { SalaPlanta, resolverEstados } from '../../core/data/mapa-mock';
 import {
   fimDeJornada,
+  ehFimDeSemana,
   hojeIso,
   normalizarNome,
   paraHora,
   paraMinutos,
+  proximoDiaUtilIso,
   proximaHoraCheia,
 } from '../../core/util/formatos';
 import { MapaSalas } from './mapa-salas';
 import { PainelReserva } from './painel-reserva';
 import { AssistenteIa, RespostaAssistente } from '../../shared/assistente-ia/assistente-ia';
 import { ToastService } from '../../shared/toast/toast';
+import { AvisoRegrasSalas } from '../../shared/aviso-regras-salas/aviso-regras-salas';
 
 @Component({
   selector: 'app-agendamento',
-  imports: [MapaSalas, PainelReserva, AssistenteIa],
+  imports: [MapaSalas, PainelReserva, AssistenteIa, AvisoRegrasSalas],
   templateUrl: './agendamento.html',
   styleUrl: './agendamento.css',
 })
@@ -31,18 +34,21 @@ export class Agendamento implements OnInit {
   private readonly salasService = inject(SalasService);
   private readonly reservasService = inject(ReservasService);
   private readonly conversasService = inject(ConversasService);
-  private readonly auth = inject(AuthService);
+  protected readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
 
   /** Conversa aberta com o assistente; nula quando não há em andamento. */
   private conversaId: number | null = null;
+  private readonly dataAssistenteInvalida = signal(false);
 
-  readonly duracoes = [30, 60, 90, 120];
+  readonly duracoes = [15, 30, 45, 60, 75, 90, 105, 120];
   readonly hoje = hojeIso();
 
-  readonly data = signal(this.hoje);
-  readonly horaInicio = signal(proximaHoraCheia());
+  readonly data = signal(
+    ehFimDeSemana(this.hoje) ? proximoDiaUtilIso(this.hoje) : this.hoje,
+  );
+  readonly horaInicio = signal(ehFimDeSemana(this.hoje) ? '08:00' : proximaHoraCheia());
   readonly duracao = signal(60);
   readonly pessoas = signal(1);
   readonly equipamentos = signal(false);
@@ -89,13 +95,20 @@ export class Agendamento implements OnInit {
     this.selecionada.set(nome);
     this.limparErroConfirmacao();
 
-    if (sala && this.pessoas() > sala.capacidade) {
+    // Sala sem capacidade (Arena, de eventos) não limita as pessoas.
+    if (sala && sala.capacidade !== null && this.pessoas() > sala.capacidade) {
       this.pessoas.set(sala.capacidade);
       this.buscar();
     }
   }
 
   atualizarData(valor: string): void {
+    if (ehFimDeSemana(valor)) {
+      this.erroValidacao.set('Agendamentos são permitidos apenas de segunda a sexta.');
+      return;
+    }
+
+    this.dataAssistenteInvalida.set(false);
     this.data.set(valor);
     this.limparErroConfirmacao();
     this.buscar();
@@ -136,7 +149,9 @@ export class Agendamento implements OnInit {
       const resposta = await firstValueFrom(
         this.conversasService.enviarMensagem(this.conversaId!, texto),
       );
-      this.sincronizarPainel(resposta);
+      if (!this.sincronizarPainel(resposta)) {
+        return { texto: this.mensagemDataAssistenteInvalida(resposta.mensagem) };
+      }
       return this.montarRespostaAssistente(resposta);
     } catch (erro: unknown) {
       return { texto: mensagemDeErro(erro) };
@@ -188,7 +203,9 @@ export class Agendamento implements OnInit {
         this.conversasService.selecionarSala(this.conversaId!, sugestao.salaId),
       );
       this.selecionar(sugestao.nome);
-      this.sincronizarPainel(resposta);
+      if (!this.sincronizarPainel(resposta)) {
+        return { texto: this.mensagemDataAssistenteInvalida(resposta.mensagem) };
+      }
       return this.montarRespostaAssistente(resposta);
     } catch (erro: unknown) {
       return { texto: mensagemDeErro(erro) };
@@ -197,6 +214,12 @@ export class Agendamento implements OnInit {
 
   /** Confirma a reserva pela conversa e recarrega o mapa. */
   private async confirmarNoChat(): Promise<RespostaAssistente> {
+    if (this.dataAssistenteInvalida()) {
+      return {
+        texto: 'Agendamentos são permitidos apenas de segunda a sexta. Informe uma data útil.',
+      };
+    }
+
     try {
       const resposta = await firstValueFrom(
         this.conversasService.confirmar(this.conversaId!),
@@ -218,7 +241,14 @@ export class Agendamento implements OnInit {
   }
 
   /** Aplica no painel/mapa o que a IA interpretou (data, horário, pessoas). */
-  private sincronizarPainel(resposta: OrquestradorResposta): void {
+  private sincronizarPainel(resposta: OrquestradorResposta): boolean {
+    if (resposta.data && ehFimDeSemana(resposta.data)) {
+      this.dataAssistenteInvalida.set(true);
+      this.erroValidacao.set('Agendamentos são permitidos apenas de segunda a sexta.');
+      return false;
+    }
+
+    this.dataAssistenteInvalida.set(false);
     let mudou = false;
 
     if (resposta.data && resposta.data !== this.data()) {
@@ -252,6 +282,8 @@ export class Agendamento implements OnInit {
       this.limparErroConfirmacao();
       this.buscar();
     }
+
+    return true;
   }
 
   async confirmarPainel(): Promise<void> {
@@ -271,6 +303,12 @@ export class Agendamento implements OnInit {
 
     if (this.confirmando()) {
       return 'Aguarde, estou confirmando a reserva.';
+    }
+
+    const falha = this.validar();
+    if (falha) {
+      this.erroValidacao.set(falha);
+      return falha;
     }
 
     const horaFim = horaFinal(this.horaInicio(), this.duracao());
@@ -381,7 +419,8 @@ export class Agendamento implements OnInit {
    * A data é recalculada no momento porque `hoje` é fixo desde a abertura da tela.
    */
   private reiniciarPainel(): void {
-    this.data.set(hojeIso());
+    const hoje = hojeIso();
+    this.data.set(ehFimDeSemana(hoje) ? proximoDiaUtilIso(hoje) : hoje);
     this.pessoas.set(1);
     // A reserva nova muda as ocupações do dia, então as antigas não valem mais.
     this.ocupacoesSalvas.set(null);
@@ -410,6 +449,10 @@ export class Agendamento implements OnInit {
       return 'A data não pode estar no passado.';
     }
 
+    if (ehFimDeSemana(this.data())) {
+      return 'Agendamentos são permitidos apenas de segunda a sexta.';
+    }
+
     if (paraMinutos(this.horaInicio()) === null) {
       return 'Informe o horário inicial da reserva.';
     }
@@ -423,6 +466,10 @@ export class Agendamento implements OnInit {
     }
 
     return null;
+  }
+
+  private mensagemDataAssistenteInvalida(mensagem: string): string {
+    return `${mensagem} Agendamentos são permitidos apenas de segunda a sexta. Informe uma data útil.`;
   }
 }
 

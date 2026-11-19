@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { USUARIO_MOCK } from '../../core/data/usuario-mock';
+import { mensagemDeErro } from '../../core/http/api-error';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 
@@ -31,33 +31,48 @@ export class Topbar {
 
   readonly usuario = this.auth.usuario;
   readonly autenticado = this.auth.autenticado;
-  readonly nomePadrao = USUARIO_MOCK;
   readonly exibirAcoesPortal = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-      map((event) => !/^\/(?:agendamento|minhas-reservas)(?:\/|[?#]|$)/.test(event.urlAfterRedirects)),
+      map(
+        (event) =>
+          !/^\/(?:agendamento(?:-admin)?|minhas-reservas)(?:\/|[?#]|$)/.test(
+            event.urlAfterRedirects,
+          ),
+      ),
     ),
     {
-      initialValue: !/^\/(?:agendamento|minhas-reservas)(?:\/|[?#]|$)/.test(this.router.url),
+      initialValue: !/^\/(?:agendamento(?:-admin)?|minhas-reservas)(?:\/|[?#]|$)/.test(
+        this.router.url,
+      ),
     },
   );
   readonly exibirLocalizacao = toSignal(
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-      map((event) => /^\/(?:agendamento|minhas-reservas)(?:\/|[?#]|$)/.test(event.urlAfterRedirects)),
+      map(
+        (event) =>
+          /^\/(?:agendamento(?:-admin)?|minhas-reservas)(?:\/|[?#]|$)/.test(
+            event.urlAfterRedirects,
+          ),
+      ),
     ),
     {
-      initialValue: /^\/(?:agendamento|minhas-reservas)(?:\/|[?#]|$)/.test(this.router.url),
+      initialValue: /^\/(?:agendamento(?:-admin)?|minhas-reservas)(?:\/|[?#]|$)/.test(
+        this.router.url,
+      ),
     },
   );
 
-  readonly modalAberto = signal(false);
+  /** Modal de login compartilhado com o portal (que pode abri-lo sem sessão). */
+  readonly modalAberto = this.auth.loginAberto;
   readonly menuPerfilAberto = signal(false);
-  readonly nomeDigitado = signal(USUARIO_MOCK);
+  readonly emailDigitado = signal('');
+  readonly senhaDigitada = signal('');
   readonly entrando = signal(false);
   readonly erroLogin = signal<string | null>(null);
 
-  private readonly campoNome = viewChild.required<ElementRef<HTMLInputElement>>('campoNome');
+  private readonly campoEmail = viewChild.required<ElementRef<HTMLInputElement>>('campoEmail');
 
   readonly iniciais = computed(() => {
     const nome = this.usuario();
@@ -76,12 +91,14 @@ export class Topbar {
   });
 
   abrirModal(): void {
-    this.nomeDigitado.set(this.usuario() ?? this.nomePadrao);
+    this.emailDigitado.set('');
+    this.senhaDigitada.set('');
     this.erroLogin.set(null);
-    this.modalAberto.set(true);
+    // Entrar sem destino: o usuário permanece na página após autenticar.
+    this.auth.abrirLogin();
     afterNextRender(
       () => {
-        const campo = this.campoNome().nativeElement;
+        const campo = this.campoEmail().nativeElement;
         campo.focus();
         campo.select();
       },
@@ -90,7 +107,7 @@ export class Topbar {
   }
 
   fecharModal(): void {
-    this.modalAberto.set(false);
+    this.auth.fecharLogin();
     this.erroLogin.set(null);
   }
 
@@ -113,9 +130,16 @@ export class Topbar {
     }
   }
 
+  /** Login pelo backend com e-mail e senha; ambos os campos são obrigatórios. */
   async entrar(): Promise<void> {
-    const nome = this.nomeDigitado().trim();
-    if (!nome || this.entrando()) {
+    const email = this.emailDigitado().trim();
+    const senha = this.senhaDigitada();
+    if (this.entrando()) {
+      return;
+    }
+
+    if (!email || !senha) {
+      this.erroLogin.set('Informe o e-mail e a senha para entrar.');
       return;
     }
 
@@ -123,10 +147,20 @@ export class Topbar {
     this.erroLogin.set(null);
 
     try {
-      await this.auth.entrar(nome);
+      await this.auth.entrar(email, senha);
+      // O login pela topbar permanece na página; segue adiante apenas quando o
+      // modal foi aberto pelo acesso "Agendamento de Salas" do portal.
+      const destino = this.auth.destinoLogin();
       this.fecharModal();
-    } catch {
-      this.erroLogin.set('Não foi possível entrar agora. Tente novamente.');
+
+      if (destino === 'agendamento') {
+        await this.router.navigate([
+          this.auth.ehAdmin() ? '/agendamento-admin' : '/agendamento',
+        ]);
+      }
+    } catch (erro: unknown) {
+      // 401 vem do backend como "E-mail ou senha inválidos."; o resto usa a mensagem padrão.
+      this.erroLogin.set(mensagemDeErro(erro));
     } finally {
       this.entrando.set(false);
     }
@@ -135,5 +169,8 @@ export class Topbar {
   sair(): void {
     this.fecharMenuPerfil();
     this.auth.sair();
+    // Encerrar a sessão devolve o usuário ao portal; sem login não se entra
+    // nas telas de agendamento.
+    void this.router.navigate(['/portal']);
   }
 }

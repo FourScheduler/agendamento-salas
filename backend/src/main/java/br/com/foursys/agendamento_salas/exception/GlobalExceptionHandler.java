@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -143,6 +144,20 @@ public class GlobalExceptionHandler {
 				.body(new ErrorResponse(
 						HttpStatus.UNAUTHORIZED.value(),
 						"Token ausente ou inválido. Faça login novamente.",
+						LocalDateTime.now()
+				));
+	}
+
+	/** E-mail ou senha incorretos no `POST /auth/login`; a mensagem não revela qual campo falhou. */
+	@ExceptionHandler(BadCredentialsException.class)
+	public ResponseEntity<ErrorResponse> handleCredenciaisInvalidas(
+			BadCredentialsException exception
+	) {
+		return ResponseEntity
+				.status(HttpStatus.UNAUTHORIZED)
+				.body(new ErrorResponse(
+						HttpStatus.UNAUTHORIZED.value(),
+						"E-mail ou senha inválidos.",
 						LocalDateTime.now()
 				));
 	}

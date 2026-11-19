@@ -29,10 +29,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -80,6 +83,67 @@ class AgendamentoServiceTest {
     @DisplayName("Criação de agendamentos")
     class CreateBooking {
 
+        @ParameterizedTest
+        @CsvSource({"USER,15", "USER,45", "USER,90", "ADMIN,15", "ADMIN,45", "ADMIN,90"})
+        @DisplayName("Deve preservar duracoes de 15, 45 e 90 minutos para USER e ADMIN")
+        void deveCriarAgendamentoComNovasDuracoes(PerfilUsuario perfil, int minutos) {
+            Usuario usuario = usuario(7L, perfil);
+            Sala sala = sala(12L);
+            LocalTime inicio = LocalTime.of(9, 0);
+            LocalTime fim = inicio.plusMinutes(minutos);
+            CriarAgendamentoRequest request = request(sala, null, inicio, fim, 4);
+            prepararCriacao(usuario, sala);
+            prepararSalvamento();
+
+            ConfimacaoAgendamentoResponse confirmacao = service.criar(request, usuario.getId());
+
+            ArgumentCaptor<List<Agendamento>> captor = ArgumentCaptor.forClass(List.class);
+            verify(agendamentoRepositoryPort).salvar(captor.capture());
+            assertThat(confirmacao.inicio()).isEqualTo(inicio);
+            assertThat(confirmacao.fim()).isEqualTo(fim);
+            assertThat(captor.getValue().get(0).getHoraInicio()).isEqualTo(inicio);
+            assertThat(captor.getValue().get(0).getHoraFim()).isEqualTo(fim);
+        }
+
+        @Test
+        @DisplayName("Deve rejeitar sábado e domingo para USER e ADMIN sem persistir")
+        void deveRejeitarFimDeSemanaParaTodosOsPerfis() {
+            LocalDate sabado = LocalDate.now()
+                    .with(java.time.temporal.TemporalAdjusters.next(DayOfWeek.SATURDAY));
+            LocalDate domingo = LocalDate.now()
+                    .with(java.time.temporal.TemporalAdjusters.next(DayOfWeek.SUNDAY));
+
+            for (PerfilUsuario perfil : List.of(PerfilUsuario.USER, PerfilUsuario.ADMIN)) {
+                Usuario usuario = usuario(perfil == PerfilUsuario.USER ? 71L : 72L, perfil);
+                Sala sala = sala(12L);
+                when(usuarioRepositoryPort.buscarPorId(usuario.getId()))
+                        .thenReturn(Optional.of(usuario));
+
+                for (LocalDate data : List.of(sabado, domingo)) {
+                    CriarAgendamentoRequest request = request(
+                            sala,
+                            null,
+                            LocalTime.of(9, 0),
+                            LocalTime.of(10, 0),
+                            4,
+                            data
+                    );
+
+                    assertThrows(
+                            ValidacaoBuscaException.class,
+                            () -> service.criar(request, usuario.getId())
+                    );
+                }
+            }
+
+            verifyNoInteractions(
+                    agendamentoRepositoryPort,
+                    logRepositoryPort,
+                    salaRepositoryPort,
+                    agendamentoMapper
+            );
+        }
+
         @Test
         @DisplayName("Deve salvar o agendamento, registrar log e retornar confirmação para usuário comum")
         void deveCriarAgendamentoEDevolverConfirmacao() {
@@ -119,7 +183,7 @@ class AgendamentoServiceTest {
         }
 
         @Test
-        @DisplayName("Deve permitir que administrador faça agendamento longo para outro usuário")
+        @DisplayName("Deve criar a reserva em nome do solicitante para os Minhas reservas dele")
         void deveCriarAgendamentoLongoParaSolicitanteQuandoAdmin() {
             Usuario admin = usuario(7L, PerfilUsuario.ADMIN);
             Usuario solicitante = usuario(8L, PerfilUsuario.USER);
@@ -136,8 +200,48 @@ class AgendamentoServiceTest {
             ArgumentCaptor<List<Agendamento>> agendamentoCaptor = ArgumentCaptor.forClass(List.class);
             verify(agendamentoRepositoryPort).salvar(agendamentoCaptor.capture());
             verify(logRepositoryPort).salvar(any(Log.class));
-            assertThat(agendamentoCaptor.getValue().get(0).getUsuarioIdSolicitante()).isEqualTo(solicitante);
+            Agendamento salvo = agendamentoCaptor.getValue().get(0);
+            // O dono é o solicitante: a busca de Minhas reservas filtra por ele.
+            assertThat(salvo.getUsuarioId()).isEqualTo(solicitante);
+            assertThat(salvo.getUsuarioIdSolicitante()).isEqualTo(solicitante);
+            // O log de auditoria continua registrando quem fez a reserva.
+            ArgumentCaptor<Log> logCaptor = ArgumentCaptor.forClass(Log.class);
+            verify(logRepositoryPort).salvar(logCaptor.capture());
+            assertThat(logCaptor.getValue().getUsuario()).isEqualTo(admin);
             assertThat(confirmacao.solicitante()).isEqualTo(usuarioResponse(solicitante));
+        }
+
+        @Test
+        @DisplayName("Deve impedir que usuário comum reserve a sala restrita")
+        void naoDevePermitirQueUsuarioComumReserveSalaRestrita() {
+            Usuario usuario = usuario(7L, PerfilUsuario.USER);
+            Sala arena = salaRestrita();
+            CriarAgendamentoRequest request = request(
+                    arena, null, LocalTime.of(9, 0), LocalTime.of(11, 0), 30
+            );
+            prepararCriacao(usuario, arena);
+
+            assertThrows(UsuarioSemPermissaoException.class, () -> service.criar(request, usuario.getId()));
+
+            verifyNoInteractions(agendamentoRepositoryPort, logRepositoryPort);
+        }
+
+        @Test
+        @DisplayName("Deve permitir que administrador reserve a Arena sem validar capacidade")
+        void devePermitirQueAdministradorReserveArenaSemCapacidade() {
+            Usuario admin = usuario(7L, PerfilUsuario.ADMIN);
+            Sala arena = salaRestrita();
+            CriarAgendamentoRequest request = request(
+                    arena, null, LocalTime.of(9, 0), LocalTime.of(23, 0), 80
+            );
+            prepararCriacao(admin, arena);
+            prepararSalvamento();
+
+            ConfimacaoAgendamentoResponse confirmacao = service.criar(request, admin.getId());
+
+            assertThat(confirmacao.id()).isEqualTo(99L);
+            verify(agendamentoRepositoryPort).salvar(anyList());
+            verify(logRepositoryPort).salvar(any(Log.class));
         }
 
         @Test
@@ -151,7 +255,7 @@ class AgendamentoServiceTest {
                             new CriarAgendamentoRequest.SalaRef(segundaSala.getId()),
                             new CriarAgendamentoRequest.SalaRef(primeiraSala.getId())
                     ),
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)),
                     LocalTime.of(9, 0),
                     LocalTime.of(10, 0),
                     8,
@@ -201,7 +305,7 @@ class AgendamentoServiceTest {
                             new CriarAgendamentoRequest.SalaRef(12L),
                             new CriarAgendamentoRequest.SalaRef(13L)
                     ),
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)),
                     LocalTime.of(9, 0),
                     LocalTime.of(10, 0),
                     8,
@@ -229,7 +333,7 @@ class AgendamentoServiceTest {
                             new CriarAgendamentoRequest.SalaRef(primeiraSala.getId()),
                             new CriarAgendamentoRequest.SalaRef(segundaSala.getId())
                     ),
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)),
                     LocalTime.of(9, 0),
                     LocalTime.of(10, 0),
                     7,
@@ -260,7 +364,7 @@ class AgendamentoServiceTest {
                             new CriarAgendamentoRequest.SalaRef(12L),
                             new CriarAgendamentoRequest.SalaRef(12L)
                     ),
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)),
                     LocalTime.of(9, 0),
                     LocalTime.of(10, 0),
                     4,
@@ -292,7 +396,7 @@ class AgendamentoServiceTest {
                             new CriarAgendamentoRequest.SalaRef(primeiraSala.getId()),
                             new CriarAgendamentoRequest.SalaRef(segundaSala.getId())
                     ),
-                    LocalDate.now().plusDays(1),
+                    LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)),
                     LocalTime.of(9, 0),
                     LocalTime.of(10, 0),
                     8,
@@ -647,12 +751,23 @@ class AgendamentoServiceTest {
                 .build();
     }
 
+    /** Arena: sala restrita para eventos, sem capacidade definida. */
+    private Sala salaRestrita() {
+        return Sala.builder()
+                .id(9L)
+                .nome("Arena")
+                .disponivel(true)
+                .capacidade(null)
+                .restrito(true)
+                .build();
+    }
+
     private Agendamento agendamento(Long id) {
         return Agendamento.builder()
                 .id(id)
                 .usuarioId(usuario(7L, PerfilUsuario.USER))
                 .salaId(sala(12L))
-                .dataAgendamento(LocalDate.now().plusDays(1))
+                .dataAgendamento(LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)))
                 .dataCriacao(LocalDateTime.now())
                 .horaInicio(LocalTime.of(9, 0))
                 .horaFim(LocalTime.of(10, 0))
@@ -666,7 +781,7 @@ class AgendamentoServiceTest {
         return new AgendamentoResponse(
                 1L,
                 salaResponse(sala(12L)),
-                LocalDate.now().plusDays(1),
+                LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)),
                 LocalDateTime.now(),
                 LocalTime.of(9, 0),
                 LocalTime.of(10, 0),
@@ -693,9 +808,20 @@ class AgendamentoServiceTest {
             LocalTime fim,
             int quantidadePessoas
     ) {
+        return request(sala, solicitante, inicio, fim, quantidadePessoas, proximoDiaUtil());
+    }
+
+    private CriarAgendamentoRequest request(
+            Sala sala,
+            Usuario solicitante,
+            LocalTime inicio,
+            LocalTime fim,
+            int quantidadePessoas,
+            LocalDate data
+    ) {
         return new CriarAgendamentoRequest(
                 List.of(new CriarAgendamentoRequest.SalaRef(sala.getId())),
-                LocalDate.now().plusDays(1),
+                data,
                 inicio,
                 fim,
                 quantidadePessoas,
@@ -706,6 +832,14 @@ class AgendamentoServiceTest {
         );
     }
 
+    private LocalDate proximoDiaUtil() {
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
+        while (data.getDayOfWeek() == DayOfWeek.SATURDAY || data.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            data = data.plusDays(1);
+        }
+        return data;
+    }
+
     private SalaResponse salaResponse(Sala sala) {
         return SalaResponse.builder()
                 .id(sala.getId())
@@ -713,6 +847,7 @@ class AgendamentoServiceTest {
                 .disponivel(sala.getDisponivel())
                 .capacidade(sala.getCapacidade())
                 .localizacao(sala.getLocalizacao())
+                .restrito(Boolean.TRUE.equals(sala.getRestrito()))
                 .build();
     }
 

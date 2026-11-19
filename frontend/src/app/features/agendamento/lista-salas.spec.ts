@@ -34,7 +34,17 @@ describe('ListaSalas', () => {
     const fixture = montar([]);
     const lista = (fixture.nativeElement as HTMLElement).querySelectorAll('button');
 
-    expect(lista.length).toBe(8);
+    // Inclui a Arena (id 9); no fluxo comum ela não chega à lista filtrada pelo mapa.
+    expect(lista.length).toBe(9);
+  });
+
+  it('should show "Eventos" for a room without capacity', () => {
+    const fixture = montar([{ id: 6 }]);
+    const arena = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button'),
+    ).find((item) => item.textContent?.includes('Arena'));
+
+    expect(arena?.textContent).toContain('Eventos · sem limite de pessoas');
   });
 
   it('should allow selecting only the available rooms', () => {

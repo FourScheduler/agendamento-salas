@@ -6,16 +6,25 @@ A busca recebe data, horário inicial, horário final (ou duração) e quantidad
 
 ## Capacidades
 
-| Grupo    | Salas             | Capacidade        |
-| -------- | ----------------- | ----------------- |
-| Foco     | Sala Focus        | 1 a 2 pessoas     |
-| Tamboré  | Salas 01, 02 e 03 | até 4 pessoas     |
-| Comp     | Salas 01 a 04     | 5 pessoas ou mais |
-| Restrito | Auditório         | a definir         |
+| Grupo    | Salas             | Capacidade               |
+| -------- | ----------------- | ------------------------ |
+| Foco     | Sala Focus        | 1 a 2 pessoas            |
+| Tamboré  | Salas 01, 02 e 03 | até 5 pessoas            |
+| Comp     | Salas 01 a 04     | 5 pessoas ou mais        |
+| Restrito | Arena             | eventos (sem capacidade) |
 
 - Reuniões com mais de 10 pessoas podem integrar salas, conforme disponibilidade.
+- Com cinco participantes, Salas 01, 02 e 03 e as Comp podem ser encontradas e selecionadas,
+  conforme disponibilidade. A partir de seis, Salas 01, 02 e 03 não atendem à capacidade.
+- Ao selecionar Sala 01, 02 ou 03 para cinco pessoas, o resumo exibe em destaque vermelho:
+  `Para cinco pessoas nesta sala, solicite uma cadeira à equipe de Facilities.`
+  A orientação vale para USER e ADMIN, sem bloquear a reserva.
 - A célula da sala na planta mostra só a capacidade máxima (`Até N`); as regras de grupo ficam na
   nota da legenda.
+- A Arena é de eventos e não tem capacidade definida: não limita a quantidade de pessoas e não
+  aparece nas sugestões do assistente. No mapa do usuário comum ela fica visível como sala restrita
+  não clicável (`Reserva somente com o Facilities.`); no modo administrativo é selecionável quando
+  livre. Somente o perfil `ADMIN` pode reservá-la — o backend responde `403` para usuário comum.
 
 ## Equipamentos
 
@@ -27,13 +36,43 @@ A busca recebe data, horário inicial, horário final (ou duração) e quantidad
 ## Validações
 
 - A data não pode estar no passado.
-- O horário final deve ser posterior ao horário inicial.
+- Agendamentos só podem ocorrer de segunda a sexta; sábados e domingos são bloqueados na seleção,
+  nas consultas e na confirmação, inclusive quando a data vem de estado restaurado ou do assistente.
+- Ao abrir o agendamento comum ou administrativo no sábado ou domingo, o painel inicia no próximo
+  dia útil (segunda-feira), às 08h00, com duração de 1 hora. Esse horário é uma sugestão editável,
+  não um novo limite mínimo. Nos dias úteis, permanece a sugestão da próxima hora cheia do dia atual.
+- Não há limite máximo de antecedência para a data do agendamento.
+- O horário final deve ser posterior ao horário inicial e precisa ficar dentro do mesmo dia.
+- USER e ADMIN podem selecionar durações de 15 min, 30 min, 45 min, 1 h, 1h15, 1h30, 1h45 e 2 h.
+  USER continua limitado a duas horas; ADMIN mantém as durações maiores dentro do mesmo dia.
 - A capacidade da sala deve ser igual ou superior à quantidade de pessoas.
 - Com sala selecionada, o seletor de pessoas trava na capacidade da sala e mostra
   `Esta sala comporta até N pessoas.`; se a seleção exceder a capacidade, a quantidade é reduzida
   para o máximo da sala.
 - Apenas salas disponíveis podem ser exibidas e selecionadas.
 - O usuário deve confirmar os dados antes de concluir a reserva.
+
+## Perfil administrativo
+
+A tela `/agendamento-admin` é restrita a usuários com perfil `ADMIN` (guard de rota no frontend e regras no backend). O portal não mostra um acesso separado: com sessão ativa, o acesso **Agendamento de Salas** direciona para a tela correspondente ao perfil (`USER` → `/agendamento`, `ADMIN` → `/agendamento-admin`); sem sessão, o clique abre o login e, depois de autenticar, segue para a mesma tela conforme o perfil.
+
+A tela administrativa usa o mesmo layout da tela comum (planta de salas + painel de resumo), sem assistente. Em relação à tela comum:
+
+- Pode selecionar mais de uma sala por reserva, clicando em cada sala na planta; a capacidade considerada é a soma das salas escolhidas (a Arena, sem capacidade, não limita as pessoas).
+- Pode agendar até o dia inteiro: a duração usa um stepper de 15 em 15 minutos, com mínimo de 15 min, do horário inicial até o fim do dia, com atalhos `15 min`, `30 min`, `45 min`, `1 h`, `1h30`, `2 h`, `4 h` e `Dia inteiro` (o limite de 120 minutos vale apenas para `USER`). Os atalhos respeitam o tempo restante no dia. Ao trocar o horário inicial, uma duração que passaria da meia-noite é reduzida para a última opção válida.
+- Pode escolher quem é o solicitante da reserva em outro usuário, pela busca de nome ou e-mail sobre
+  `GET /api/usuarios`; por padrão o solicitante é o próprio administrador, que aparece uma única vez,
+  como primeiro item da lista com o selo `(eu mesmo)` — buscando o próprio nome ele também é
+  encontrado.
+- Pode reservar a Arena (sala restrita de eventos); o backend valida o perfil e recusa usuário comum com `403`.
+- A reserva fica com o solicitante escolhido como dono e aparece nos **Minhas reservas** dele — não nos do administrador que registrou (o log de auditoria continua gravando quem criou a reserva).
+
+## Sessão e acesso
+
+- As telas de agendamento (`/agendamento` e `/agendamento-admin`) só abrem com sessão ativa; sem login, o guard de rota devolve o usuário ao portal.
+- O login (e-mail e senha) pela topbar **permanece na página** em que o usuário está; quem decide o destino é o acesso do portal: com sessão, o clique em **Agendamento de Salas** leva à tela do perfil; sem sessão, abre o login e segue para a tela do perfil após autenticar.
+- O botão **Sair** encerra a sessão e redireciona para o portal.
+- Em **Minhas reservas**, o botão de voltar segue o perfil: `ADMIN` volta para `/agendamento-admin` e `USER` para `/agendamento`.
 
 ## Estado do MVP
 

@@ -124,7 +124,7 @@ class SalaControllerTests {
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
 								.with(user("teste@email.com"))
-								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("data", LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)).toString())
 								.param("horaInicio", "14:00")
 								.param("horaFim", "15:00")
 								.param("qntdPessoas", "1")
@@ -144,7 +144,7 @@ class SalaControllerTests {
 
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
-								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("data", LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)).toString())
 								.param("horaInicio", "14:00")
 								.param("horaFim", "15:00")
 								.param("qntdPessoas", "1")
@@ -169,7 +169,7 @@ class SalaControllerTests {
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
 								.with(user("teste@email.com"))
-								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("data", LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)).toString())
 								.param("horaInicio", "14:00")
 								.param("horaFim", "15:00")
 								.param("qntdPessoas", "4")
@@ -192,7 +192,7 @@ class SalaControllerTests {
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
 								.with(user("teste@email.com"))
-								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("data", LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)).toString())
 								.param("horaInicio", "14:00")
 								.param("horaFim", "15:00")
 								.param("qntdPessoas", "10")
@@ -244,7 +244,7 @@ class SalaControllerTests {
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
 								.with(user("teste@email.com"))
-								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("data", LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)).toString())
 								.param("horaInicio", "15:00")
 								.param("horaFim", "14:00")
 								.param("qntdPessoas", "4")
@@ -271,7 +271,7 @@ class SalaControllerTests {
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
 								.with(user("teste@email.com"))
-								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("data", LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)).toString())
 								.param("horaInicio", "14:00")
 								.param("horaFim", "15:00")
 								.param("qntdPessoas", "0")
@@ -298,7 +298,7 @@ class SalaControllerTests {
 		mockMvc.perform(
 						get("/api/salas/disponiveis")
 								.with(user("teste@email.com"))
-								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("data", LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)).toString())
 								.param("horaInicio", "14:00")
 								.param("qntdPessoas", "4")
 				)
@@ -316,7 +316,7 @@ class SalaControllerTests {
 
 		mockMvc.perform(
 						get("/api/salas/ocupacoes")
-								.param("data", LocalDate.now().plusDays(1).toString())
+								.param("data", LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY)).toString())
 				)
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].salaId").value(2))

@@ -27,6 +27,33 @@ describe('api-error', () => {
     });
   });
 
+  it('should map a JSON error payload received as text', () => {
+    // Endpoints com responseType 'text' (ex.: /auth/login) trazem o corpo como string.
+    const httpErro = new HttpErrorResponse({
+      error: '{"status":401,"message":"E-mail ou senha inválidos."}',
+      status: 401,
+      statusText: 'Unauthorized',
+    });
+
+    expect(paraApiError(httpErro)).toEqual({
+      status: 401,
+      message: 'E-mail ou senha inválidos.',
+    });
+  });
+
+  it('should fallback when the text body is not valid JSON', () => {
+    const httpErro = new HttpErrorResponse({
+      error: 'não é json',
+      status: 502,
+      statusText: 'Bad Gateway',
+    });
+
+    expect(paraApiError(httpErro)).toEqual({
+      status: 502,
+      message: 'Erro interno inesperado. Tente novamente.',
+    });
+  });
+
   it('should describe a network failure', () => {
     const httpErro = new HttpErrorResponse({ status: 0 });
 

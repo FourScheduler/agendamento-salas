@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -92,6 +93,7 @@ public class AgendamentoService {
                 agendamentoRequest.horaFim(), usuario.getPerfilUsuario());
 
         validarCapacidadeSala(agendamentoRequest, salas);
+        validarSalasRestritas(salas, usuario.getPerfilUsuario());
         validarDisponibilidadeSalas(salas);
 
         salas.forEach(sala -> validarConflitoHorario(
@@ -102,9 +104,14 @@ public class AgendamentoService {
                 )
         );
 
+        // Reserva em nome de outro usuário: a pertence ao solicitante e aparece nos
+        // Minhas reservas dele — não nos do administrador que fez o registro.
+        Usuario solicitante = buscarSolicitante(agendamentoRequest, usuario);
+        Usuario dono = solicitante != null ? solicitante : usuario;
+
         List<Agendamento> agendamentos = salas.stream()
                 .map(sala -> Agendamento.builder()
-                        .usuarioId(usuario)
+                        .usuarioId(dono)
                         .salaId(sala)
                         .dataAgendamento(agendamentoRequest.data())
                         .dataCriacao(agora)
@@ -117,15 +124,7 @@ public class AgendamentoService {
                         .build())
                 .toList();
 
-        if(agendamentoRequest.usuarioIdSolicitante() != null) {
-            if(!usuario.getPerfilUsuario().equals(PerfilUsuario.ADMIN)) {
-                throw new UsuarioSemPermissaoException();
-            }
-
-            Usuario solicitante = usuarioRepositoryPort
-                    .buscarPorId(agendamentoRequest.usuarioIdSolicitante().id())
-                    .orElseThrow(UsuarioInexistenteException::new);
-
+        if (solicitante != null) {
             agendamentos.forEach(agendamento ->
                     agendamento.setUsuarioIdSolicitante(solicitante)
             );
@@ -158,6 +157,7 @@ public class AgendamentoService {
                 .disponivel(sala.getDisponivel())
                 .capacidade(sala.getCapacidade())
                 .localizacao(sala.getLocalizacao())
+                .restrito(Boolean.TRUE.equals(sala.getRestrito()))
                 .build();
     }
 
@@ -254,6 +254,9 @@ public class AgendamentoService {
         if (data == null || data.isBefore(LocalDate.now())) {
             throw new ValidacaoBuscaException("A data não pode estar no passado.");
         }
+        if (data.getDayOfWeek() == DayOfWeek.SATURDAY || data.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            throw new ValidacaoBuscaException("Agendamentos são permitidos apenas de segunda a sexta.");
+        }
     }
 
     private void validarQuantidadePessoas(Integer qntdPessoas) {
@@ -298,9 +301,28 @@ public class AgendamentoService {
     }
 
     private void validarCapacidadeSala(CriarAgendamentoRequest agendamentoRequest, List<Sala> salas) {
+        // Salas sem capacidade definida (Arena, de eventos) não limitam as pessoas.
+        boolean semCapacidade = salas.stream().anyMatch(sala -> sala.getCapacidade() == null);
+        if (semCapacidade) {
+            return;
+        }
+
         long capacidadeTotal = salas.stream().mapToLong(Sala::getCapacidade).sum();
         if (agendamentoRequest.qntdPessoas() > capacidadeTotal) {
             throw new CapacidadeNaoSuportadaException();
+        }
+    }
+
+    /**
+     * Salas marcadas como restritas (Arena) são de reserva de eventos e ficam
+     * disponíveis apenas para o perfil ADMIN.
+     */
+    private void validarSalasRestritas(List<Sala> salas, PerfilUsuario perfilUsuario) {
+        boolean restrita = salas.stream()
+                .anyMatch(sala -> Boolean.TRUE.equals(sala.getRestrito()));
+
+        if (restrita && !PerfilUsuario.ADMIN.equals(perfilUsuario)) {
+            throw new UsuarioSemPermissaoException();
         }
     }
 
@@ -314,6 +336,24 @@ public class AgendamentoService {
 
     private Usuario buscarUsuario(Long id) {
         return usuarioRepositoryPort.buscarPorId(id)
+                .orElseThrow(UsuarioInexistenteException::new);
+    }
+
+    /**
+     * Resolve o solicitante escolhido pelo administrador; {@code null} quando a reserva
+     * é do próprio usuário autenticado. Somente ADMIN pode indicar outro solicitante.
+     */
+    private Usuario buscarSolicitante(CriarAgendamentoRequest agendamentoRequest, Usuario usuario) {
+        if (agendamentoRequest.usuarioIdSolicitante() == null) {
+            return null;
+        }
+
+        if (!PerfilUsuario.ADMIN.equals(usuario.getPerfilUsuario())) {
+            throw new UsuarioSemPermissaoException();
+        }
+
+        return usuarioRepositoryPort
+                .buscarPorId(agendamentoRequest.usuarioIdSolicitante().id())
                 .orElseThrow(UsuarioInexistenteException::new);
     }
 

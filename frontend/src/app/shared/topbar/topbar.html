@@ -10,7 +10,7 @@
     </span>
   }
 
-  @if (exibirAcoesPortal()) {
+  @if (exibirAcoesPortal() && autenticado()) {
     <div class="topbar__acoes">
       <button
         class="topbar__botao-icone topbar__notificacoes"
@@ -120,21 +120,34 @@
     >
       <h2 class="login-modal__titulo" id="login-titulo">Entrar no Portal</h2>
       <p class="login-modal__ajuda">
-        Use seu nome para a demonstração. O login real virá pelo SSO do portal.
+        Use o e-mail e a senha da sua conta para entrar. O SSO do portal virá depois.
       </p>
 
       <form class="login-modal__form" (submit)="$event.preventDefault(); entrar()">
-        <label class="login-modal__campo" for="login-nome">
-          <span class="campo__rotulo">Nome</span>
+        <label class="login-modal__campo" for="login-email">
+          <span class="campo__rotulo">E-mail</span>
           <input
-            #campoNome
-            id="login-nome"
-            name="nome"
+            #campoEmail
+            id="login-email"
+            name="email"
             class="login-modal__entrada"
-            type="text"
-            autocomplete="name"
-            [value]="nomeDigitado()"
-            (input)="nomeDigitado.set(campoNome.value)"
+            type="email"
+            autocomplete="email"
+            [value]="emailDigitado()"
+            (input)="emailDigitado.set(campoEmail.value)"
+          />
+        </label>
+
+        <label class="login-modal__campo" for="login-senha">
+          <span class="campo__rotulo">Senha</span>
+          <input
+            id="login-senha"
+            name="senha"
+            class="login-modal__entrada"
+            type="password"
+            autocomplete="current-password"
+            [value]="senhaDigitada()"
+            (input)="senhaDigitada.set($any($event.target).value)"
           />
         </label>
 

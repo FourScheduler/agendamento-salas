@@ -152,18 +152,20 @@ com a disposição espelhada do desenho de referência do escritório:
   com a Sala Focus à esquerda e as Comp 03 e Comp 04 à direita, faixa de mesas.
 - A Sala de servidores e o Time do suporte não são reserváveis: fundo `--page-bg`, borda tracejada e
   rótulo em caixa alta. Não entram na legenda de estados.
-- O Auditório é uma sala restrita (`<div class="sala sala--restrita">`, não é `<button>`): fundo
-  `--disabled`, borda tracejada, capacidade `A definir`, selo `Agendamento somente com um
-responsável` e dica acessível com `Reserve com a equipe de Facilities`. É o quinto estado da legenda,
-  `Restrito`, e só passa a ser reservável quando existir usuário admin (issue de login).
+- A Arena é uma sala restrita (`<div class="sala sala--restrita">` para o usuário comum, não é
+  `<button>`): fundo `--disabled`, borda tracejada, capacidade `Eventos`, selo `Reserva somente com
+  o Facilities.` e dica acessível com `Arena reservável apenas pelo Facilities.`. É o quinto estado
+  da legenda, `Restrito`. No modo administrativo (`podeReservarRestritas`)
+  a Arena é renderizada como `<button>` normal, selecionável quando livre; a posição vem do `area`
+  da sala (`audit`), não da classe `.sala--restrita`.
 - A dica (`.dica` e `.dica__caixa`) é um padrão global de `styles.css`, aberta no hover e no
   `:focus-visible`, com `role="tooltip"` e `aria-describedby`.
 - Áreas estáticas (circulação, mesas e janelas) usam texto curto em caixa alta, `0.5625rem`, peso 700
   e cor `--muted-soft`; as verticais usam `writing-mode: vertical-rl`.
 - Cada sala é um `<button>` posicionado por `grid-area`, com os estados da seção 9.
 - A célula da sala mostra só o nome e a capacidade máxima no formato curto `Até N` (Focus 2, Salas 01
-  a 03 com 4, Comp 01 a 04 com 8). As regras de grupo ficam fora da planta, na nota
-  `legenda__regras` do rodapé do cartão.
+  a 03 com 5, Comp 01 a 04 com 8); a Arena, sem capacidade, mostra `Eventos`. As regras de grupo
+  ficam fora da planta, na nota `legenda__regras` do rodapé do cartão.
 - Em telas estreitas a planta mantém `min-width: 640px` e o corpo do cartão ganha rolagem
   horizontal. A rolagem fica só na `.planta__rolagem`, para a lista de baixo não acompanhar o
   arraste.
@@ -175,8 +177,26 @@ responsável` e dica acessível com `Reserve com a equipe de Facilities`. É o q
 
 ## 13. Painel de resumo
 
+- Todos os campos de data usam o componente compartilhado de calendário
+  (`app-calendario-data`), com navegação mensal e seleção acessível de dias. O chamador define os
+  limites conforme o contexto: fins de semana são sempre bloqueados; agendamentos também bloqueiam
+  datas passadas, sem data máxima.
 - Seletor de pessoas em stepper `-` / `+`. Com sala selecionada o `+` trava na capacidade da sala
   (classe `naCapacidade`) e a linha `resumo__limite` mostra `Esta sala comporta até N pessoas.`
+- Duração: no modo comum, um `<select>` com 30, 60, 90 e 120 minutos; no modo administrativo, um
+  stepper `−` / `+` de 30 em 30 minutos (`.duracao`, reusa as classes `.stepper`) com o valor em
+  destaque e atalhos em pílulas (`.duracao__atalho`): `30 min`, `1 h`, `2 h`, `4 h` e `Dia inteiro` —
+  o último atalho recebe a duração máxima possível a partir do horário inicial e some quando não
+  cabe no dia.
+- Solicitante (somente no modo administrativo): a linha `Solicitante` abre um campo de busca
+  (`#resumo-solicitante`, `role="combobox"`, placeholder `Digite o nome ou e-mail`) em vez de um
+  `<select>` com todos os usuários. As sugestões (`.sugestoes`, `.sugestoes__item`) filtram por nome
+  ou e-mail sem diferenciar acento/maiúsculas e mostram no máximo 8 resultados com nome e e-mail. O
+  administrador logado é o **primeiro item**, sempre visível sem rolagem, com o selo laranja
+  `(eu mesmo)` (`.sugestoes__selo`, fundo `--orange-soft`) — ele não se repete na lista e a busca pelo
+  próprio nome devolve esse item. Os itens ficam em destaque laranja (`--orange-soft`) quando ativos
+  (`aria-activedescendant` + setas/Enter/Esc no teclado). Ao abrir, o nome já escolhido vem selecionado
+  no campo.
 - Equipamentos: linha com checkbox (`linha--check`), rótulo `Equipamentos` e valor
   `Câmera e recursos para reunião híbrida`, seguida da nota
   `Solicite o equipamento previamente à equipe de Facilities.`
@@ -197,3 +217,15 @@ responsável` e dica acessível com `Reserve com a equipe de Facilities`. É o q
   criado para o projeto.
 - Rodapé com `* Esses links só podem ser acessados pela VPN.` e a versão `V.6.5.4`.
 - Os links oficiais abrem em nova aba (`target="_blank"` e `rel="noopener noreferrer"`).
+
+## 15. Aviso de Facilities
+
+Ao entrar em `/agendamento`, o perfil `USER` vê o cartaz de Facilities. A moldura segue o
+raio dos cartões do portal. O conteúdo reproduz a arte revisada da issue #191, com foto em
+diagonal, ícones originais, títulos em azul-marinho e divisórias laranja. As oito regras usam
+quatro colunas no desktop e passam para duas ou uma em telas menores.
+
+A leitura tem rolagem própria e o botão de fechar fica ao alcance mesmo no fim do cartaz.
+O X ou a tecla Esc devolvem o foco ao título da página. Fechar o aviso registra a leitura
+na sessão da aba. Atualizar a página ou voltar de Minhas Reservas mantém o aviso fechado.
+Um novo login ou uma nova aba independente volta a apresentar o cartaz ao usuário comum.

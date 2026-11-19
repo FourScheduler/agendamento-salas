@@ -19,6 +19,8 @@ import br.com.foursys.agendamento_salas.port.out.UsuarioRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -225,7 +227,7 @@ class SalaServiceTest {
 
     @Test
     void deveBuscarSalasDisponiveisComSucesso() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
         LocalTime inicio = LocalTime.of(14, 0);
         LocalTime fim = LocalTime.of(15, 0);
 
@@ -267,9 +269,30 @@ class SalaServiceTest {
         verifyNoInteractions(usuarioRepositoryPort);
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {15, 45, 90})
+    void deveBuscarDisponibilidadeComNovasDuracoes(int minutos) {
+        LocalDate data = LocalDate.now()
+                .with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
+        LocalTime inicio = LocalTime.of(9, 0);
+        LocalTime fim = inicio.plusMinutes(minutos);
+        Sala sala = Sala.builder().id(1L).nome("Sala 01").capacidade(4).disponivel(true).build();
+        SalaResponse resposta = mock(SalaResponse.class);
+        when(salaRepositoryPort.buscarDisoniveis(data, inicio, fim, 4))
+                .thenReturn(List.of(sala));
+        when(salaMapper.entityToResponse(sala)).thenReturn(resposta);
+
+        List<SalaResponse> resultado = salaService.buscarSalasDisponiveis(
+                data, inicio, fim, 4, null
+        );
+
+        assertEquals(List.of(resposta), resultado);
+        verify(salaRepositoryPort).buscarDisoniveis(data, inicio, fim, 4);
+    }
+
     @Test
     void deveRetornarListaVaziaQuandoNenhumaSalaEstiverDisponivel() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
         LocalTime inicio = LocalTime.of(14, 0);
         LocalTime fim = LocalTime.of(15, 0);
 
@@ -297,8 +320,52 @@ class SalaServiceTest {
     }
 
     @Test
+    void deveListarSalasSemCapacidadeSemErroDeOrdenacao() {
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
+        LocalTime inicio = LocalTime.of(14, 0);
+        LocalTime fim = LocalTime.of(15, 0);
+
+        Sala arena = Sala.builder()
+                .nome("Arena")
+                .disponivel(true)
+                .capacidade(null)
+                .restrito(true)
+                .localizacao("Tamboré")
+                .build();
+
+        Sala salaComCapacidade = Sala.builder()
+                .nome("Sala 01")
+                .disponivel(true)
+                .capacidade(4)
+                .localizacao("Tamboré")
+                .build();
+
+        when(salaRepositoryPort.buscarDisoniveis(
+                data,
+                inicio,
+                fim,
+                5
+        )).thenReturn(List.of(arena, salaComCapacidade));
+
+        when(salaMapper.entityToResponse(arena))
+                .thenReturn(mock(SalaResponse.class));
+        when(salaMapper.entityToResponse(salaComCapacidade))
+                .thenReturn(mock(SalaResponse.class));
+
+        List<SalaResponse> resultado = salaService.buscarSalasDisponiveis(
+                data,
+                inicio,
+                fim,
+                5,
+                null
+        );
+
+        assertEquals(2, resultado.size());
+    }
+
+    @Test
     void deveRejeitarQuantidadeDePessoasMenorQueUm() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
         LocalTime inicio = LocalTime.of(14, 0);
         LocalTime fim = LocalTime.of(15, 0);
 
@@ -320,7 +387,7 @@ class SalaServiceTest {
 
     @Test
     void deveRejeitarQuantidadeDePessoasNula() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
         LocalTime inicio = LocalTime.of(14, 0);
         LocalTime fim = LocalTime.of(15, 0);
 
@@ -359,6 +426,30 @@ class SalaServiceTest {
     }
 
     @Test
+    void deveRejeitarSabadosEDomingosNaBuscaDeSalas() {
+        for (int diasAFrente = 1; diasAFrente <= 7; diasAFrente++) {
+            LocalDate data = LocalDate.now().plusDays(diasAFrente);
+            if (data.getDayOfWeek() != java.time.DayOfWeek.SATURDAY
+                    && data.getDayOfWeek() != java.time.DayOfWeek.SUNDAY) {
+                continue;
+            }
+
+            assertThrows(
+                    ValidacaoBuscaException.class,
+                    () -> salaService.buscarSalasDisponiveis(
+                            data,
+                            LocalTime.of(14, 0),
+                            LocalTime.of(15, 0),
+                            5,
+                            null
+                    )
+            );
+        }
+
+        verifyNoInteractions(salaRepositoryPort);
+    }
+
+    @Test
     void deveRejeitarDataNula() {
         LocalTime inicio = LocalTime.of(14, 0);
         LocalTime fim = LocalTime.of(15, 0);
@@ -379,7 +470,7 @@ class SalaServiceTest {
 
     @Test
     void deveRejeitarHorarioInicialNulo() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
 
         assertThrows(
                 ValidacaoBuscaException.class,
@@ -397,7 +488,7 @@ class SalaServiceTest {
 
     @Test
     void deveRejeitarHorarioFinalNulo() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
 
         assertThrows(
                 ValidacaoBuscaException.class,
@@ -415,7 +506,7 @@ class SalaServiceTest {
 
     @Test
     void deveRejeitarHorarioFinalAnteriorAoInicial() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
 
         assertThrows(
                 ValidacaoBuscaException.class,
@@ -433,7 +524,7 @@ class SalaServiceTest {
 
     @Test
     void deveRejeitarHorarioFinalIgualAoInicial() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
         LocalTime horario = LocalTime.of(14, 0);
 
         assertThrows(
@@ -462,7 +553,7 @@ class SalaServiceTest {
 
     @Test
     void usuarioDeveSerImpedidoDeReservarMaisDeDuasHoras() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
         LocalTime inicio = LocalTime.of(14, 0);
         LocalTime fim = LocalTime.of(17, 0);
 
@@ -493,7 +584,7 @@ class SalaServiceTest {
 
     @Test
     void usuarioPodeReservarExatamenteDuasHoras() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
         LocalTime inicio = LocalTime.of(14, 0);
         LocalTime fim = LocalTime.of(16, 0);
 
@@ -522,7 +613,7 @@ class SalaServiceTest {
 
     @Test
     void usuarioComPerfilDiferenteDeUserPodeReservarMaisDeDuasHoras() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
         LocalTime inicio = LocalTime.of(14, 0);
         LocalTime fim = LocalTime.of(18, 0);
 
@@ -557,7 +648,7 @@ class SalaServiceTest {
 
     @Test
     void deveLancarExcecaoQuandoUsuarioNaoExistir() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
         LocalTime inicio = LocalTime.of(14, 0);
         LocalTime fim = LocalTime.of(17, 0);
 
@@ -583,7 +674,7 @@ class SalaServiceTest {
 
     @Test
     void emailNuloDeveConsiderarUsuarioComoUser() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
         LocalTime inicio = LocalTime.of(14, 0);
         LocalTime fim = LocalTime.of(15, 0);
 
@@ -611,7 +702,7 @@ class SalaServiceTest {
 
     @Test
     void deveListarOcupacoesDaData() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
 
         Agendamento primeiraReserva = Agendamento.builder()
                 .salaId(Sala.builder().id(2L).build())
@@ -643,7 +734,7 @@ class SalaServiceTest {
 
     @Test
     void deveRetornarListaVaziaQuandoDataNaoTiverReservas() {
-        LocalDate data = LocalDate.now().plusDays(1);
+        LocalDate data = LocalDate.now().with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY));
 
         when(agendamentoRepositoryPort.buscarPorData(data)).thenReturn(List.of());
 
@@ -670,6 +761,24 @@ class SalaServiceTest {
                 ValidacaoBuscaException.class,
                 () -> salaService.buscarOcupacoes(LocalDate.now().minusDays(1))
         );
+
+        verifyNoInteractions(agendamentoRepositoryPort);
+    }
+
+    @Test
+    void deveRejeitarSabadosEDomingosNasOcupacoes() {
+        for (int diasAFrente = 1; diasAFrente <= 7; diasAFrente++) {
+            LocalDate data = LocalDate.now().plusDays(diasAFrente);
+            if (data.getDayOfWeek() != java.time.DayOfWeek.SATURDAY
+                    && data.getDayOfWeek() != java.time.DayOfWeek.SUNDAY) {
+                continue;
+            }
+
+            assertThrows(
+                    ValidacaoBuscaException.class,
+                    () -> salaService.buscarOcupacoes(data)
+            );
+        }
 
         verifyNoInteractions(agendamentoRepositoryPort);
     }

@@ -17,11 +17,21 @@
     <ul class="portal__apps">
       @for (aplicativo of aplicativos; track aplicativo.nome) {
         <li class="portal__app">
-          @if (aplicativo.rota; as rota) {
-            <a [routerLink]="rota">
+          @if (aplicativo.rota) {
+            <a
+              role="button"
+              tabindex="0"
+              (click)="abrirAgendamento()"
+              (keydown.enter)="abrirAgendamento()"
+            >
               <span class="portal__caixa">
                 <img class="portal__icone" [src]="aplicativo.icone" alt="" />
-                <span class="portal__nome">{{ aplicativo.nome }}</span>
+                <span class="portal__nome">
+                  {{ aplicativo.nome }}
+                  @if (aplicativo.novo) {
+                    <span class="portal__selo">Novo</span>
+                  }
+                </span>
               </span>
             </a>
           } @else {

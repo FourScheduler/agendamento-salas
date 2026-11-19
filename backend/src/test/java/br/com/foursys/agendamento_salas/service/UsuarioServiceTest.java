@@ -89,4 +89,14 @@ class UsuarioServiceTest {
                 () -> service.buscarPorId(99L)
         );
     }
+
+    @Test
+    void deveListarTodosUsuariosOrdenadosPeloRepositorio() {
+        java.util.List<Usuario> usuarios = java.util.List.of(new Usuario(), new Usuario());
+        when(repository.buscarTodos()).thenReturn(usuarios);
+        UsuarioService service = new UsuarioService(repository, passwordEncoder);
+
+        assertEquals(usuarios, service.listarTodos());
+        verify(repository).buscarTodos();
+    }
 }

@@ -1,0 +1,29 @@
+<dialog #dialogo aria-labelledby="titulo-regras" (close)="fechado.emit()">
+  <button class="fechar" type="button" aria-label="Fechar aviso de regras das salas"
+          autofocus (click)="dialogo.close()">×</button>
+
+  <article class="cartaz" tabindex="0" aria-labelledby="titulo-regras">
+    <header>
+      <img class="foto" src="facilities/sala.jpg" alt="" />
+      <div class="marca"><img src="facilities/foursys.png" alt="Foursys" /></div>
+      <h2 id="titulo-regras">Como você gostaria de encontrar a sala de reunião?</h2>
+      <p>Ao finalizar sua reunião, lembre-se de deixar o ambiente organizado e pronto para o próximo uso.</p>
+      <h3>Antes de sair, verifique:</h3>
+    </header>
+    <ul class="regras">
+      @for (regra of regras; track regra.icone) {
+        <li>
+          <img [src]="'facilities/' + regra.icone + '.png'" alt="" width="144" height="144" />
+          <h4>{{ regra.titulo }}</h4>
+          <p>{{ regra.texto }}</p>
+        </li>
+      }
+    </ul>
+    <footer>
+      <strong>A sala não se organiza sozinha.</strong>
+      <p>Ao finalizar sua reunião, deixe tudo em ordem. Cada um é responsável por respeitar e organizar as salas.</p>
+      <b>Contamos com a colaboração de todos</b>
+      <small>Equipe Facilities</small>
+    </footer>
+  </article>
+</dialog>

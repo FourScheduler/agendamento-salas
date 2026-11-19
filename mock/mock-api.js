@@ -1,10 +1,12 @@
 const http = require('http');
 
 const salas = [
-  { id: 1, nome: 'Sala Focus', disponivel: true, capacidade: 2, localizacao: 'Tamboré' },
-  { id: 3, nome: 'Sala Comp 02', disponivel: true, capacidade: 8, localizacao: 'Tamboré' },
-  { id: 5, nome: 'Sala Comp 04', disponivel: true, capacidade: 8, localizacao: 'Tamboré' },
-  { id: 7, nome: 'Sala 02', disponivel: true, capacidade: 4, localizacao: 'Tamboré' },
+  { id: 4, nome: 'Sala Focus', disponivel: true, capacidade: 2, localizacao: 'Tamboré' },
+  { id: 6, nome: 'Sala Comp 02', disponivel: true, capacidade: 8, localizacao: 'Tamboré' },
+  { id: 8, nome: 'Sala Comp 04', disponivel: true, capacidade: 8, localizacao: 'Tamboré' },
+  { id: 1, nome: 'Sala 01', disponivel: true, capacidade: 5, localizacao: 'Tamboré' },
+  { id: 2, nome: 'Sala 02', disponivel: true, capacidade: 5, localizacao: 'Tamboré' },
+  { id: 3, nome: 'Sala 03', disponivel: true, capacidade: 5, localizacao: 'Tamboré' },
 ];
 
 const cabecalhos = {
@@ -22,7 +24,9 @@ const servidor = http.createServer((requisicao, resposta) => {
   }
 
   resposta.writeHead(200, cabecalhos);
-  resposta.end(JSON.stringify(salas));
+  const url = new URL(requisicao.url, 'http://localhost:8080');
+  const pessoas = Number(url.searchParams.get('qntdPessoas') ?? 1);
+  resposta.end(JSON.stringify(salas.filter((sala) => sala.capacidade >= pessoas)));
 });
 
 servidor.listen(8080, () => console.log('mock api em 8080'));

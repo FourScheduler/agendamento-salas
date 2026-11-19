@@ -24,7 +24,7 @@ public interface SalaJpaRepository extends JpaRepository<Sala, Long> {
     SELECT s
     FROM Sala s
     WHERE s.disponivel = true
-      AND s.capacidade >= :pessoas
+      AND (s.capacidade IS NULL OR s.capacidade >= :pessoas)
       AND NOT EXISTS (
           SELECT a
           FROM Agendamento a

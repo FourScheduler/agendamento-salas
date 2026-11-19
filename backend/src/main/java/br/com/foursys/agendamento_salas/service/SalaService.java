@@ -17,6 +17,7 @@ import br.com.foursys.agendamento_salas.port.out.UsuarioRepositoryPort;
 import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -117,7 +118,11 @@ public class SalaService {
                                                 localizacao
                                         )
                                 )
-                                .thenComparingInt(Sala::getCapacidade)
+                                .thenComparingInt(
+                                        sala -> sala.getCapacidade() == null
+                                                ? Integer.MAX_VALUE
+                                                : sala.getCapacidade()
+                                )
                 )
 
                 .map(salaMapper::entityToResponse)
@@ -129,9 +134,7 @@ public class SalaService {
      * em cada sala, o próximo horário em que ela fica livre.
      */
     public List<OcupacaoSalaResponse> buscarOcupacoes(LocalDate data) {
-        if (data == null || data.isBefore(LocalDate.now())) {
-            throw new ValidacaoBuscaException("A data não pode estar no passado.");
-        }
+        validarData(data);
 
         return agendamentoRepositoryPort.buscarPorData(data).stream()
                 .map(agendamento -> new OcupacaoSalaResponse(
@@ -188,9 +191,7 @@ public class SalaService {
         if (pessoas == null || pessoas < 1) {
             throw new ValidacaoBuscaException("A quantidade de pessoas deve ser ao menos 1.");
         }
-        if (data == null || data.isBefore(LocalDate.now())) {
-            throw new ValidacaoBuscaException("A data não pode estar no passado.");
-        }
+        validarData(data);
         if (inicio == null) {
             throw new ValidacaoBuscaException("Informe o horário inicial da reserva.");
         }
@@ -199,6 +200,15 @@ public class SalaService {
         }
         if (!fim.isAfter(inicio)) {
             throw new ValidacaoBuscaException("O horário final deve ser posterior ao horário inicial.");
+        }
+    }
+
+    private void validarData(LocalDate data) {
+        if (data == null || data.isBefore(LocalDate.now())) {
+            throw new ValidacaoBuscaException("A data não pode estar no passado.");
+        }
+        if (data.getDayOfWeek() == DayOfWeek.SATURDAY || data.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            throw new ValidacaoBuscaException("Agendamentos são permitidos apenas de segunda a sexta.");
         }
     }
 

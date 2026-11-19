@@ -3,12 +3,14 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { BuscaReservasRequest, Reserva, StatusReserva } from '../../core/models/api.models';
 import { mensagemDeErro } from '../../core/http/api-error';
+import { AuthService } from '../../core/services/auth.service';
 import { ReservasService } from '../../core/services/reservas.service';
-import { dataCurta, paraIso } from '../../core/util/formatos';
+import { dataCurta, ehFimDeSemana, paraIso } from '../../core/util/formatos';
 import { ToastService } from '../../shared/toast/toast';
 import { Carregando } from '../../shared/estados/carregando';
 import { Erro } from '../../shared/estados/erro';
 import { Vazio } from '../../shared/estados/vazio';
+import { CalendarioData } from '../../shared/calendario-data/calendario-data';
 
 type Filtro = 'futuras' | 'passadas';
 
@@ -39,12 +41,13 @@ const OPCOES_STATUS: StatusReserva[] = ['CONFIRMADO', 'CANCELADO', 'AGUARDANDO_C
 
 @Component({
   selector: 'app-minhas-reservas',
-  imports: [Carregando, Erro, Vazio],
+  imports: [Carregando, CalendarioData, Erro, Vazio],
   templateUrl: './minhas-reservas.html',
   styleUrl: './minhas-reservas.css',
 })
 export class MinhasReservas implements OnInit {
   private readonly reservasService = inject(ReservasService);
+  private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
@@ -71,6 +74,11 @@ export class MinhasReservas implements OnInit {
     const { inicio, fim } = this.periodoFiltro();
     return Boolean(inicio && fim && inicio > fim);
   });
+  readonly periodoComFimDeSemana = computed(() => {
+    const { inicio, fim } = this.periodoFiltro();
+    return Boolean((inicio && ehFimDeSemana(inicio)) || (fim && ehFimDeSemana(fim)));
+  });
+  readonly dataFiltroFimDeSemana = signal(false);
 
   /** Chave da reserva cuja confirmação de cancelamento está aberta. */
   readonly cancelamentoSolicitado = signal<string | null>(null);
@@ -117,7 +125,7 @@ export class MinhasReservas implements OnInit {
   }
 
   buscar(): void {
-    if (this.periodoInvalido()) {
+    if (this.periodoInvalido() || this.periodoComFimDeSemana()) {
       return;
     }
 
@@ -165,9 +173,13 @@ export class MinhasReservas implements OnInit {
   }
 
   /** Altera uma das datas do período e consulta o backend de novo. */
-  trocarData(campo: 'inicio' | 'fim', event: Event): void {
-    const valor = (event.target as HTMLInputElement).value;
+  trocarData(campo: 'inicio' | 'fim', valor: string): void {
+    if (ehFimDeSemana(valor)) {
+      this.dataFiltroFimDeSemana.set(true);
+      return;
+    }
 
+    this.dataFiltroFimDeSemana.set(false);
     this.periodoFiltro.update((periodo) => ({ ...periodo, [campo]: valor || null }));
     this.buscar();
   }
@@ -175,6 +187,7 @@ export class MinhasReservas implements OnInit {
   /** Volta para o padrão: sem status e sem período informado. */
   limparFiltros(): void {
     this.statusFiltro.set(null);
+    this.dataFiltroFimDeSemana.set(false);
     this.periodoFiltro.set({ inicio: null, fim: null });
     this.buscar();
   }
@@ -184,9 +197,11 @@ export class MinhasReservas implements OnInit {
     return this.statusFiltro() !== null || this.periodoPersonalizado();
   }
 
-  /** Volta para a tela de agendamento de salas. */
+  /** Volta para a tela de agendamento do perfil: admin volta para a administrativa. */
   voltarParaAgendamento(): void {
-    this.router.navigate(['/agendamento']);
+    void this.router.navigate([
+      this.auth.ehAdmin() ? '/agendamento-admin' : '/agendamento',
+    ]);
   }
 
   agendar(): void {

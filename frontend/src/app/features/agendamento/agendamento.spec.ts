@@ -8,20 +8,33 @@ import { authInterceptor } from '../../core/http/auth-interceptor';
 import { RespostaAssistente } from '../../shared/assistente-ia/assistente-ia';
 import { ToastService } from '../../shared/toast/toast';
 import { environment } from '../../../environments/environment';
-import { hojeIso } from '../../core/util/formatos';
+import { hojeIso, paraIso } from '../../core/util/formatos';
+import { vi } from 'vitest';
 
 function aguardarMicrotarefas(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-async function entrarDemo(httpMock: HttpTestingController): Promise<void> {
-  const login = TestBed.inject(AuthService).entrar('Kevin Miranda');
-  httpMock.expectOne(`${environment.apiUrl}/auth/demo`).flush('token-jwt-123');
+function proximaDataDeFimDeSemana(dia: 0 | 6): string {
+  const data = new Date();
+  do {
+    data.setDate(data.getDate() + 1);
+  } while (data.getDay() !== dia);
+
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const diaDoMes = String(data.getDate()).padStart(2, '0');
+  return `${data.getFullYear()}-${mes}-${diaDoMes}`;
+}
+
+async function entrarUsuarioComum(httpMock: HttpTestingController): Promise<void> {
+  const login = TestBed.inject(AuthService).entrar('usuario@teste.com', '123456');
+  httpMock.expectOne(`${environment.apiUrl}/auth/login`).flush('token-jwt-123');
   await aguardarMicrotarefas();
   httpMock.expectOne(`${environment.apiUrl}/api/usuarios/me`).flush({
     id: 3,
     nome: 'Usuario Teste Um',
     email: 'usuario@teste.com',
+    perfilUsuario: 'USER',
   });
   await login;
 }
@@ -29,8 +42,19 @@ async function entrarDemo(httpMock: HttpTestingController): Promise<void> {
 describe('Agendamento', () => {
   let httpMock: HttpTestingController;
 
+  // O jsdom ainda não implementa a abertura modal nativa do navegador.
+  beforeAll(() => {
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+      configurable: true,
+      value(this: HTMLDialogElement) { this.open = true; },
+    });
+  });
+
+  afterAll(() => Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal'));
+
   beforeEach(async () => {
     window.localStorage.clear();
+    window.sessionStorage.clear();
     await TestBed.configureTestingModule({
       imports: [Agendamento],
       providers: [
@@ -43,8 +67,10 @@ describe('Agendamento', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     httpMock.verify();
     window.localStorage.clear();
+    window.sessionStorage.clear();
   });
 
   function iniciar() {
@@ -93,6 +119,117 @@ describe('Agendamento', () => {
     const fixture = iniciar();
     expect(fixture.componentInstance).toBeTruthy();
     expect(chamadaDeBusca().request.method).toBe('GET');
+  });
+
+  it('mantém as oito regras fechadas quando o USER retorna ao agendamento na mesma aba', async () => {
+    await entrarUsuarioComum(httpMock);
+    const fixture = iniciar();
+    const salas = [{ id: 2, nome: 'Sala 02' }];
+    responder(salas);
+    await fixture.whenStable();
+    const pagina = fixture.nativeElement as HTMLElement;
+    const aviso = pagina.querySelector<HTMLDialogElement>('dialog[open]')!;
+    expect(aviso.querySelectorAll('li')).toHaveLength(8);
+    expect(aviso.textContent).toContain('Não é permitido comer nas salas de reunião (exceto em eventos, com aviso prévio à equipe de Facilities).');
+    fixture.componentInstance.selecionar('Sala 02');
+    aviso.dispatchEvent(new Event('close'));
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(pagina.querySelector('h1'));
+    expect(fixture.componentInstance.selecionada()).toBe('Sala 02');
+    fixture.componentInstance.atualizarPessoas(2);
+    responder(salas);
+    fixture.detectChanges();
+    expect(pagina.querySelector('app-aviso-regras-salas')).toBeNull();
+    fixture.destroy();
+
+    const retorno = iniciar();
+    responder([]);
+    await retorno.whenStable();
+    expect(retorno.nativeElement.querySelector('app-aviso-regras-salas')).toBeNull();
+  });
+
+  it('omite o aviso quando um ADMIN acessa a tela comum', () => {
+    window.localStorage.setItem('fourscheduler.token', 'token-teste');
+    window.localStorage.setItem('fourscheduler.perfil', 'ADMIN');
+    const fixture = iniciar();
+    responder([]);
+    expect(fixture.nativeElement.querySelector('app-aviso-regras-salas')).toBeNull();
+  });
+
+  it.each([
+    [1, 'Sala 01'],
+    [2, 'Sala 02'],
+    [3, 'Sala 03'],
+  ])('should find room %i and keep five participants when selecting %s', (id, nome) => {
+    const fixture = iniciar();
+    responder([]);
+    const componente = fixture.componentInstance;
+
+    componente.atualizarPessoas(5);
+    const busca = chamadaDeBusca();
+    expect(busca.request.params.get('qntdPessoas')).toBe('5');
+    busca.flush([{ id, nome, capacidade: 5, disponivel: true, localizacao: 'Tamboré' }]);
+    componente.selecionar(nome);
+
+    expect(componente.selecionada()).toBe(nome);
+    expect(componente.salaEscolhida()?.capacidade).toBe(5);
+    expect(componente.pessoas()).toBe(5);
+    expect(componente.erroValidacao()).toBeNull();
+    httpMock.expectNone((requisicao) => requisicao.url.includes('/api/salas/disponiveis'));
+  });
+
+  it.each([
+    [15, '09:15'],
+    [45, '09:45'],
+    [75, '10:15'],
+    [90, '10:30'],
+    [105, '10:45'],
+  ])('should search rooms for %i minutes in USER mode', (duracao, fim) => {
+    const fixture = iniciar();
+    responder([]);
+    expect(fixture.componentInstance.duracoes).toEqual([15, 30, 45, 60, 75, 90, 105, 120]);
+
+    fixture.componentInstance.atualizarDuracao(duracao);
+
+    const chamada = chamadaDeBusca();
+    expect(chamada.request.params.get('horaInicio')).toBe('09:00');
+    expect(chamada.request.params.get('horaFim')).toBe(fim);
+    chamada.flush([]);
+    expect(fixture.componentInstance.erroValidacao()).toBeNull();
+  });
+
+  it.each([
+    ['2026-11-21T10:15:00', '2026-11-23', '08:00'],
+    ['2026-11-22T23:45:00', '2026-11-23', '08:00'],
+    ['2026-01-31T23:45:00', '2026-02-02', '08:00'],
+    ['2023-12-31T23:45:00', '2024-01-01', '08:00'],
+    ['2026-11-23T10:15:00', '2026-11-23', '11:00'],
+    ['2026-11-20T10:00:00', '2026-11-20', '10:00'],
+  ])('should initialize availability opened at %s for %s at %s', (agora, data, horaInicio) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(agora));
+    const fixture = TestBed.createComponent(Agendamento);
+
+    fixture.detectChanges();
+
+    const componente = fixture.componentInstance;
+    expect(componente.data()).toBe(data);
+    expect(componente.horaInicio()).toBe(horaInicio);
+    expect(componente.duracao()).toBe(60);
+    expect(componente.pessoas()).toBe(1);
+    expect(componente.erroValidacao()).toBeNull();
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-painel-reserva')?.textContent)
+      .toContain(horaInicio);
+    const busca = chamadaDeBusca();
+    expect(busca.request.params.get('data')).toBe(data);
+    expect(busca.request.params.get('horaInicio')).toBe(horaInicio);
+    expect(busca.request.params.get('horaFim')).toBe(
+      `${String(Number(horaInicio.slice(0, 2)) + 1).padStart(2, '0')}:00`,
+    );
+    busca.flush([]);
+    const ocupacoes = chamadaDeOcupacoes();
+    expect(ocupacoes.request.params.get('data')).toBe(data);
+    ocupacoes.flush([]);
   });
 
   it('should render the page title', async () => {
@@ -164,6 +301,33 @@ describe('Agendamento', () => {
     expect(httpMock.match(`${environment.apiUrl}/api/agendamento`).length).toBe(0);
   });
 
+  it('should reject a weekend date update without searching availability', () => {
+    const fixture = iniciar();
+    responder([]);
+    const componente = fixture.componentInstance;
+    const dataInicial = componente.data();
+
+    componente.atualizarData(proximaDataDeFimDeSemana(6));
+
+    expect(componente.data()).toBe(dataInicial);
+    expect(componente.erroValidacao()).toContain('segunda a sexta');
+    expect(httpMock.match((requisicao) => requisicao.url.includes('/api/salas/disponiveis')))
+      .toHaveLength(0);
+  });
+
+  it('should reject a restored weekend date before searching availability', () => {
+    const fixture = iniciar();
+    responder([]);
+    const componente = fixture.componentInstance;
+    componente.data.set(proximaDataDeFimDeSemana(0));
+    componente.buscar();
+
+    expect(componente.erroValidacao()).toContain('segunda a sexta');
+    expect(httpMock.match(`${environment.apiUrl}/api/agendamento`)).toHaveLength(0);
+    expect(httpMock.match((requisicao) => requisicao.url.includes('/api/salas/disponiveis')))
+      .toHaveLength(0);
+  });
+
   it('should create the reservation when authenticated and refresh the map', async () => {
     const fixture = iniciar();
     responder([{ id: 2, nome: 'Sala 02' }]);
@@ -171,7 +335,7 @@ describe('Agendamento', () => {
 
     fixture.componentInstance.selecionar('Sala 02');
 
-    await entrarDemo(httpMock);
+    await entrarUsuarioComum(httpMock);
 
     const promessa = fixture.componentInstance.confirmarReserva();
 
@@ -221,7 +385,7 @@ describe('Agendamento', () => {
     // Capacidade 8 do mapa: 5 pessoas não dispara a busca de ajuste da capacidade.
     componente.selecionar('Componivel 02');
 
-    await entrarDemo(httpMock);
+    await entrarUsuarioComum(httpMock);
 
     const promessa = componente.confirmarReserva();
 
@@ -255,7 +419,7 @@ describe('Agendamento', () => {
 
     fixture.componentInstance.selecionar('Sala 02');
 
-    await entrarDemo(httpMock);
+    await entrarUsuarioComum(httpMock);
 
     const promessa = fixture.componentInstance.confirmarReserva();
     httpMock.expectOne(`${environment.apiUrl}/api/agendamento`).flush({
@@ -290,7 +454,13 @@ describe('Agendamento', () => {
     responder([{ id: 2, nome: 'Sala 02' }]);
     await fixture.whenStable();
 
-    await entrarDemo(httpMock);
+    await entrarUsuarioComum(httpMock);
+
+    // Data relativa: uma data fixa no passado faria a busca ser recusada.
+    const amanha = new Date();
+    amanha.setDate(amanha.getDate() + 1);
+    const dataAmanha = paraIso(amanha);
+    const [ano, mes, dia] = dataAmanha.split('-');
 
     const promessa =
       fixture.componentInstance.processarMensagemAssistente('sala para 4 pessoas amanhã às 14h');
@@ -313,7 +483,7 @@ describe('Agendamento', () => {
       estado: 'AGUARDANDO_ESCOLHA',
       mensagem: 'Encontrei algumas salas disponíveis. Qual você prefere?',
       sugestoes: [{ salaId: 2, nome: 'Sala 02', capacidade: 4, localizacao: 'Tamboré' }],
-      data: '2026-10-20',
+      data: dataAmanha,
       horaInicio: '14:00:00',
       horaFim: '15:00:00',
       qntdPessoas: 4,
@@ -325,7 +495,7 @@ describe('Agendamento', () => {
     responderOcupacoes();
     responder([{ id: 2, nome: 'Sala 02' }]);
 
-    expect(fixture.componentInstance.data()).toBe('2026-10-20');
+    expect(fixture.componentInstance.data()).toBe(dataAmanha);
     expect(fixture.componentInstance.horaInicio()).toBe('14:00');
     expect(fixture.componentInstance.duracao()).toBe(60);
     expect(fixture.componentInstance.pessoas()).toBe(4);
@@ -344,7 +514,7 @@ describe('Agendamento', () => {
       estado: 'AGUARDANDO_CONFIRMACAO',
       mensagem: 'Você escolheu a sala Sala 02. Deseja confirmar o agendamento?',
       sugestoes: [],
-      data: '2026-10-20',
+      data: dataAmanha,
       horaInicio: '14:00:00',
       horaFim: '15:00:00',
       qntdPessoas: 4,
@@ -366,7 +536,7 @@ describe('Agendamento', () => {
         estado: 'CONFIRMADO',
         mensagem: 'Agendamento realizado com sucesso!',
         sugestoes: [],
-        data: '2026-10-20',
+        data: dataAmanha,
         horaInicio: '14:00:00',
         horaFim: '15:00:00',
         qntdPessoas: 4,
@@ -380,7 +550,7 @@ describe('Agendamento', () => {
 
     expect(respostaConfirmacao.texto).toContain('sucesso');
     const toast = TestBed.inject(ToastService).toasts()[0];
-    expect(toast.titulo).toBe('Reserva confirmada das 14:00 às 15:00 20/10/26');
+    expect(toast.titulo).toBe(`Reserva confirmada das 14:00 às 15:00 ${dia}/${mes}/${ano.slice(-2)}`);
     expect(toast.mensagem).toBeUndefined();
     await fixture.whenStable();
   });
@@ -390,7 +560,7 @@ describe('Agendamento', () => {
     responder([]);
     await fixture.whenStable();
 
-    await entrarDemo(httpMock);
+    await entrarUsuarioComum(httpMock);
 
     const promessa =
       fixture.componentInstance.processarMensagemAssistente('sala para 4 pessoas');

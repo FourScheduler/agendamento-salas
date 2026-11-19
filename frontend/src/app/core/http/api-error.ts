@@ -14,7 +14,7 @@ const MENSAGENS_PADRAO: Record<number, string> = {
 
 export function paraApiError(erro: unknown): ApiError {
   if (erro instanceof HttpErrorResponse) {
-    const corpo = erro.error;
+    const corpo = corpoEmJson(erro.error);
     if (ehErroResposta(corpo)) {
       return { status: corpo.status, message: corpo.message };
     }
@@ -22,6 +22,21 @@ export function paraApiError(erro: unknown): ApiError {
   }
 
   return { status: 0, message: MENSAGENS_PADRAO[0] };
+}
+
+/**
+ * Endpoints com responseType 'text' (ex.: /auth/login) recebem o corpo de erro
+ * como string; converte o JSON para objeto antes de validar o formato padrão.
+ */
+function corpoEmJson(corpo: unknown): unknown {
+  if (typeof corpo !== 'string' || !corpo.trimStart().startsWith('{')) {
+    return corpo;
+  }
+  try {
+    return JSON.parse(corpo);
+  } catch {
+    return corpo;
+  }
 }
 
 export const apiErrorInterceptor: HttpInterceptorFn = (requisicao, proximo) =>

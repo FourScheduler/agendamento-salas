@@ -6,16 +6,22 @@
         class="lista__item"
         [class.lista__item--ocupada]="sala.estado === 'ocupada'"
         [class.lista__item--indisponivel]="sala.estado === 'indisponivel'"
-        [class.lista__item--selecionada]="selecionada() === sala.nome"
+        [class.lista__item--selecionada]="estaSelecionada(sala.nome)"
         [attr.aria-pressed]="
-          sala.estado === 'disponivel' ? selecionada() === sala.nome : null
+          sala.estado === 'disponivel' ? estaSelecionada(sala.nome) : null
         "
         [attr.aria-disabled]="sala.estado === 'disponivel' ? null : true"
         (click)="clique.emit(sala.nome)"
       >
         <span class="lista__info">
           <span class="lista__nome">{{ sala.nome }}</span>
-          <span class="lista__capacidade">Até {{ sala.capacidade }} pessoas</span>
+          <span class="lista__capacidade">
+            @if (sala.capacidade === null) {
+              Eventos · sem limite de pessoas
+            } @else {
+              Até {{ sala.capacidade }} pessoas
+            }
+          </span>
         </span>
         <span class="lista__estado">
           <span
