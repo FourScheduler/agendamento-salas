@@ -54,6 +54,7 @@ describe('Agendamento', () => {
 
   beforeEach(async () => {
     window.localStorage.clear();
+    window.sessionStorage.clear();
     await TestBed.configureTestingModule({
       imports: [Agendamento],
       providers: [
@@ -69,6 +70,7 @@ describe('Agendamento', () => {
     vi.useRealTimers();
     httpMock.verify();
     window.localStorage.clear();
+    window.sessionStorage.clear();
   });
 
   function iniciar() {
@@ -119,7 +121,7 @@ describe('Agendamento', () => {
     expect(chamadaDeBusca().request.method).toBe('GET');
   });
 
-  it('exibe as oito regras ao USER uma vez por entrada no agendamento', async () => {
+  it('mantém as oito regras fechadas quando o USER retorna ao agendamento na mesma aba', async () => {
     await entrarUsuarioComum(httpMock);
     const fixture = iniciar();
     const salas = [{ id: 2, nome: 'Sala 02' }];
@@ -143,7 +145,7 @@ describe('Agendamento', () => {
     const retorno = iniciar();
     responder([]);
     await retorno.whenStable();
-    expect(retorno.nativeElement.querySelector('dialog[open]')).toBeTruthy();
+    expect(retorno.nativeElement.querySelector('app-aviso-regras-salas')).toBeNull();
   });
 
   it('omite o aviso quando um ADMIN acessa a tela comum', () => {

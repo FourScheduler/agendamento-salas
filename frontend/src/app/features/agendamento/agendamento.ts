@@ -34,7 +34,7 @@ export class Agendamento implements OnInit {
   private readonly salasService = inject(SalasService);
   private readonly reservasService = inject(ReservasService);
   private readonly conversasService = inject(ConversasService);
-  private readonly auth = inject(AuthService);
+  protected readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
 
@@ -67,8 +67,6 @@ export class Agendamento implements OnInit {
   readonly erroApi = signal<string | null>(null);
   readonly erroValidacao = signal<string | null>(null);
   readonly autenticado = this.auth.autenticado;
-  protected readonly perfil = this.auth.perfil;
-  protected readonly avisoFechado = signal(false);
   readonly usuario = this.auth.usuario;
   readonly confirmando = signal(false);
   readonly erroConfirmacao = signal<string | null>(null);

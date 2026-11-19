@@ -34,6 +34,7 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     window.localStorage.clear();
+    window.sessionStorage.clear();
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
@@ -44,7 +45,53 @@ describe('AuthService', () => {
   afterEach(() => {
     httpMock.verify();
     window.localStorage.clear();
+    window.sessionStorage.clear();
   });
+
+  function recarregarAplicacao(): AuthService {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    return TestBed.inject(AuthService);
+  }
+
+  it('restaura a dispensa no F5 e volta a mostrar as regras em outra aba independente', () => {
+    // Uma sessão anterior à criação do aviso também pode dispensá-lo.
+    window.localStorage.setItem('fourscheduler.token', 'token-existente');
+    window.localStorage.setItem('fourscheduler.perfil', 'USER');
+    const primeiraEntrada = recarregarAplicacao();
+    expect(primeiraEntrada.exibirAvisoRegras()).toBe(true);
+    primeiraEntrada.fecharAvisoRegras();
+    expect(recarregarAplicacao().exibirAvisoRegras()).toBe(false);
+
+    window.sessionStorage.clear();
+    expect(recarregarAplicacao().exibirAvisoRegras()).toBe(true);
+  });
+
+  it.each(['maria@teste.com', 'joao@teste.com'])(
+    'volta a mostrar as regras após logout e novo login como %s',
+    async (proximoEmail) => {
+      async function entrar(email: string) {
+        const login = service.entrar(email, '123456');
+        responderLogin(httpMock);
+        await aguardarMicrotarefas();
+        responderPerfil(httpMock, { nome: 'Mesmo nome', perfilUsuario: 'USER' });
+        await login;
+      }
+
+      await entrar('maria@teste.com');
+      service.fecharAvisoRegras();
+      expect(service.exibirAvisoRegras()).toBe(false);
+      const marcadorAntigo = window.sessionStorage.getItem('fourscheduler.avisoRegrasFechado')!;
+      service.sair();
+      expect(window.sessionStorage.getItem('fourscheduler.avisoRegrasFechado')).toBeNull();
+      await entrar(proximoEmail);
+      expect(service.exibirAvisoRegras()).toBe(true);
+
+      // Uma aba antiga ainda pode ter o marcador do login anterior ao recarregar.
+      window.sessionStorage.setItem('fourscheduler.avisoRegrasFechado', marcadorAntigo);
+      expect(recarregarAplicacao().exibirAvisoRegras()).toBe(true);
+    },
+  );
 
   it('should start unauthenticated when there is no saved session', () => {
     expect(service.autenticado()).toBe(false);

@@ -7,6 +7,8 @@ import { LoginRequest, PerfilUsuario } from '../models/api.models';
 const CHAVE_USUARIO = 'fourscheduler.usuario';
 const CHAVE_TOKEN = 'fourscheduler.token';
 const CHAVE_PERFIL = 'fourscheduler.perfil';
+const CHAVE_SESSAO = 'fourscheduler.sessao';
+const CHAVE_AVISO = 'fourscheduler.avisoRegrasFechado';
 
 /**
  * Sessão da aplicação. O login usa e-mail e senha (`POST /auth/login`); o nome
@@ -22,12 +24,27 @@ export class AuthService {
   private readonly usuarioInterno = signal<string | null>(lerValor(CHAVE_USUARIO));
   private readonly tokenInterno = signal<string | null>(lerValor(CHAVE_TOKEN));
   private readonly perfilInterno = signal<PerfilUsuario | null>(lerPerfil(CHAVE_PERFIL));
+  // Sessões já abertas antes desta versão recebem um identificador na primeira leitura.
+  private idSessao = this.tokenInterno() ? lerValor(CHAVE_SESSAO) ?? novaSessao() : null;
+  private readonly sessaoDoAvisoFechado = signal(lerValor(CHAVE_AVISO, 'sessionStorage'));
 
   readonly usuario = this.usuarioInterno.asReadonly();
   readonly token = this.tokenInterno.asReadonly();
   readonly perfil = this.perfilInterno.asReadonly();
   readonly autenticado = computed(() => this.tokenInterno() !== null);
   readonly ehAdmin = computed(() => this.perfilInterno() === 'ADMIN');
+  readonly exibirAvisoRegras = computed(
+    () => this.autenticado() && this.perfil() === 'USER' && this.sessaoDoAvisoFechado() !== this.idSessao,
+  );
+
+  fecharAvisoRegras(): void {
+    this.registrarAvisoFechado(this.idSessao);
+  }
+
+  private registrarAvisoFechado(sessao: string | null): void {
+    this.sessaoDoAvisoFechado.set(sessao);
+    salvarValor(CHAVE_AVISO, sessao, 'sessionStorage');
+  }
 
   /** Modal de login aberto, seja pela topbar ou pelo portal sem sessão. */
   readonly loginAberto = signal(false);
@@ -64,11 +81,16 @@ export class AuthService {
     );
 
     // Sessão primeiro: o interceptor anexa o token à chamada do perfil.
+    this.idSessao = novaSessao();
+    this.registrarAvisoFechado(null);
     this.guardarToken(token);
     await this.carregarPerfil(emailLimpo);
   }
 
   sair(): void {
+    this.idSessao = null;
+    this.registrarAvisoFechado(null);
+    salvarValor(CHAVE_SESSAO, null);
     this.usuarioInterno.set(null);
     this.tokenInterno.set(null);
     this.perfilInterno.set(null);
@@ -104,9 +126,18 @@ export class AuthService {
   }
 }
 
-function lerValor(chave: string): string | null {
+// Identifica o login no navegador sem gravar a credencial no aviso.
+function novaSessao(): string {
+  const id = crypto.getRandomValues(new Uint32Array(4)).join('-');
+  salvarValor(CHAVE_SESSAO, id);
+  return id;
+}
+
+type Armazenamento = 'localStorage' | 'sessionStorage';
+
+function lerValor(chave: string, armazenamento: Armazenamento = 'localStorage'): string | null {
   try {
-    return window.localStorage.getItem(chave);
+    return window[armazenamento].getItem(chave);
   } catch {
     return null;
   }
@@ -118,14 +149,18 @@ function lerPerfil(chave: string): PerfilUsuario | null {
   return valor === 'ADMIN' || valor === 'USER' ? valor : null;
 }
 
-function salvarValor(chave: string, valor: string | null): void {
+function salvarValor(
+  chave: string,
+  valor: string | null,
+  armazenamento: Armazenamento = 'localStorage',
+): void {
   try {
     if (valor === null) {
-      window.localStorage.removeItem(chave);
+      window[armazenamento].removeItem(chave);
     } else {
-      window.localStorage.setItem(chave, valor);
+      window[armazenamento].setItem(chave, valor);
     }
   } catch {
-    // localStorage indisponível: a sessão vale só na memória.
+    // Armazenamento indisponível: a sessão vale só na memória.
   }
 }

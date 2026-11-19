@@ -226,5 +226,6 @@ diagonal, ícones originais, títulos em azul-marinho e divisórias laranja. As 
 quatro colunas no desktop e passam para duas ou uma em telas menores.
 
 A leitura tem rolagem própria e o botão de fechar fica ao alcance mesmo no fim do cartaz.
-O X ou a tecla Esc devolvem o foco ao título da página. O aviso aparece novamente na próxima
-entrada na tela.
+O X ou a tecla Esc devolvem o foco ao título da página. Fechar o aviso registra a leitura
+na sessão da aba. Atualizar a página ou voltar de Minhas Reservas mantém o aviso fechado.
+Um novo login ou uma nova aba independente volta a apresentar o cartaz ao usuário comum.

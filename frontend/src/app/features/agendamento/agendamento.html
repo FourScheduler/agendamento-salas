@@ -49,7 +49,7 @@
   </div>
 
   <app-assistente-ia [processarMensagem]="processarMensagemAssistente" />
-  @if (autenticado() && perfil() === 'USER' && !avisoFechado()) {
-    <app-aviso-regras-salas (fechado)="avisoFechado.set(true); titulo.focus()" />
+  @if (auth.exibirAvisoRegras()) {
+    <app-aviso-regras-salas (fechado)="auth.fecharAvisoRegras(); titulo.focus()" />
   }
 </section>
