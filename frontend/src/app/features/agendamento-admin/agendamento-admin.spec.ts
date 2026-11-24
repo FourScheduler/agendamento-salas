@@ -154,6 +154,7 @@ describe('AgendamentoAdmin', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('h1')?.textContent).toContain('Escolha as salas');
+    expect(compiled.textContent).not.toContain('Acesso restrito a administradores');
     expect(compiled.querySelector('app-mapa-salas')).toBeTruthy();
     expect(compiled.querySelector('app-painel-reserva')).toBeTruthy();
     // A tela administrativa não tem assistente.

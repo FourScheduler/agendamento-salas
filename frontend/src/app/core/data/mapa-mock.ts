@@ -35,8 +35,21 @@ const SALAS_BASE: SalaBase[] = [
   { id: 6, nome: 'Componivel 02', capacidade: 8, area: 'comp02' },
   { id: 7, nome: 'Componivel 03', capacidade: 8, area: 'comp03' },
   { id: 8, nome: 'Componivel 04', capacidade: 8, area: 'comp04' },
-  { id: 9, nome: 'Arena', capacidade: null, area: 'audit', restrito: true },
+  { id: 9, nome: 'Arena', capacidade: null, area: 'arena', restrito: true },
+  { id: 10, nome: 'Reunião Diretoria', capacidade: 4, area: 'diretoria' },
+  { id: 11, nome: 'Cabine 01', capacidade: 4, area: 'cabine01' },
+  { id: 12, nome: 'Cabine 02', capacidade: 4, area: 'cabine02' },
+  { id: 13, nome: 'Cabine 03', capacidade: 1, area: 'cabine03' },
+  { id: 14, nome: 'Cabine 04', capacidade: 1, area: 'cabine04' },
+  { id: 15, nome: 'Cabine 05', capacidade: 1, area: 'cabine05' },
+  { id: 16, nome: 'Cabine 06', capacidade: 1, area: 'cabine06' },
+  { id: 17, nome: 'Cabine 07', capacidade: 1, area: 'cabine07' },
 ];
+
+/** Cabines ocupam a faixa estreita da ala esquerda, com grade própria na planta. */
+export function ehCabine(sala: { area: string }): boolean {
+  return sala.area.startsWith('cabine');
+}
 
 export function resolverEstados(disponiveis: Array<{ id: number }>): SalaPlanta[] {
   const livres = new Set(disponiveis.map((sala) => sala.id));

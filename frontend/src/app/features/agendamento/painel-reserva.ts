@@ -320,6 +320,10 @@ export class PainelReserva {
 
   /** Capacidade em texto; a Arena é de eventos e não tem limite de pessoas. */
   rotuloCapacidade(sala: SalaPlanta): string {
-    return sala.capacidade === null ? 'Eventos' : `Até ${sala.capacidade} pessoas`;
+    if (sala.capacidade === null) {
+      return 'Eventos';
+    }
+
+    return sala.capacidade === 1 ? 'Até 01 · 1 pessoa' : `Até ${sala.capacidade} pessoas`;
   }
 }
