@@ -9,11 +9,16 @@ A busca recebe data, horário inicial, horário final (ou duração) e quantidad
 | Grupo    | Salas             | Capacidade               |
 | -------- | ----------------- | ------------------------ |
 | Foco     | Sala Focus        | 1 a 2 pessoas            |
+| Cabine   | Cabines 03 a 07   | individual (1 pessoa)    |
+| Cabine   | Cabines 01 e 02   | até 4 pessoas            |
+| Diretoria| Reunião Diretoria | até 4 pessoas            |
 | Tamboré  | Salas 01, 02 e 03 | até 5 pessoas            |
 | Comp     | Salas 01 a 04     | 5 pessoas ou mais        |
 | Restrito | Arena             | eventos (sem capacidade) |
 
 - Reuniões com mais de 10 pessoas podem integrar salas, conforme disponibilidade.
+- Entre Reunião Diretoria e Presidência, apenas Reunião Diretoria é reservável (até 4 pessoas).
+  Presidência é uma área fixa da planta, sem agendamento para USER ou ADMIN.
 - Com cinco participantes, Salas 01, 02 e 03 e as Comp podem ser encontradas e selecionadas,
   conforme disponibilidade. A partir de seis, Salas 01, 02 e 03 não atendem à capacidade.
 - Ao selecionar Sala 01, 02 ou 03 para cinco pessoas, o resumo exibe em destaque vermelho:
@@ -56,9 +61,9 @@ A busca recebe data, horário inicial, horário final (ou duração) e quantidad
 
 A tela `/agendamento-admin` é restrita a usuários com perfil `ADMIN` (guard de rota no frontend e regras no backend). O portal não mostra um acesso separado: com sessão ativa, o acesso **Agendamento de Salas** direciona para a tela correspondente ao perfil (`USER` → `/agendamento`, `ADMIN` → `/agendamento-admin`); sem sessão, o clique abre o login e, depois de autenticar, segue para a mesma tela conforme o perfil.
 
-A tela administrativa usa o mesmo layout da tela comum (planta de salas + painel de resumo), sem assistente. Em relação à tela comum:
+A tela administrativa usa o mesmo layout da tela comum (planta de salas + painel de resumo), sem assistente ou aviso visual de acesso restrito; o mapa fica mais próximo do cabeçalho. Em relação à tela comum:
 
-- Pode selecionar mais de uma sala por reserva, clicando em cada sala na planta; a capacidade considerada é a soma das salas escolhidas (a Arena, sem capacidade, não limita as pessoas).
+- Pode selecionar mais de uma sala por reserva, clicando em cada sala na planta; cada sala também pode ser removida individualmente pelo botão no resumo, desfazendo sua seleção na planta. A capacidade considerada é a soma das salas escolhidas (a Arena, sem capacidade, não limita as pessoas).
 - Pode agendar até o dia inteiro: a duração usa um stepper de 15 em 15 minutos, com mínimo de 15 min, do horário inicial até o fim do dia, com atalhos `15 min`, `30 min`, `45 min`, `1 h`, `1h30`, `2 h`, `4 h` e `Dia inteiro` (o limite de 120 minutos vale apenas para `USER`). Os atalhos respeitam o tempo restante no dia. Ao trocar o horário inicial, uma duração que passaria da meia-noite é reduzida para a última opção válida.
 - Pode escolher quem é o solicitante da reserva em outro usuário, pela busca de nome ou e-mail sobre
   `GET /api/usuarios`; por padrão o solicitante é o próprio administrador, que aparece uma única vez,

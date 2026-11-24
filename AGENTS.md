@@ -48,6 +48,9 @@ O backend lê banco e autenticação de um arquivo `backend/.env`, que não é v
 - Sala 02 (Tamboré): 5 pessoas
 - Sala 03 (Tamboré): 5 pessoas
 - Arena (Tamboré): eventos, sem capacidade definida; reservável apenas pelo perfil `ADMIN`
+- Reunião Diretoria (Tamboré): 4 pessoas; Presidência é apenas uma área não reservável
+- Cabine 01 e Cabine 02 (Tamboré): até 4 pessoas
+- Cabine 03 a Cabine 07 (Tamboré): individuais, 1 pessoa
 
 Regras de grupo: Focus para 1 a 2 pessoas, Salas 01 a 03 até 5, Comp a partir de 5. Reuniões com mais de 10 pessoas integram salas, conforme disponibilidade. A Arena é de eventos: não limita as pessoas, não aparece nas sugestões do assistente e o backend recusa usuário comum com `403`. Equipamentos de reunião híbrida são solicitados à equipe de Facilities.
 

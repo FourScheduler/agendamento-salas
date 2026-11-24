@@ -142,33 +142,50 @@ Nunca deixe a área em branco enquanto a chamada acontece.
 
 ## 12. Planta do escritório
 
-A planta (`mapa-salas.css`) é um `grid` de CSS com proporção fixa `aspect-ratio: 2490 / 1091`,
-com a disposição espelhada do desenho de referência do escritório:
+A planta (`mapa-salas.css`) é um `grid` de CSS com proporção fixa `aspect-ratio: 13 / 5`, baseada na
+disposição do desenho de referência do escritório (`frontend/public/novo-mapa.svg`):
 
-- Colunas, da esquerda para a direita: corredor lateral, Sala 01, Sala 02, Sala 03, corredor central
-  na vertical, Sala Comp 01 com Sala Comp 02, Sala Comp 03 com Sala Comp 04 e faixa de janelas.
-- Linhas, de cima para baixo: faixa de circulação, fileira de salas (o Auditório acompanha as duas
-  primeiras fileiras), Sala de servidores à esquerda com o Time do suporte ao lado, fileira de baixo
-  com a Sala Focus à esquerda e as Comp 03 e Comp 04 à direita, faixa de mesas.
-- A Sala de servidores e o Time do suporte não são reserváveis: fundo `--page-bg`, borda tracejada e
-  rótulo em caixa alta. Não entram na legenda de estados.
+- Colunas, da esquerda para a direita: Reunião Diretoria com Presidência embaixo, circulação
+  vertical, RH e Financeiro lado a lado, circulação central, Salas 01 a 03, circulação vertical e,
+  à direita, Arena com as Comp 01 a 04.
+- Linhas, de cima para baixo: Reunião Diretoria, RH, Financeiro, Salas 01 a 03 e Arena; servidores
+  com Suporte; Sala Focus sob os servidores; cabines sob RH e Financeiro; e as duas
+  faixas de mesas abaixo das cabines e do suporte.
+- As sete cabines ficam numa grade própria (`.planta__cabines`, `role="group"`), em uma única
+  fileira, de Cabine 07 a Cabine 01 da esquerda para a direita, com nome e capacidade horizontais.
+  Em cartões de até 1100px, a fileira passa para a base da planta para preservar a legibilidade;
+  até 500px, a capacidade individual aparece como `1`, mantendo o texto completo no rótulo acessível.
+  A classe `.sala--cabine` reduz a marca de selecionada. O nome na
+  planta é abreviado como `Cab. 01` a `Cab. 07`, preservando o nome completo no rótulo acessível,
+  na lista e no resumo.
+- Reunião Diretoria e Presidência dividem uma grade própria (`.planta__alaDiretoria`) em duas
+  linhas iguais, com a mesma largura e sem ultrapassar os limites da planta. Apenas Reunião
+  Diretoria é reservável (até 4 pessoas); Presidência é uma área estática.
+- Presidência, RH, Financeiro, servidores e Suporte não são reserváveis: fundo
+  `--page-bg`, borda sólida `--border-soft` e rótulo em caixa alta. Não entram na legenda de estados.
 - A Arena é uma sala restrita (`<div class="sala sala--restrita">` para o usuário comum, não é
   `<button>`): fundo `--disabled`, borda tracejada, capacidade `Eventos`, selo `Reserva somente com
   o Facilities.` e dica acessível com `Arena reservável apenas pelo Facilities.`. É o quinto estado
   da legenda, `Restrito`. No modo administrativo (`podeReservarRestritas`)
   a Arena é renderizada como `<button>` normal, selecionável quando livre; a posição vem do `area`
-  da sala (`audit`), não da classe `.sala--restrita`.
+  da sala (`arena`), não da classe `.sala--restrita`.
 - A dica (`.dica` e `.dica__caixa`) é um padrão global de `styles.css`, aberta no hover e no
   `:focus-visible`, com `role="tooltip"` e `aria-describedby`.
-- Áreas estáticas (circulação, mesas e janelas) usam texto curto em caixa alta, `0.5625rem`, peso 700
-  e cor `--muted-soft`; as verticais usam `writing-mode: vertical-rl`.
-- Cada sala é um `<button>` posicionado por `grid-area`, com os estados da seção 9.
-- A célula da sala mostra só o nome e a capacidade máxima no formato curto `Até N` (Focus 2, Salas 01
-  a 03 com 5, Comp 01 a 04 com 8); a Arena, sem capacidade, mostra `Eventos`. As regras de grupo
+- Áreas estáticas (circulação e mesas) são caixas com borda tracejada `--border` e raio de
+  4px (mesas com fundo `--page-bg`), com texto curto em caixa alta, `0.5625rem`, peso 700 e cor
+  `--muted-soft`; as verticais usam `writing-mode: vertical-rl`.
+- Cada sala é um `<button>` posicionado por `grid-area`, com os estados da seção 9. A dica da sala
+  (`.sala__dica`) usa `width: max-content` até `12rem`, para não ficar espremida nas cabines.
+- O cabeçalho da planta não exibe uma disponibilidade genérica; o selo aparece ao informar uma
+  sala e apresenta seu estado ou próximo horário disponível.
+- A célula da sala mostra o nome e a faixa de pessoas com ícone: `1` e `user-round` para capacidade
+  individual, ou `1-N` e `users-round` para capacidades maiores que uma. A Arena, sem capacidade,
+  mostra `Eventos` sem ícone de pessoas. As regras de grupo
   ficam fora da planta, na nota `legenda__regras` do rodapé do cartão.
-- Em telas estreitas a planta mantém `min-width: 640px` e o corpo do cartão ganha rolagem
-  horizontal. A rolagem fica só na `.planta__rolagem`, para a lista de baixo não acompanhar o
-  arraste.
+- A planta se adapta à largura disponível e mantém altura mínima de `20rem`; a rolagem eventual
+  fica só na `.planta__rolagem`, para a lista de baixo não acompanhar o arraste.
+- O cartão da planta mantém as bordas e seu corpo usa `0.25rem` de espaçamento horizontal,
+  ampliando o desenho e preservando espaço para o indicador de foco.
 - Abaixo de `700px` a lista de salas (`app-lista-salas`) aparece sob a planta e vira o principal
   caminho de seleção: uma linha por sala com nome, capacidade, amostra e estado. Acima desse
   breakpoint a lista fica com `display: none` e a planta continua sendo usada.
@@ -177,6 +194,8 @@ com a disposição espelhada do desenho de referência do escritório:
 
 ## 13. Painel de resumo
 
+- No modo administrativo, cada cartão de sala selecionada tem um botão de remoção com rótulo
+  acessível que identifica a sala; ao remover, a seleção também é desfeita na planta e na lista.
 - Todos os campos de data usam o componente compartilhado de calendário
   (`app-calendario-data`), com navegação mensal e seleção acessível de dias. O chamador define os
   limites conforme o contexto: fins de semana são sempre bloqueados; agendamentos também bloqueiam

@@ -1,6 +1,7 @@
 import { Component, computed, input, output, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { OcupacaoSala } from '../../core/models/api.models';
-import { SalaPlanta } from '../../core/data/mapa-mock';
+import { SalaPlanta, ehCabine } from '../../core/data/mapa-mock';
 import {
   dataExtenso as formatarData,
   diaSemana as formatarDia,
@@ -15,7 +16,7 @@ import { ListaSalas } from './lista-salas';
 
 @Component({
   selector: 'app-mapa-salas',
-  imports: [Carregando, Erro, ListaSalas, Vazio],
+  imports: [Carregando, Erro, ListaSalas, NgTemplateOutlet, Vazio],
   templateUrl: './mapa-salas.html',
   styleUrl: './mapa-salas.css',
 })
@@ -63,20 +64,40 @@ export class MapaSalas {
       : this.salas().filter((sala) => !sala.restrito),
   );
 
+  /** Salas posicionadas direto na grade da planta. */
+  readonly salasGrade = computed(() =>
+    this.salas().filter((sala) => !ehCabine(sala) && sala.area !== 'diretoria'),
+  );
+  readonly salaDiretoria = computed(() => this.salas().find((sala) => sala.area === 'diretoria'));
+  /** Cabines ficam numa faixa própria, em ordem visual de 07 a 01 como na planta. */
+  readonly cabines = computed(() => this.salas().filter(ehCabine));
+
   /** Sala restrita (Arena) vista por quem não tem perfil ADMIN. */
   restritaParaUsuario(sala: SalaPlanta): boolean {
     return sala.restrito && !this.podeReservarRestritas();
   }
 
-  /** Capacidade em texto; a Arena é de eventos e não tem limite de pessoas. */
-  capacidadeTexto(sala: SalaPlanta): string {
-    return sala.capacidade === null ? 'Eventos' : `Até ${sala.capacidade}`;
+  rotuloSala(sala: SalaPlanta): string {
+    if (ehCabine(sala)) {
+      return sala.nome.replace(/^Cabine /, 'Cab. ');
+    }
+
+    return sala.nome.replace(/^Componivel /, 'Comp. ');
   }
 
-  /** Selo verde do cabeçalho: genérico sem sala, específico depois de escolher uma. */
+  /** Faixa de pessoas exibida no mapa; a Arena não tem limite de participantes. */
+  capacidadeTexto(sala: SalaPlanta): string {
+    if (sala.capacidade === null) {
+      return 'Eventos';
+    }
+
+    return sala.capacidade === 1 ? '1' : `1-${sala.capacidade}`;
+  }
+
+  /** Selo do cabeçalho, exibido quando uma sala é informada. */
   readonly seloDisponibilidade = computed(() => {
     const sala = this.salaDoSelo();
-    return sala ? this.dicaDaSala(sala) : `Disponibilidade às ${this.horaInicio()}`;
+    return sala ? this.dicaDaSala(sala) : null;
   });
 
   /**

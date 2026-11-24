@@ -18,6 +18,8 @@
           <span class="lista__capacidade">
             @if (sala.capacidade === null) {
               Eventos · sem limite de pessoas
+            } @else if (sala.capacidade === 1) {
+              Até 01 · 1 pessoa
             } @else {
               Até {{ sala.capacidade }} pessoas
             }

@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  container-type: inline-size;
 }
 
 .planta__cabecalho,
@@ -57,7 +58,7 @@
 
 .planta__corpo {
   flex: 1;
-  padding: 1.25rem;
+  padding: 1.25rem 0.25rem;
 }
 
 .planta__rolagem {
@@ -67,59 +68,89 @@
 .planta__grade {
   display: grid;
   grid-template-columns:
-    minmax(0, 171fr) minmax(0, 410fr) minmax(0, 410fr) minmax(0, 410fr)
-    minmax(0, 150fr) minmax(0, 410fr) minmax(0, 410fr) minmax(0, 74fr);
+    minmax(0, 114fr) minmax(0, 32fr) minmax(0, 260fr) minmax(0, 260fr)
+    minmax(0, 52fr) minmax(0, 88fr) minmax(0, 88fr) minmax(0, 88fr)
+    minmax(0, 32fr) minmax(0, 126fr) minmax(0, 126fr);
   grid-template-rows:
-    minmax(0, 160fr) minmax(0, 246fr) minmax(0, 303fr) minmax(0, 291fr)
-    minmax(0, 91fr);
+    minmax(0, 120fr) minmax(0, 42fr) minmax(0, 96fr)
+    minmax(0, 112fr) minmax(0, 76fr);
   grid-template-areas:
-    'margem topo    topo    topo    corredor audit   audit   janelas'
-    'margem sala01  sala02  sala03  corredor audit   audit   janelas'
-    'margem servidor suporte suporte corredor comp01  comp02  janelas'
-    'margem focus   suporte suporte corredor comp03  comp04  janelas'
-    'rodape rodape  rodape  rodape  rodape   rodape  rodape  rodape';
-  gap: 0.5rem;
-  min-width: 640px;
-  aspect-ratio: 2490 / 1091;
+    'alaDiretoria circE  rh       financeiro circC   sala01   sala02   sala03   circD  arena  arena'
+    'alaDiretoria circE  rh       financeiro circC   sala01   sala02   sala03   circD  comp01 comp02'
+    'alaDiretoria circE  rh       financeiro circC   servidor suporte  suporte  circD  comp01 comp02'
+    'alaDiretoria circE  cabines  cabines    circC   focus    suporte  suporte  circD  comp03 comp04'
+    'alaDiretoria circE  mesasE   mesasE     circC   mesasD   mesasD   mesasD   mesasD comp03 comp04';
+  gap: 0.375rem;
+  min-width: 0;
+  min-height: 20rem;
+  aspect-ratio: 13 / 5;
+}
+
+.planta__alaDiretoria {
+  display: grid;
+  grid-area: alaDiretoria;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-areas: 'diretoria' 'presidencia';
+  gap: 0.375rem;
+  min-width: 0;
+  min-height: 0;
+}
+
+.planta__alaDiretoria > * {
+  min-width: 0;
+  min-height: 0;
+  overflow-wrap: anywhere;
+}
+
+.planta__cabines {
+  display: grid;
+  grid-area: cabines;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-areas: 'cabine07 cabine06 cabine05 cabine04 cabine03 cabine02 cabine01';
+  gap: 0.25rem;
+  min-width: 0;
+  min-height: 0;
 }
 
 .faixa {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.25rem;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
   color: var(--muted-soft);
 }
 
 .faixa span {
   font-size: 0.5625rem;
   font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-.faixa--margem {
-  grid-area: margem;
-  border-right: 1px dashed var(--border);
+.faixa--circulacaoEsquerda {
+  grid-area: circE;
 }
 
-.faixa--topo {
-  grid-area: topo;
-  border-bottom: 1px dashed var(--border);
+.faixa--circulacaoCentral {
+  grid-area: circC;
 }
 
-.faixa--corredor {
-  grid-area: corredor;
-  border-right: 1px dashed var(--border);
-  border-left: 1px dashed var(--border);
+.faixa--circulacaoDireita {
+  grid-area: circD;
 }
 
-.faixa--janelas {
-  grid-area: janelas;
-  border-left: 3px solid var(--border-soft);
+.faixa--mesas {
+  background: var(--page-bg);
 }
 
-.faixa--rodape {
-  grid-area: rodape;
-  border-top: 1px dashed var(--border);
+.faixa--mesasEsquerda {
+  grid-area: mesasE;
+}
+
+.faixa--mesasDireita {
+  grid-area: mesasD;
 }
 
 .faixa--vertical span {
@@ -132,14 +163,33 @@
   align-items: center;
   justify-content: center;
   padding: 0.5rem;
-  border: 1px dashed var(--border);
+  border: 1px solid var(--border-soft);
   border-radius: 4px;
   background: var(--page-bg);
   color: var(--muted-soft);
   font-size: 0.5625rem;
   font-weight: 700;
+  letter-spacing: 0.04em;
   text-align: center;
   text-transform: uppercase;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.estrutural--presidencia {
+  grid-area: presidencia;
+}
+
+.estrutural--presidencia span {
+  white-space: nowrap;
+}
+
+.estrutural--rh {
+  grid-area: rh;
+}
+
+.estrutural--financeiro {
+  grid-area: financeiro;
 }
 
 .estrutural--servidor {
@@ -157,7 +207,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  padding: 0.5rem;
+  padding: 0.375rem;
   border: 1px solid var(--green-line);
   border-radius: 4px;
   background: var(--green-soft);
@@ -165,6 +215,8 @@
   font-family: inherit;
   text-align: center;
   cursor: pointer;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .sala:hover {
@@ -176,7 +228,8 @@
   top: 50%;
   left: 50%;
   z-index: 5;
-  max-width: 100%;
+  width: max-content;
+  max-width: 12rem;
   padding: 0.25rem 0.5rem;
   transform: translate(-50%, -50%);
   border-radius: 6px;
@@ -199,11 +252,81 @@
 .sala__nome {
   font-size: 0.875rem;
   font-weight: 600;
+  line-height: 1.2;
 }
 
 .sala__capacidade {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
   color: var(--muted);
   font-size: 0.75rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sala__capacidade svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sala--cabine {
+  gap: 0.125rem;
+  padding: 0.125rem;
+}
+
+.sala--cabine .sala__nome {
+  font-size: 0.625rem;
+  white-space: nowrap;
+}
+
+.sala--cabine .sala__capacidade {
+  font-size: 0.75rem;
+}
+
+@container (max-width: 1100px) {
+  .planta__grade {
+    grid-template-rows:
+      minmax(0, 120fr) minmax(0, 42fr) minmax(0, 96fr)
+      minmax(0, 112fr) minmax(0, 76fr);
+    grid-template-areas:
+      'alaDiretoria circE rh       financeiro circC sala01  sala02  sala03  circD arena  arena'
+      'alaDiretoria circE rh       financeiro circC sala01  sala02  sala03  circD comp01 comp02'
+      'alaDiretoria circE rh       financeiro circC servidor suporte suporte circD comp01 comp02'
+      'alaDiretoria circE cabines  cabines    circC focus   suporte suporte circD comp03 comp04'
+      'alaDiretoria circE mesasE   mesasE     circC mesasD  mesasD  mesasD  mesasD comp03 comp04';
+  }
+}
+
+@container (max-width: 500px) {
+  .planta__grade {
+    column-gap: 0.125rem;
+  }
+
+  .planta__cabines {
+    gap: 0.125rem;
+  }
+
+  .sala--cabine {
+    padding: 0;
+  }
+
+}
+
+.sala--cabine .sala__marca {
+  width: 16px;
+  height: 16px;
+}
+
+.sala--cabine .sala__marca svg {
+  display: none;
 }
 
 .sala--ocupada,

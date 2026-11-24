@@ -35,7 +35,16 @@ describe('ListaSalas', () => {
     const lista = (fixture.nativeElement as HTMLElement).querySelectorAll('button');
 
     // Inclui a Arena (id 9); no fluxo comum ela não chega à lista filtrada pelo mapa.
-    expect(lista.length).toBe(9);
+    expect(lista.length).toBe(17);
+  });
+
+  it('should label the individual cabines in singular', () => {
+    const fixture = montar([{ id: 13 }]);
+    const cabine = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button'),
+    ).find((item) => item.textContent?.includes('Cabine 03'));
+
+    expect(cabine?.textContent).toContain('Até 01 · 1 pessoa');
   });
 
   it('should show "Eventos" for a room without capacity', () => {
