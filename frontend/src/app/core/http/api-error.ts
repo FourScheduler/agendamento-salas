@@ -65,3 +65,7 @@ export function mensagemDeErro(erro: unknown): string {
 
   return MENSAGENS_PADRAO[500];
 }
+
+export function erroDeAutenticacao(erro: unknown): boolean {
+  return typeof erro === 'object' && erro !== null && 'status' in erro && erro.status === 401;
+}

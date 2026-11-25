@@ -141,7 +141,7 @@ export class PainelReserva {
   readonly temSala = computed(() => this.salasDoResumo().length > 0);
 
   readonly podeConfirmar = computed(
-    () => this.autenticado() && this.temSala() && !this.confirmando(),
+    () => this.temSala() && !this.confirmando(),
   );
 
   readonly notaConfirmacao = computed(() => {

@@ -2,7 +2,7 @@ import { DestroyRef, Component, OnInit, computed, inject, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { BuscaSalasRequest, OcupacaoSala, OrquestradorResposta, SugestaoSala } from '../../core/models/api.models';
-import { mensagemDeErro } from '../../core/http/api-error';
+import { erroDeAutenticacao, mensagemDeErro } from '../../core/http/api-error';
 import { AuthService } from '../../core/services/auth.service';
 import { SalasService } from '../../core/services/salas.service';
 import { ReservasService } from '../../core/services/reservas.service';
@@ -21,7 +21,7 @@ import {
 import { MapaSalas } from './mapa-salas';
 import { PainelReserva } from './painel-reserva';
 import { AssistenteIa, RespostaAssistente } from '../../shared/assistente-ia/assistente-ia';
-import { ToastService } from '../../shared/toast/toast';
+import { MENSAGEM_TOKEN_INVALIDO, ToastService } from '../../shared/toast/toast';
 import { AvisoRegrasSalas } from '../../shared/aviso-regras-salas/aviso-regras-salas';
 
 @Component({
@@ -88,6 +88,14 @@ export class Agendamento implements OnInit {
 
   ngOnInit(): void {
     this.buscar();
+  }
+
+  alternarSalaNoMapa(nome: string): void {
+    if (this.selecionada() === nome) {
+      this.removerSala(nome);
+    } else {
+      this.selecionar(nome);
+    }
   }
 
   selecionar(nome: string): void {
@@ -225,6 +233,10 @@ export class Agendamento implements OnInit {
   /** Confirma a reserva pela conversa e recarrega o mapa. */
   private async confirmarNoChat(conversaId: number): Promise<RespostaAssistente> {
     if (conversaId !== this.conversaId) return { texto: 'Escolha uma sala novamente.' };
+    if (!this.auth.autenticado()) {
+      this.toast.erro(MENSAGEM_TOKEN_INVALIDO);
+      return { texto: MENSAGEM_TOKEN_INVALIDO };
+    }
     if (this.confirmando()) return { texto: 'Aguarde, estou confirmando a reserva.' };
     if (this.dataAssistenteInvalida()) {
       return {
@@ -249,6 +261,7 @@ export class Agendamento implements OnInit {
       this.buscar();
       return { texto: resposta.mensagem };
     } catch (erro: unknown) {
+      if (erroDeAutenticacao(erro)) this.toast.erro(MENSAGEM_TOKEN_INVALIDO);
       return { texto: mensagemDeErro(erro) };
     } finally {
       this.confirmando.set(false);
@@ -308,6 +321,7 @@ export class Agendamento implements OnInit {
   /** Fluxo único de confirmação: painel de resumo e ação Reservar do chat. */
   async confirmarReserva(): Promise<string> {
     if (!this.auth.autenticado()) {
+      this.toast.erro(MENSAGEM_TOKEN_INVALIDO);
       return 'Faça login para reservar a sala.';
     }
 
@@ -356,6 +370,7 @@ export class Agendamento implements OnInit {
       return texto;
     } catch (erro: unknown) {
       const falha = mensagemDeErro(erro);
+      if (erroDeAutenticacao(erro)) this.toast.erro(MENSAGEM_TOKEN_INVALIDO);
       this.erroConfirmacao.set(falha);
       return `Não consegui confirmar a reserva: ${falha}`;
     } finally {

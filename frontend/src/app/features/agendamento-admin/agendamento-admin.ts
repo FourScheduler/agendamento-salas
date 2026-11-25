@@ -2,7 +2,7 @@ import { DestroyRef, Component, OnInit, computed, inject, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import { BuscaSalasRequest, OcupacaoSala, Usuario } from '../../core/models/api.models';
-import { mensagemDeErro } from '../../core/http/api-error';
+import { erroDeAutenticacao, mensagemDeErro } from '../../core/http/api-error';
 import { AuthService } from '../../core/services/auth.service';
 import { ReservasService } from '../../core/services/reservas.service';
 import { SalasService } from '../../core/services/salas.service';
@@ -21,7 +21,7 @@ import {
 } from '../../core/util/formatos';
 import { MapaSalas } from '../agendamento/mapa-salas';
 import { PainelReserva } from '../agendamento/painel-reserva';
-import { ToastService } from '../../shared/toast/toast';
+import { MENSAGEM_TOKEN_INVALIDO, ToastService } from '../../shared/toast/toast';
 
 /**
  * Agendamento administrativo: mesmo mapa e mesmo painel da tela comum, sem
@@ -238,6 +238,7 @@ export class AgendamentoAdmin implements OnInit {
 
   async confirmar(): Promise<void> {
     if (!this.auth.autenticado()) {
+      this.toast.erro(MENSAGEM_TOKEN_INVALIDO);
       this.erroConfirmacao.set('Faça login para confirmar a reserva.');
       return;
     }
@@ -287,6 +288,7 @@ export class AgendamentoAdmin implements OnInit {
       this.reiniciarPainel();
       this.buscar();
     } catch (erro: unknown) {
+      if (erroDeAutenticacao(erro)) this.toast.erro(MENSAGEM_TOKEN_INVALIDO);
       this.erroConfirmacao.set(mensagemDeErro(erro));
     } finally {
       this.confirmando.set(false);

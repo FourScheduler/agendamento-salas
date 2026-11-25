@@ -56,9 +56,9 @@ describe('MapaSalas', () => {
       .toBe('Comp. 02');
     expect(botaoPorNome(fixture, 'Sala Focus')?.querySelector('.sala__capacidade')?.textContent?.trim())
       .toBe('1-2');
-    expect(botaoPorNome(fixture, 'Cabine 03')?.querySelector('.sala__capacidade')?.textContent?.trim())
+    expect(botaoPorNome(fixture, 'Cabine 01')?.querySelector('.sala__capacidade')?.textContent?.trim())
       .toBe('1');
-    const capacidadeIndividual = botaoPorNome(fixture, 'Cabine 03')?.querySelector('.sala__capacidade');
+    const capacidadeIndividual = botaoPorNome(fixture, 'Cabine 01')?.querySelector('.sala__capacidade');
     const capacidadeGrupo = botaoPorNome(fixture, 'Sala Focus')?.querySelector('.sala__capacidade');
     expect(capacidadeIndividual?.firstElementChild?.textContent?.trim()).toBe('1');
     expect(capacidadeIndividual?.lastElementChild?.classList.contains('lucide-user-round')).toBe(true);
@@ -145,12 +145,13 @@ describe('MapaSalas', () => {
     for (let numero = 1; numero <= 7; numero++) {
       const nome = `Cabine ${String(numero).padStart(2, '0')}`;
       const capacidade = botaoPorNome(fixture, nome)?.querySelector('.sala__capacidade');
-      expect(capacidade?.textContent?.trim()).toBe(numero <= 5 ? '1' : '1-4');
+      const grupo = numero === 3 || numero === 5;
+      expect(capacidade?.textContent?.trim()).toBe(grupo ? '1-4' : '1');
       expect(capacidade?.lastElementChild?.classList.contains(
-        numero <= 5 ? 'lucide-user-round' : 'lucide-users-round',
+        grupo ? 'lucide-users-round' : 'lucide-user-round',
       )).toBe(true);
     }
-    expect(botaoPorNome(fixture, 'Cabine 03')?.getAttribute('aria-label')).toContain(' · 1');
+    expect(botaoPorNome(fixture, 'Cabine 03')?.getAttribute('aria-label')).toContain(' · 1-4');
     expect(botaoPorNome(fixture, 'Cabine 01')?.getAttribute('aria-disabled')).toBeNull();
     expect(botaoPorNome(fixture, 'Cabine 02')?.getAttribute('aria-disabled')).toBe('true');
   });
@@ -187,6 +188,15 @@ describe('MapaSalas', () => {
     expect(fixture.componentInstance.salasLista().some((sala) => sala.id === 10)).toBe(admin);
   });
 
+  it('quebra o nome de servidores após servi', () => {
+    const fixture = montar([{ id: 1 }]);
+    const rotulo = (fixture.nativeElement as HTMLElement).querySelector('.estrutural--servidor span');
+
+    const quebra = rotulo?.querySelector('br');
+    expect(quebra?.previousSibling?.textContent).toBe('servi');
+    expect(quebra?.nextSibling?.textContent).toBe('dores');
+  });
+
   it('should show Reunião Diretoria as restricted for regular users', () => {
     const fixture = montar([{ id: 6 }, { id: 10 }]);
     const diretoria = (fixture.nativeElement as HTMLElement)
@@ -196,6 +206,8 @@ describe('MapaSalas', () => {
     expect(diretoria?.textContent).toContain('1-4');
     expect(diretoria?.querySelector('.sala__restricao')?.childNodes[0].textContent?.trim())
       .toBe('Somente Facilities');
+    expect(diretoria?.querySelector('[role="tooltip"]')?.textContent?.trim())
+      .toBe('Reunião Diretoria reservável apenas pelo Facilities.');
     const capacidade = diretoria?.querySelector('.sala__capacidade');
     expect(capacidade?.firstElementChild?.textContent?.trim()).toBe('1-4');
     expect(capacidade?.lastElementChild?.classList.contains('lucide-users-round')).toBe(true);
@@ -208,11 +220,11 @@ describe('MapaSalas', () => {
   });
 
   it('should explain that an individual cabine does not fit a group', () => {
-    const fixture = montar([{ id: 13 }]);
+    const fixture = montar([{ id: 11 }]);
     fixture.componentRef.setInput('pessoas', 2);
     fixture.detectChanges();
 
-    const dica = botaoPorNome(fixture, 'Cabine 03')?.querySelector('.sala__dica');
+    const dica = botaoPorNome(fixture, 'Cabine 01')?.querySelector('.sala__dica');
 
     expect(dica?.textContent).toContain('não atende 2 pessoas (até 1)');
   });

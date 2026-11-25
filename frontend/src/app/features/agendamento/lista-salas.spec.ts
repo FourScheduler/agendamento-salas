@@ -39,10 +39,10 @@ describe('ListaSalas', () => {
   });
 
   it('should label the individual cabines in singular', () => {
-    const fixture = montar([{ id: 13 }]);
+    const fixture = montar([{ id: 11 }]);
     const cabine = Array.from(
       (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button'),
-    ).find((item) => item.textContent?.includes('Cabine 03'));
+    ).find((item) => item.textContent?.includes('Cabine 01'));
 
     expect(cabine?.textContent).toContain('Até 01 · 1 pessoa');
   });

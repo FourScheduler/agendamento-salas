@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { apiErrorInterceptor } from '../../core/http/api-error';
 import { authInterceptor } from '../../core/http/auth-interceptor';
 import { environment } from '../../../environments/environment';
+import { ToastService } from '../../shared/toast/toast';
 import { vi } from 'vitest';
 
 function aguardarMicrotarefas(): Promise<void> {
@@ -279,7 +280,7 @@ describe('AgendamentoAdmin', () => {
     expect(sala.getAttribute('aria-pressed')).toBe('false');
     pagina.querySelector<HTMLButtonElement>('button[aria-label="Remover sala Sala 02"]')!.click();
     fixture.detectChanges();
-    expect(pagina.querySelector('.resumo__semSala')).toBeTruthy();
+    expect(pagina.querySelector('.resumo__sala')).toBeNull();
   });
 
   it('should mark every chosen room on the map', async () => {
@@ -305,6 +306,13 @@ describe('AgendamentoAdmin', () => {
     );
     expect(marcadas.length).toBe(2);
     expect(fixture.componentInstance.selecionadas().length).toBe(2);
+
+    livres[0].click();
+    fixture.detectChanges();
+    expect(livres[0].getAttribute('aria-pressed')).toBe('false');
+    expect(livres[1].getAttribute('aria-pressed')).toBe('true');
+    expect(fixture.componentInstance.selecionadas().length).toBe(1);
+    expect(mapa.querySelectorAll('.resumo__salaNome')).toHaveLength(1);
   });
 
   it('remove pelo cartão, sincroniza a planta e ajusta a capacidade após retirar a Arena', async () => {
@@ -342,7 +350,7 @@ describe('AgendamentoAdmin', () => {
     expect(componente.pessoas()).toBe(5);
     expect(pagina.querySelector('.resumo__salaNome')?.textContent).toBe('Sala 01');
     remover('Sala 01');
-    expect(pagina.querySelector('.resumo__semSala')).toBeTruthy();
+    expect(pagina.querySelector('.resumo__sala')).toBeNull();
     expect(pagina.querySelector('button.sala[aria-pressed="true"]')).toBeNull();
     expect(pagina.querySelector<HTMLButtonElement>('.resumo__confirmar')!.disabled).toBe(true);
   });
@@ -443,10 +451,37 @@ describe('AgendamentoAdmin', () => {
     await fixture.whenStable();
 
     fixture.componentInstance.alternarSala('Sala 01');
-    await fixture.componentInstance.confirmar();
+    fixture.detectChanges();
+    const botao = (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('.resumo__confirmar')!;
+    expect(botao.disabled).toBe(false);
+    botao.click();
+    await fixture.whenStable();
 
     expect(fixture.componentInstance.erroConfirmacao()).toContain('Faça login');
+    expect(TestBed.inject(ToastService).toasts()[0]).toMatchObject({
+      tipo: 'erro',
+      titulo: 'Token ausente ou inválido. Faça login novamente.',
+    });
     expect(httpMock.match(`${environment.apiUrl}/api/agendamento`).length).toBe(0);
+  });
+
+  it('exibe aviso vermelho ao confirmar com token inválido', async () => {
+    await entrarComoAdmin(httpMock);
+    const fixture = iniciar();
+    responder([{ id: 1, nome: 'Sala 01', capacidade: 4 }]);
+    fixture.componentInstance.alternarSala('Sala 01');
+    const promessa = fixture.componentInstance.confirmar();
+    httpMock.expectOne(`${environment.apiUrl}/api/agendamento`).flush(
+      { status: 401, message: 'Token ausente ou inválido. Faça login novamente.' },
+      { status: 401, statusText: 'Unauthorized' },
+    );
+    await promessa;
+    expect(TestBed.inject(ToastService).toasts()[0]).toMatchObject({
+      tipo: 'erro',
+      titulo: 'Token ausente ou inválido. Faça login novamente.',
+    });
+    expect(fixture.componentInstance.selecionadas()).toEqual(['Sala 01']);
   });
 
   it('should keep only rooms still free after a new search', async () => {

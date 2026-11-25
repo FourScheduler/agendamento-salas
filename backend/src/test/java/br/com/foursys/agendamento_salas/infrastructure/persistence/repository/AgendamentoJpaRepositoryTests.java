@@ -52,20 +52,24 @@ class AgendamentoJpaRepositoryTests {
     }
 
     @Test
-    @DisplayName("Deve disponibilizar somente cabines 06 e 07 para quatro pessoas")
+    @DisplayName("Deve disponibilizar somente cabines 03 e 05 para quatro pessoas")
     void deveAplicarCapacidadesDasCabinesAposMigration() {
-        assertThat(salaJpaRepository.findAllById(List.of(11L, 12L, 13L, 14L, 15L)))
+        assertThat(salaJpaRepository.findAllById(List.of(11L, 12L, 14L, 16L, 17L)))
                 .hasSize(5)
                 .allSatisfy(cabine -> assertThat(cabine.getCapacidade()).isEqualTo(1));
-        assertThat(salaJpaRepository.findAllById(List.of(16L, 17L)))
+        assertThat(salaJpaRepository.findAllById(List.of(13L, 15L)))
                 .hasSize(2)
                 .allSatisfy(cabine -> assertThat(cabine.getCapacidade()).isEqualTo(4));
 
         assertThat(salaJpaRepository.buscarSalasDisponiveis(
                 DATA, LocalTime.of(9, 0), LocalTime.of(10, 0), 4
         )).extracting(Sala::getId)
-                .contains(16L, 17L)
-                .doesNotContain(11L, 12L, 13L, 14L, 15L);
+                .contains(13L, 15L)
+                .doesNotContain(11L, 12L, 14L, 16L, 17L);
+        assertThat(salaJpaRepository.buscarSalasDisponiveis(
+                DATA, LocalTime.of(9, 0), LocalTime.of(10, 0), 5
+        )).extracting(Sala::getId)
+                .doesNotContain(11L, 12L, 13L, 14L, 15L, 16L, 17L);
     }
 
     @Test
