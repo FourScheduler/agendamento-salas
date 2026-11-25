@@ -42,8 +42,19 @@ async function entrarUsuarioComum(httpMock: HttpTestingController): Promise<void
 describe('Agendamento', () => {
   let httpMock: HttpTestingController;
 
+  // O jsdom ainda não implementa a abertura modal nativa do navegador.
+  beforeAll(() => {
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+      configurable: true,
+      value(this: HTMLDialogElement) { this.open = true; },
+    });
+  });
+
+  afterAll(() => Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal'));
+
   beforeEach(async () => {
     window.localStorage.clear();
+    window.sessionStorage.clear();
     await TestBed.configureTestingModule({
       imports: [Agendamento],
       providers: [
@@ -59,6 +70,7 @@ describe('Agendamento', () => {
     vi.useRealTimers();
     httpMock.verify();
     window.localStorage.clear();
+    window.sessionStorage.clear();
   });
 
   function iniciar() {
@@ -109,30 +121,38 @@ describe('Agendamento', () => {
     expect(chamadaDeBusca().request.method).toBe('GET');
   });
 
-  it('remove a sala pelo resumo sem alterar os filtros e permite selecioná-la novamente', async () => {
+  it('permite ao USER retirar a sala pelo X e mantém os filtros para a próxima escolha', async () => {
     await entrarUsuarioComum(httpMock);
+    TestBed.inject(AuthService).fecharAvisoRegras();
     const fixture = iniciar();
     responder([{ id: 2, nome: 'Sala 02' }]);
-    fixture.detectChanges();
     const componente = fixture.componentInstance;
+    componente.duracao.set(45);
+    componente.pessoas.set(3);
+    componente.equipamentos.set(true);
+    fixture.detectChanges();
     const pagina = fixture.nativeElement as HTMLElement;
-    const sala = Array.from(pagina.querySelectorAll<HTMLButtonElement>('button.sala'))
-      .find((botao) => botao.querySelector('.sala__nome')?.textContent === 'Sala 02')!;
-    const filtros = [componente.data(), componente.horaInicio(), componente.duracao(), componente.pessoas()];
+    const sala = pagina.querySelector<HTMLButtonElement>('button.sala[aria-pressed="false"]')!;
+    const confirmar = pagina.querySelector<HTMLButtonElement>('.resumo__confirmar')!;
     sala.click();
     fixture.detectChanges();
+    expect(confirmar.disabled).toBe(false);
+    const data = componente.data();
+    const hora = componente.horaInicio();
     pagina.querySelector<HTMLButtonElement>('button[aria-label="Remover sala Sala 02"]')!.click();
     fixture.detectChanges();
-    expect(componente.selecionada()).toBeNull();
     expect(sala.getAttribute('aria-pressed')).toBe('false');
     expect(pagina.querySelector('.resumo__semSala')).toBeTruthy();
-    expect([componente.data(), componente.horaInicio(), componente.duracao(), componente.pessoas()]).toEqual(filtros);
+    expect(confirmar.disabled).toBe(true);
+    expect([componente.data(), componente.horaInicio(), componente.duracao(), componente.pessoas(), componente.equipamentos()])
+      .toEqual([data, hora, 45, 3, true]);
     sala.click();
     fixture.detectChanges();
-    expect(componente.selecionada()).toBe('Sala 02');
+    expect(confirmar.disabled).toBe(false);
+    expect(pagina.querySelector('.resumo__salaNome')?.textContent).toBe('Sala 02');
   });
 
-  it('descarta a confirmação pendente do assistente ao remover a sala', async () => {
+  it('descarta a confirmação pendente no assistente quando o USER remove a sala', async () => {
     await entrarUsuarioComum(httpMock);
     const fixture = iniciar();
     responder([{ id: 2, nome: 'Sala 02' }]);
@@ -144,11 +164,46 @@ describe('Agendamento', () => {
     httpMock.expectOne(`${environment.apiUrl}/api/agendamento/conversas/mensagens`).flush({
       conversaId: 7, estado: 'AGUARDANDO_CONFIRMACAO', mensagem: 'Confirmar?', sugestoes: [],
     });
-    const confirmar = (await conversa).acoes!.find((acao) => acao.rotulo === 'Confirmar agendamento')!;
+    const confirmar = (await conversa).acoes!.find(acao => acao.rotulo === 'Confirmar agendamento')!;
     componente.removerSala('Sala 02');
     const resposta = await confirmar.aoClicar!() as RespostaAssistente;
     expect(resposta.texto).toContain('Escolha uma sala');
     httpMock.expectNone(`${environment.apiUrl}/api/agendamento/conversas/7/confirmar`);
+  });
+
+  it('mantém as oito regras fechadas quando o USER retorna ao agendamento na mesma aba', async () => {
+    await entrarUsuarioComum(httpMock);
+    const fixture = iniciar();
+    const salas = [{ id: 2, nome: 'Sala 02' }];
+    responder(salas);
+    await fixture.whenStable();
+    const pagina = fixture.nativeElement as HTMLElement;
+    const aviso = pagina.querySelector<HTMLDialogElement>('dialog[open]')!;
+    expect(aviso.querySelectorAll('li')).toHaveLength(8);
+    expect(aviso.textContent).toContain('Não é permitido comer nas salas de reunião (exceto em eventos, com aviso prévio à equipe de Facilities).');
+    fixture.componentInstance.selecionar('Sala 02');
+    aviso.dispatchEvent(new Event('close'));
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(pagina.querySelector('h1'));
+    expect(fixture.componentInstance.selecionada()).toBe('Sala 02');
+    fixture.componentInstance.atualizarPessoas(2);
+    responder(salas);
+    fixture.detectChanges();
+    expect(pagina.querySelector('app-aviso-regras-salas')).toBeNull();
+    fixture.destroy();
+
+    const retorno = iniciar();
+    responder([]);
+    await retorno.whenStable();
+    expect(retorno.nativeElement.querySelector('app-aviso-regras-salas')).toBeNull();
+  });
+
+  it('omite o aviso quando um ADMIN acessa a tela comum', () => {
+    window.localStorage.setItem('fourscheduler.token', 'token-teste');
+    window.localStorage.setItem('fourscheduler.perfil', 'ADMIN');
+    const fixture = iniciar();
+    responder([]);
+    expect(fixture.nativeElement.querySelector('app-aviso-regras-salas')).toBeNull();
   });
 
   it.each([

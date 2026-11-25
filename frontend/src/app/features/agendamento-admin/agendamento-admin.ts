@@ -147,7 +147,9 @@ export class AgendamentoAdmin implements OnInit {
   }
 
   private definirSalasSelecionadas(nomes: string[]): void {
-    if (this.confirmando()) return;
+    if (this.confirmando()) {
+      return;
+    }
     this.selecionadas.set(nomes);
     this.limparErroConfirmacao();
 

@@ -9,6 +9,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { ehFimDeSemana, hojeIso, proximoDiaUtilIso } from '../../core/util/formatos';
 
 export interface AcaoAssistente {
   rotulo: string;
@@ -45,9 +46,9 @@ const TEXTOS = {
   placeholder: 'Ex: Quero uma sala para 4 pessoas amanhã das 14h às 15h',
   placeholderCurto: 'Ex.: Sala para 4 amanhã às 14h as 15h',
   ajuda: 'É só escrever do seu jeito que eu entendo. Por exemplo:',
-  exemplos: [
+  exemplos: (data: string) => [
     'Quero uma sala para 4 pessoas amanhã das 14h às 15h',
-    'Sala para o dia 19/10/2026 para cinco pessoas das 11h as 12h', // Não será possível com o integra
+    `Sala para o dia ${data} para cinco pessoas das 11h às 12h`,
     'Quero agendar uma sala',
   ],
   pensando: 'Entendendo o seu pedido…',
@@ -420,7 +421,14 @@ export class AssistenteIa implements AfterViewInit, OnDestroy {
   }
 
   private mostrarAjuda(): void {
-    this.adicionarMensagem({ de: 'assistente', texto: TEXTOS.ajuda, exemplos: TEXTOS.exemplos });
+    const hoje = hojeIso();
+    const dataExemplo = ehFimDeSemana(hoje) ? proximoDiaUtilIso(hoje) : hoje;
+    const [ano, mes, dia] = dataExemplo.split('-');
+    this.adicionarMensagem({
+      de: 'assistente',
+      texto: TEXTOS.ajuda,
+      exemplos: TEXTOS.exemplos(`${dia}/${mes}/${ano}`),
+    });
   }
 
   private mostrarPensando(): void {

@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { AssistenteIa } from './assistente-ia';
 
 describe('AssistenteIa', () => {
@@ -35,6 +36,37 @@ describe('AssistenteIa', () => {
     const botao = raiz.querySelector<HTMLButtonElement>('button.ai-panel__send');
 
     expect(botao?.disabled).toBe(true);
+  });
+
+  it.each([
+    ['2026-11-19', '19/11/2026'],
+    ['2026-11-20', '20/11/2026'],
+    ['2026-11-21', '23/11/2026'],
+    ['2026-11-22', '23/11/2026'],
+    ['2022-12-31', '02/01/2023'],
+  ])('usa a data útil ao abrir a ajuda em %s e copia o exemplo ao clicar', (hoje, esperada) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2026-10-19T12:00:00'));
+      const { fixture, raiz } = iniciar();
+      vi.setSystemTime(new Date(`${hoje}T12:00:00`));
+      fixture.componentInstance.estado.set('greeting');
+      fixture.componentInstance.tocarNoMascote();
+      fixture.detectChanges();
+
+      const exemplos = raiz.querySelectorAll<HTMLButtonElement>('button.ai-chip');
+      const texto = `Sala para o dia ${esperada} para cinco pessoas das 11h às 12h`;
+      expect(Array.from(exemplos, botao => botao.textContent)).toEqual([
+        'Quero uma sala para 4 pessoas amanhã das 14h às 15h',
+        texto,
+        'Quero agendar uma sala',
+      ]);
+      exemplos[1].click();
+      fixture.detectChanges();
+      expect(raiz.querySelector<HTMLInputElement>('input.ai-panel__input')?.value).toBe(texto);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('should enable the send button after typing', () => {

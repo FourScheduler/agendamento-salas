@@ -22,10 +22,11 @@ import { MapaSalas } from './mapa-salas';
 import { PainelReserva } from './painel-reserva';
 import { AssistenteIa, RespostaAssistente } from '../../shared/assistente-ia/assistente-ia';
 import { ToastService } from '../../shared/toast/toast';
+import { AvisoRegrasSalas } from '../../shared/aviso-regras-salas/aviso-regras-salas';
 
 @Component({
   selector: 'app-agendamento',
-  imports: [MapaSalas, PainelReserva, AssistenteIa],
+  imports: [MapaSalas, PainelReserva, AssistenteIa, AvisoRegrasSalas],
   templateUrl: './agendamento.html',
   styleUrl: './agendamento.css',
 })
@@ -33,7 +34,7 @@ export class Agendamento implements OnInit {
   private readonly salasService = inject(SalasService);
   private readonly reservasService = inject(ReservasService);
   private readonly conversasService = inject(ConversasService);
-  private readonly auth = inject(AuthService);
+  protected readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly toast = inject(ToastService);
 
