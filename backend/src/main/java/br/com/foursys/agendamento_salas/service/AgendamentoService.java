@@ -92,8 +92,8 @@ public class AgendamentoService {
         validarQuantidadeHorasAgendamento(agendamentoRequest.horaInicio(),
                 agendamentoRequest.horaFim(), usuario.getPerfilUsuario());
 
-        validarCapacidadeSala(agendamentoRequest, salas);
         validarSalasRestritas(salas, usuario.getPerfilUsuario());
+        validarCapacidadeSala(agendamentoRequest, salas);
         validarDisponibilidadeSalas(salas);
 
         salas.forEach(sala -> validarConflitoHorario(
@@ -314,8 +314,7 @@ public class AgendamentoService {
     }
 
     /**
-     * Salas marcadas como restritas (Arena) são de reserva de eventos e ficam
-     * disponíveis apenas para o perfil ADMIN.
+     * Salas marcadas como restritas ficam disponíveis apenas para o perfil ADMIN.
      */
     private void validarSalasRestritas(List<Sala> salas, PerfilUsuario perfilUsuario) {
         boolean restrita = salas.stream()

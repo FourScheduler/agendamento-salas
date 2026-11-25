@@ -42,6 +42,33 @@ class AgendamentoJpaRepositoryTests {
     private Sala sala;
 
     @Test
+    @DisplayName("Deve marcar Reunião Diretoria como restrita preservando sua capacidade")
+    void deveRestringirReuniaoDiretoriaAposMigration() {
+        Sala diretoria = salaJpaRepository.findById(10L).orElseThrow();
+
+        assertThat(diretoria.getNome()).isEqualTo("Reunião Diretoria");
+        assertThat(diretoria.getCapacidade()).isEqualTo(4);
+        assertThat(diretoria.getRestrito()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Deve disponibilizar somente cabines 06 e 07 para quatro pessoas")
+    void deveAplicarCapacidadesDasCabinesAposMigration() {
+        assertThat(salaJpaRepository.findAllById(List.of(11L, 12L, 13L, 14L, 15L)))
+                .hasSize(5)
+                .allSatisfy(cabine -> assertThat(cabine.getCapacidade()).isEqualTo(1));
+        assertThat(salaJpaRepository.findAllById(List.of(16L, 17L)))
+                .hasSize(2)
+                .allSatisfy(cabine -> assertThat(cabine.getCapacidade()).isEqualTo(4));
+
+        assertThat(salaJpaRepository.buscarSalasDisponiveis(
+                DATA, LocalTime.of(9, 0), LocalTime.of(10, 0), 4
+        )).extracting(Sala::getId)
+                .contains(16L, 17L)
+                .doesNotContain(11L, 12L, 13L, 14L, 15L);
+    }
+
+    @Test
     @DisplayName("Deve aplicar capacidade cinco nas salas 01 a 03 e filtrar seis participantes")
     void deveEncontrarSalasAteCincoParticipantesAposMigration() {
         assertThat(salaJpaRepository.findAllById(List.of(1L, 2L, 3L)))

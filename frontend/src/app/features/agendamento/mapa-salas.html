@@ -19,12 +19,6 @@
       </span>
     </div>
 
-    @if (seloDisponibilidade(); as disponibilidade) {
-      <p class="planta__disponibilidade">
-        <span class="planta__ponto" aria-hidden="true"></span>
-        {{ disponibilidade }}
-      </p>
-    }
   </header>
 
   <div class="planta__corpo">
@@ -86,15 +80,29 @@
         @if (restritaParaUsuario(sala)) {
           <div class="sala sala--restrita" [style.grid-area]="sala.area">
             <span class="sala__nome">{{ sala.nome }}</span>
-            <span class="sala__capacidade">Eventos</span>
+            <span class="sala__capacidade">
+              <span>{{ capacidadeTexto(sala) }}</span>
+              @if (sala.area === 'diretoria') {
+                <svg
+                  class="lucide lucide-users-round"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="M18 21a8 8 0 0 0-16 0" />
+                  <circle cx="10" cy="8" r="5" />
+                  <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+                </svg>
+              }
+            </span>
             <span
               class="sala__restricao dica"
               tabindex="0"
               [attr.aria-describedby]="'dica-restrita-' + sala.id"
             >
-              Reserva somente com o Facilities.
+              Somente Facilities
               <span class="dica__caixa" [id]="'dica-restrita-' + sala.id" role="tooltip">
-                Arena reservável apenas pelo Facilities.
+                {{ sala.area === 'arena' ? 'Arena reservável apenas pelo Facilities.' : 'Reunião Diretoria reservável apenas por administradores.' }}
               </span>
             </span>
           </div>

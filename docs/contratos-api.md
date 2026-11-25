@@ -88,7 +88,7 @@ Resposta `200`:
 ]
 ```
 
-Salas com capacidade inferior a `pessoas` são filtradas; a Arena (id 9) vem com `capacidade: null` — é de eventos, não limita as pessoas — e é marcada com `restrito: true` por ser de reserva exclusiva do perfil `ADMIN`. A resposta pode ser uma lista vazia.
+Salas com capacidade inferior a `pessoas` são filtradas; a Arena (id 9) vem com `capacidade: null` — é de eventos e não limita as pessoas. Arena e Reunião Diretoria (id 10, capacidade 4) são marcadas com `restrito: true` por serem de reserva exclusiva do perfil `ADMIN`. A resposta pode ser uma lista vazia.
 
 ### GET /api/salas/ocupacoes — implementado
 
@@ -164,7 +164,7 @@ Exige autenticação. Request (`CriarAgendamentoRequest`, com Bean Validation no
 
 O campo opcional `usuarioIdSolicitante` (`{"id": 3}`) cria a reserva em nome de outro usuário cadastrado; somente `ADMIN` pode informá-lo (um usuário comum recebe `403`). Quando ausente ou nulo, o solicitante é o próprio usuário autenticado. A reserva fica com o solicitante como **dono** (`usuarioId`), então ela aparece nos *Minhas reservas* do solicitante (`GET /api/agendamento/busca` filtra por esse dono) e não nos do administrador; o log de auditoria registra quem fez o registro. A tela de agendamento administrativo usa `GET /api/usuarios` para buscar o solicitante da reserva digitando nome ou e-mail.
 
-Salas com `restrito: true` (a Arena, de eventos) só podem ser reservadas por perfil `ADMIN`; um usuário comum recebe `403`. Salas sem capacidade (`capacidade: null`) não limitam a quantidade de pessoas.
+Salas com `restrito: true` (Arena e Reunião Diretoria) só podem ser reservadas por perfil `ADMIN`; um usuário comum recebe `403`. Salas sem capacidade (`capacidade: null`) não limitam a quantidade de pessoas.
 
 Cada sala gera uma reserva independente, vinculada ao mesmo usuário, horário e título. Para uma reunião integrada, a capacidade é a soma das capacidades das salas selecionadas (salas sem capacidade não participam da soma e não limitam as pessoas); a confirmação é atômica: se uma sala for inválida, indisponível ou tiver conflito, nenhuma reserva é criada. Salas repetidas e lista vazia são rejeitadas. A resposta conserva os campos da reserva principal por compatibilidade e inclui todos os registros criados:
 

@@ -311,8 +311,8 @@ describe('Agendamento', () => {
     const salas = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
       'button.sala',
     );
-    // 17 salas da planta; a Arena é restrita no fluxo comum e não vira botão.
-    expect(salas.length).toBe(16);
+    // Arena e Reunião Diretoria são restritas no fluxo comum.
+    expect(salas.length).toBe(15);
     expect(Array.from(salas).filter((sala) => sala.getAttribute('aria-disabled') !== 'true').length)
       .toBe(1);
   });
