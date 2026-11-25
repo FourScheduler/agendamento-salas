@@ -109,6 +109,48 @@ describe('Agendamento', () => {
     expect(chamadaDeBusca().request.method).toBe('GET');
   });
 
+  it('remove a sala pelo resumo sem alterar os filtros e permite selecioná-la novamente', async () => {
+    await entrarUsuarioComum(httpMock);
+    const fixture = iniciar();
+    responder([{ id: 2, nome: 'Sala 02' }]);
+    fixture.detectChanges();
+    const componente = fixture.componentInstance;
+    const pagina = fixture.nativeElement as HTMLElement;
+    const sala = Array.from(pagina.querySelectorAll<HTMLButtonElement>('button.sala'))
+      .find((botao) => botao.querySelector('.sala__nome')?.textContent === 'Sala 02')!;
+    const filtros = [componente.data(), componente.horaInicio(), componente.duracao(), componente.pessoas()];
+    sala.click();
+    fixture.detectChanges();
+    pagina.querySelector<HTMLButtonElement>('button[aria-label="Remover sala Sala 02"]')!.click();
+    fixture.detectChanges();
+    expect(componente.selecionada()).toBeNull();
+    expect(sala.getAttribute('aria-pressed')).toBe('false');
+    expect(pagina.querySelector('.resumo__semSala')).toBeTruthy();
+    expect([componente.data(), componente.horaInicio(), componente.duracao(), componente.pessoas()]).toEqual(filtros);
+    sala.click();
+    fixture.detectChanges();
+    expect(componente.selecionada()).toBe('Sala 02');
+  });
+
+  it('descarta a confirmação pendente do assistente ao remover a sala', async () => {
+    await entrarUsuarioComum(httpMock);
+    const fixture = iniciar();
+    responder([{ id: 2, nome: 'Sala 02' }]);
+    const componente = fixture.componentInstance;
+    componente.selecionar('Sala 02');
+    const conversa = componente.processarMensagemAssistente('Reservar Sala 02');
+    httpMock.expectOne(`${environment.apiUrl}/api/agendamento/conversas`).flush({ conversaId: 7 });
+    await aguardarMicrotarefas();
+    httpMock.expectOne(`${environment.apiUrl}/api/agendamento/conversas/mensagens`).flush({
+      conversaId: 7, estado: 'AGUARDANDO_CONFIRMACAO', mensagem: 'Confirmar?', sugestoes: [],
+    });
+    const confirmar = (await conversa).acoes!.find((acao) => acao.rotulo === 'Confirmar agendamento')!;
+    componente.removerSala('Sala 02');
+    const resposta = await confirmar.aoClicar!() as RespostaAssistente;
+    expect(resposta.texto).toContain('Escolha uma sala');
+    httpMock.expectNone(`${environment.apiUrl}/api/agendamento/conversas/7/confirmar`);
+  });
+
   it.each([
     [1, 'Sala 01'],
     [2, 'Sala 02'],
@@ -214,8 +256,8 @@ describe('Agendamento', () => {
     const salas = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
       'button.sala',
     );
-    // 17 salas da planta; a Arena é restrita no fluxo comum e não vira botão.
-    expect(salas.length).toBe(16);
+    // Arena e Reunião Diretoria são restritas no fluxo comum.
+    expect(salas.length).toBe(15);
     expect(Array.from(salas).filter((sala) => sala.getAttribute('aria-disabled') !== 'true').length)
       .toBe(1);
   });

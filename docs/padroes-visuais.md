@@ -142,7 +142,7 @@ Nunca deixe a área em branco enquanto a chamada acontece.
 
 ## 12. Planta do escritório
 
-A planta (`mapa-salas.css`) é um `grid` de CSS com proporção fixa `aspect-ratio: 13 / 5`, baseada na
+A planta (`mapa-salas.css`) é um `grid` de CSS com proporção `aspect-ratio: 13 / 5` em cartões largos, baseada na
 disposição do desenho de referência do escritório (`frontend/public/novo-mapa.svg`):
 
 - Colunas, da esquerda para a direita: Reunião Diretoria com Presidência embaixo, circulação
@@ -152,23 +152,25 @@ disposição do desenho de referência do escritório (`frontend/public/novo-map
   com Suporte; Sala Focus sob os servidores; cabines sob RH e Financeiro; e as duas
   faixas de mesas abaixo das cabines e do suporte.
 - As sete cabines ficam numa grade própria (`.planta__cabines`, `role="group"`), em uma única
-  fileira, de Cabine 07 a Cabine 01 da esquerda para a direita, com nome e capacidade horizontais.
-  Em cartões de até 1100px, a fileira passa para a base da planta para preservar a legibilidade;
-  até 500px, a capacidade individual aparece como `1`, mantendo o texto completo no rótulo acessível.
+  fileira, de Cabine 01 a Cabine 07 da esquerda para a direita, com nome e capacidade horizontais.
+  Em cartões de até 800px, a planta e as cabines são redistribuídas em quatro colunas; até 500px,
+  em duas colunas, preservando a legibilidade sem rolagem interna.
   A classe `.sala--cabine` reduz a marca de selecionada. O nome na
   planta é abreviado como `Cab. 01` a `Cab. 07`, preservando o nome completo no rótulo acessível,
   na lista e no resumo.
 - Reunião Diretoria e Presidência dividem uma grade própria (`.planta__alaDiretoria`) em duas
   linhas iguais, com a mesma largura e sem ultrapassar os limites da planta. Apenas Reunião
-  Diretoria é reservável (até 4 pessoas); Presidência é uma área estática.
+  Diretoria é reservável pelo ADMIN (até 4 pessoas); Presidência é uma área estática.
 - Presidência, RH, Financeiro, servidores e Suporte não são reserváveis: fundo
   `--page-bg`, borda sólida `--border-soft` e rótulo em caixa alta. Não entram na legenda de estados.
 - A Arena é uma sala restrita (`<div class="sala sala--restrita">` para o usuário comum, não é
-  `<button>`): fundo `--disabled`, borda tracejada, capacidade `Eventos`, selo `Reserva somente com
-  o Facilities.` e dica acessível com `Arena reservável apenas pelo Facilities.`. É o quinto estado
+  `<button>`): fundo `--disabled`, borda tracejada, capacidade `Eventos`, selo `Somente Facilities`
+  e dica acessível com `Arena reservável apenas pelo Facilities.`. É o quinto estado
   da legenda, `Restrito`. No modo administrativo (`podeReservarRestritas`)
   a Arena é renderizada como `<button>` normal, selecionável quando livre; a posição vem do `area`
   da sala (`arena`), não da classe `.sala--restrita`.
+- Reunião Diretoria também aparece como sala restrita e não clicável para usuários comuns, com
+  capacidade `1-4` com ícone de grupo e indicação `Somente Facilities`; administradores podem selecioná-la quando livre.
 - A dica (`.dica` e `.dica__caixa`) é um padrão global de `styles.css`, aberta no hover e no
   `:focus-visible`, com `role="tooltip"` e `aria-describedby`.
 - Áreas estáticas (circulação e mesas) são caixas com borda tracejada `--border` e raio de
@@ -176,14 +178,12 @@ disposição do desenho de referência do escritório (`frontend/public/novo-map
   `--muted-soft`; as verticais usam `writing-mode: vertical-rl`.
 - Cada sala é um `<button>` posicionado por `grid-area`, com os estados da seção 9. A dica da sala
   (`.sala__dica`) usa `width: max-content` até `12rem`, para não ficar espremida nas cabines.
-- O cabeçalho da planta não exibe uma disponibilidade genérica; o selo aparece ao informar uma
-  sala e apresenta seu estado ou próximo horário disponível.
+- O cabeçalho da planta não exibe selo de disponibilidade; os estados permanecem nas dicas das salas.
 - A célula da sala mostra o nome e a faixa de pessoas com ícone: `1` e `user-round` para capacidade
   individual, ou `1-N` e `users-round` para capacidades maiores que uma. A Arena, sem capacidade,
   mostra `Eventos` sem ícone de pessoas. As regras de grupo
   ficam fora da planta, na nota `legenda__regras` do rodapé do cartão.
-- A planta se adapta à largura disponível e mantém altura mínima de `20rem`; a rolagem eventual
-  fica só na `.planta__rolagem`, para a lista de baixo não acompanhar o arraste.
+- A planta se adapta à largura disponível e mantém altura mínima de `20rem`, sem rolagem interna.
 - O cartão da planta mantém as bordas e seu corpo usa `0.25rem` de espaçamento horizontal,
   ampliando o desenho e preservando espaço para o indicador de foco.
 - Abaixo de `700px` a lista de salas (`app-lista-salas`) aparece sob a planta e vira o principal
@@ -194,7 +194,7 @@ disposição do desenho de referência do escritório (`frontend/public/novo-map
 
 ## 13. Painel de resumo
 
-- No modo administrativo, cada cartão de sala selecionada tem um botão de remoção com rótulo
+- Em ambos os perfis, cada cartão de sala selecionada tem um botão de remoção com rótulo
   acessível que identifica a sala; ao remover, a seleção também é desfeita na planta e na lista.
 - Todos os campos de data usam o componente compartilhado de calendário
   (`app-calendario-data`), com navegação mensal e seleção acessível de dias. O chamador define os

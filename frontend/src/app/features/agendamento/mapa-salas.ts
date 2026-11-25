@@ -1,4 +1,4 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { OcupacaoSala } from '../../core/models/api.models';
 import { SalaPlanta, ehCabine } from '../../core/data/mapa-mock';
@@ -35,8 +35,7 @@ export class MapaSalas {
   readonly multipla = input(false);
   readonly selecionadas = input<string[]>([]);
   /**
-   * A Arena é reserva de eventos exclusiva do ADMIN: no modo comum ela fica
-   * visível como sala restrita e não clicável.
+   * Salas restritas ficam visíveis, mas não clicáveis, no modo comum.
    */
   readonly podeReservarRestritas = input(false);
 
@@ -44,9 +43,6 @@ export class MapaSalas {
   /** Clique em sala livre no modo múltiplo: pede para alternar a escolha. */
   readonly alternar = output<string>();
   readonly tentarNovamente = output<void>();
-
-  /** Sala que o selo do cabeçalho deve detalhar; nenhuma antes do primeiro clique. */
-  private readonly salaInformada = signal<string | null>(null);
 
   readonly rotuloDia = computed(() => formatarDia(this.data()));
   readonly rotuloData = computed(() => formatarData(this.data()));
@@ -69,10 +65,10 @@ export class MapaSalas {
     this.salas().filter((sala) => !ehCabine(sala) && sala.area !== 'diretoria'),
   );
   readonly salaDiretoria = computed(() => this.salas().find((sala) => sala.area === 'diretoria'));
-  /** Cabines ficam numa faixa própria, em ordem visual de 07 a 01 como na planta. */
+  /** Cabines ficam numa faixa própria, em ordem visual de 01 a 07. */
   readonly cabines = computed(() => this.salas().filter(ehCabine));
 
-  /** Sala restrita (Arena) vista por quem não tem perfil ADMIN. */
+  /** Sala restrita vista por quem não tem perfil ADMIN. */
   restritaParaUsuario(sala: SalaPlanta): boolean {
     return sala.restrito && !this.podeReservarRestritas();
   }
@@ -94,21 +90,11 @@ export class MapaSalas {
     return sala.capacidade === 1 ? '1' : `1-${sala.capacidade}`;
   }
 
-  /** Selo do cabeçalho, exibido quando uma sala é informada. */
-  readonly seloDisponibilidade = computed(() => {
-    const sala = this.salaDoSelo();
-    return sala ? this.dicaDaSala(sala) : null;
-  });
-
-  /**
-   * Sala reserva; sala ocupada só alimenta o selo com o próximo horário livre.
-   * Clicar em sala ocupada nunca reserva nada — vale para o mapa e para a lista.
-   */
+  /** Clicar em sala ocupada ou restrita nunca reserva nada. */
   clicar(nome: string): void {
     const sala = this.salas().find((item) => item.nome === nome);
-    this.salaInformada.set(nome);
 
-    if (sala?.estado === 'disponivel') {
+    if (sala?.estado === 'disponivel' && !this.restritaParaUsuario(sala)) {
       if (this.multipla()) {
         this.alternar.emit(nome);
       } else {
@@ -124,8 +110,7 @@ export class MapaSalas {
 
   /**
    * Texto do tooltip da sala no mapa: o nome já aparece no próprio cartão,
-   * então a sala livre é apenas "Disponível". O selo do cabeçalho continua
-   * nomeando a sala em `dicaDaSala`.
+   * então a sala livre é apenas "Disponível".
    */
   dicaTooltip(sala: SalaPlanta): string {
     if (sala.estado === 'disponivel' && this.atendePessoas(sala)) {
@@ -135,7 +120,7 @@ export class MapaSalas {
     return this.dicaDaSala(sala);
   }
 
-  /** Texto da dica do mouse e do selo: capacidade que não atende ou próximo horário livre. */
+  /** Texto da dica: capacidade que não atende ou próximo horário livre. */
   dicaDaSala(sala: SalaPlanta): string {
     if (!this.atendePessoas(sala)) {
       return `${sala.nome} · não atende ${this.pessoas()} pessoas (até ${sala.capacidade})`;
@@ -188,19 +173,6 @@ export class MapaSalas {
 
     const candidata = paraHora(livre);
     return fimDeJornada(candidata, duracao) ? null : candidata;
-  }
-
-  /**
-   * Última sala clicada manda sobre a selecionada: é a que o usuário acabou de ver,
-   * inclusive quando clicou numa ocupada só para saber a próxima folga.
-   */
-  private salaDoSelo(): SalaPlanta | null {
-    const nome = this.salaInformada() ?? this.selecionadas()[0] ?? this.selecionada();
-    if (!nome) {
-      return null;
-    }
-
-    return this.salas().find((sala) => sala.nome === nome) ?? null;
   }
 
   /** Arena (sem capacidade) atende qualquer quantidade; senão, compara com a sala. */

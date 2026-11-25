@@ -46,8 +46,8 @@ describe('MapaSalas', () => {
     const fixture = montar([{ id: 6 }]);
     const compiled = fixture.nativeElement as HTMLElement;
 
-    // 17 salas; a Arena é restrita para o usuário comum e não vira botão.
-    expect(compiled.querySelectorAll('button.sala').length).toBe(16);
+    // Arena e Reunião Diretoria são restritas para o usuário comum.
+    expect(compiled.querySelectorAll('button.sala').length).toBe(15);
     expect(compiled.querySelectorAll('.legenda__itens li').length).toBe(5);
     expect(compiled.querySelector('app-lista-salas')).toBeTruthy();
     expect(compiled.textContent).not.toContain('Layout ilustrativo');
@@ -71,8 +71,8 @@ describe('MapaSalas', () => {
     const fixture = montar([{ id: 6 }]);
     const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.querySelectorAll('.sala--ocupada').length).toBe(15);
-    expect(compiled.querySelectorAll('button.sala[aria-disabled="true"]').length).toBe(15);
+    expect(compiled.querySelectorAll('.sala--ocupada').length).toBe(14);
+    expect(compiled.querySelectorAll('button.sala[aria-disabled="true"]').length).toBe(14);
   });
 
   it('should emit the selected room', () => {
@@ -142,22 +142,23 @@ describe('MapaSalas', () => {
       expect(cabine?.querySelector('.sala__nome')?.textContent?.trim()).toBe(`Cab. ${sufixo}`);
       expect(cabine?.getAttribute('aria-label')).toContain(`Cab. ${sufixo} — Cabine ${sufixo}`);
     }
-    expect(botaoPorNome(fixture, 'Cabine 01')?.querySelector('.sala__capacidade')?.textContent?.trim())
-      .toBe('1-4');
-    expect(botaoPorNome(fixture, 'Cabine 02')?.querySelector('.sala__capacidade')?.textContent?.trim())
-      .toBe('1-4');
-    expect(botaoPorNome(fixture, 'Cabine 03')?.querySelector('.sala__capacidade')?.textContent?.trim())
-      .toBe('1');
-    expect(botaoPorNome(fixture, 'Cabine 07')?.querySelector('.sala__capacidade')?.textContent?.trim())
-      .toBe('1');
+    for (let numero = 1; numero <= 7; numero++) {
+      const nome = `Cabine ${String(numero).padStart(2, '0')}`;
+      const capacidade = botaoPorNome(fixture, nome)?.querySelector('.sala__capacidade');
+      expect(capacidade?.textContent?.trim()).toBe(numero <= 5 ? '1' : '1-4');
+      expect(capacidade?.lastElementChild?.classList.contains(
+        numero <= 5 ? 'lucide-user-round' : 'lucide-users-round',
+      )).toBe(true);
+    }
     expect(botaoPorNome(fixture, 'Cabine 03')?.getAttribute('aria-label')).toContain(' · 1');
-    expect(botaoPorNome(fixture, 'Cabine 01')?.querySelector('.lucide-users-round')).toBeTruthy();
     expect(botaoPorNome(fixture, 'Cabine 01')?.getAttribute('aria-disabled')).toBeNull();
     expect(botaoPorNome(fixture, 'Cabine 02')?.getAttribute('aria-disabled')).toBe('true');
   });
 
   it('should select a cabine and Reunião Diretoria from the plan', () => {
     const fixture = montar([{ id: 10 }, { id: 13 }]);
+    fixture.componentRef.setInput('podeReservarRestritas', true);
+    fixture.detectChanges();
     const escolhidas: string[] = [];
     fixture.componentInstance.selecionar.subscribe((nome) => escolhidas.push(nome));
 
@@ -168,22 +169,42 @@ describe('MapaSalas', () => {
     expect(
       botaoPorNome(fixture, 'Reunião Diretoria')?.querySelector('.sala__capacidade')?.textContent?.trim(),
     ).toBe('1-4');
+    expect(botaoPorNome(fixture, 'Reunião Diretoria')?.querySelector('.sala__capacidade .lucide-users-round'))
+      .toBeTruthy();
   });
 
   it.each([false, true])('should keep Presidência non-bookable in admin mode %s', (admin) => {
-    const fixture = montar([{ id: 10 }]);
+    const fixture = montar([{ id: 6 }, { id: 10 }]);
     fixture.componentRef.setInput('podeReservarRestritas', admin);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     const ala = compiled.querySelector('.planta__alaDiretoria')!;
 
-    expect(ala.querySelectorAll('button.sala')).toHaveLength(1);
+    expect(ala.querySelectorAll('button.sala')).toHaveLength(admin ? 1 : 0);
     expect(ala.querySelector('.estrutural--presidencia')?.textContent).toBe('Presidência');
     expect(botaoPorNome(fixture, 'Presidência')).toBeUndefined();
     expect(compiled.querySelector('app-lista-salas')?.textContent).not.toContain('Presidência');
-    expect(fixture.componentInstance.salasLista().find((sala) => sala.id === 10)?.nome).toBe(
-      'Reunião Diretoria',
-    );
+    expect(fixture.componentInstance.salasLista().some((sala) => sala.id === 10)).toBe(admin);
+  });
+
+  it('should show Reunião Diretoria as restricted for regular users', () => {
+    const fixture = montar([{ id: 6 }, { id: 10 }]);
+    const diretoria = (fixture.nativeElement as HTMLElement)
+      .querySelector('.planta__alaDiretoria .sala--restrita');
+
+    expect(diretoria?.textContent).toContain('Reunião Diretoria');
+    expect(diretoria?.textContent).toContain('1-4');
+    expect(diretoria?.querySelector('.sala__restricao')?.childNodes[0].textContent?.trim())
+      .toBe('Somente Facilities');
+    const capacidade = diretoria?.querySelector('.sala__capacidade');
+    expect(capacidade?.firstElementChild?.textContent?.trim()).toBe('1-4');
+    expect(capacidade?.lastElementChild?.classList.contains('lucide-users-round')).toBe(true);
+    expect(botaoPorNome(fixture, 'Reunião Diretoria')).toBeUndefined();
+    expect(fixture.componentInstance.salasLista().some((sala) => sala.id === 10)).toBe(false);
+    let escolhida = '';
+    fixture.componentInstance.selecionar.subscribe((nome) => (escolhida = nome));
+    fixture.componentInstance.clicar('Reunião Diretoria');
+    expect(escolhida).toBe('');
   });
 
   it('should explain that an individual cabine does not fit a group', () => {
@@ -199,11 +220,12 @@ describe('MapaSalas', () => {
   it('should keep the Arena restricted for regular users with an events tooltip', () => {
     const fixture = montar([{ id: 6 }]);
     const compiled = fixture.nativeElement as HTMLElement;
-    const arena = compiled.querySelector('.sala--restrita');
+    const arena = compiled.querySelector('.sala--restrita[style*="arena"]');
 
     expect(arena).toBeTruthy();
     expect(arena?.querySelector('.sala__capacidade')?.textContent).toContain('Eventos');
-    expect(arena?.textContent).toContain('Reserva somente com o Facilities.');
+    expect(arena?.querySelector('.sala__restricao')?.childNodes[0].textContent?.trim())
+      .toBe('Somente Facilities');
     expect(arena?.querySelector('[role="tooltip"]')?.textContent).toContain(
       'Arena reservável apenas pelo Facilities.',
     );
@@ -294,14 +316,22 @@ describe('MapaSalas', () => {
     expect(dica?.textContent).toContain('não atende 5 pessoas (até 2)');
   });
 
-  it('should not show a generic availability label before any room is clicked', () => {
+  it.each([false, true])('should not show an availability badge on selection or removal in admin mode %s', (admin) => {
     const fixture = montar([{ id: 6 }]);
-
-    expect(fixture.componentInstance.seloDisponibilidade()).toBeNull();
+    fixture.componentRef.setInput('podeReservarRestritas', admin);
+    fixture.componentRef.setInput('multipla', admin);
+    fixture.detectChanges();
+    botaoPorNome(fixture, 'Componivel 02')?.click();
+    fixture.componentRef.setInput(admin ? 'selecionadas' : 'selecionada',
+      admin ? ['Componivel 02'] : 'Componivel 02');
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).querySelector('.planta__disponibilidade')).toBeNull();
+    fixture.componentRef.setInput(admin ? 'selecionadas' : 'selecionada', admin ? [] : null);
+    fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).querySelector('.planta__disponibilidade')).toBeNull();
   });
 
-  it('should inform the next free time when an occupied room is clicked', () => {
+  it('should not select an occupied room when clicked', () => {
     const fixture = montar([{ id: 6 }]);
     fixture.componentRef.setInput('ocupacoes', [
       { salaId: 1, horaInicio: '14:00', horaFim: '15:00' },
@@ -312,25 +342,12 @@ describe('MapaSalas', () => {
     fixture.componentInstance.selecionar.subscribe((nome) => (escolhida = nome));
     botaoPorNome(fixture, 'Sala 01')?.click();
 
-    // Clique em sala ocupada informa no selo, mas nunca reserva.
     expect(escolhida).toBe('');
-    expect(fixture.componentInstance.seloDisponibilidade()).toBe(
-      'Sala 01 · Disponível às 15:00',
-    );
     fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).querySelector('.planta__disponibilidade')?.textContent)
-      .toContain('Sala 01 · Disponível às 15:00');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.planta__disponibilidade')).toBeNull();
   });
 
-  it('should name the selected room in the header badge', () => {
-    const fixture = montar([{ id: 6 }], 'Componivel 02');
-
-    expect(fixture.componentInstance.seloDisponibilidade()).toBe(
-      'Componivel 02 · Disponível',
-    );
-  });
-
-  it('should inform the next free time from the room list as well', () => {
+  it('should not select an occupied room from the room list', () => {
     const fixture = montar([{ id: 6 }]);
     fixture.componentRef.setInput('ocupacoes', [
       { salaId: 1, horaInicio: '14:00', horaFim: '15:00' },
@@ -348,8 +365,6 @@ describe('MapaSalas', () => {
     itemDaLista?.click();
 
     expect(escolhida).toBe('');
-    expect(fixture.componentInstance.seloDisponibilidade()).toBe(
-      'Sala 01 · Disponível às 15:00',
-    );
+    expect((fixture.nativeElement as HTMLElement).querySelector('.planta__disponibilidade')).toBeNull();
   });
 });

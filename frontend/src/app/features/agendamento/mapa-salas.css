@@ -41,32 +41,14 @@
   font-size: 0.9375rem;
 }
 
-.planta__disponibilidade {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--muted);
-  font-size: 0.8125rem;
-}
-
-.planta__ponto {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--green);
-}
-
 .planta__corpo {
   flex: 1;
   padding: 1.25rem 0.25rem;
 }
 
-.planta__rolagem {
-  overflow-x: auto;
-}
-
 .planta__grade {
   display: grid;
+  width: 100%;
   grid-template-columns:
     minmax(0, 114fr) minmax(0, 32fr) minmax(0, 260fr) minmax(0, 260fr)
     minmax(0, 52fr) minmax(0, 88fr) minmax(0, 88fr) minmax(0, 88fr)
@@ -106,7 +88,7 @@
   display: grid;
   grid-area: cabines;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-template-areas: 'cabine07 cabine06 cabine05 cabine04 cabine03 cabine02 cabine01';
+  grid-template-areas: 'cabine01 cabine02 cabine03 cabine04 cabine05 cabine06 cabine07';
   gap: 0.25rem;
   min-width: 0;
   min-height: 0;
@@ -249,6 +231,24 @@
   opacity: 1;
 }
 
+.planta__alaDiretoria .sala:hover,
+.planta__alaDiretoria .sala:focus-visible,
+.planta__alaDiretoria .sala:focus-within {
+  z-index: 10;
+}
+
+.planta__alaDiretoria .sala__dica,
+.planta__alaDiretoria .dica__caixa {
+  top: 50%;
+  bottom: auto;
+  left: 0;
+  transform: translateY(-50%);
+}
+
+.planta__alaDiretoria .sala__restricao {
+  position: static;
+}
+
 .sala__nome {
   font-size: 0.875rem;
   font-weight: 600;
@@ -305,19 +305,62 @@
   }
 }
 
-@container (max-width: 500px) {
+@container (max-width: 800px) {
   .planta__grade {
-    column-gap: 0.125rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: auto;
+    grid-template-areas:
+      'alaDiretoria alaDiretoria rh financeiro'
+      'sala01 sala02 sala03 focus'
+      'servidor suporte suporte suporte'
+      'cabines cabines cabines cabines'
+      'arena arena comp01 comp02'
+      'mesasE mesasD comp03 comp04';
+    aspect-ratio: auto;
+  }
+
+  .planta__grade > .faixa--vertical {
+    display: none;
   }
 
   .planta__cabines {
-    gap: 0.125rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-areas:
+      'cabine01 cabine02 cabine03 cabine04'
+      'cabine05 cabine06 cabine07 cabine07';
   }
 
-  .sala--cabine {
-    padding: 0;
+  .planta__grade .sala,
+  .planta__grade .estrutural,
+  .planta__grade .faixa--mesas {
+    min-height: 4.5rem;
+  }
+}
+
+@container (max-width: 500px) {
+  .planta__grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'alaDiretoria alaDiretoria'
+      'rh financeiro'
+      'sala01 sala02'
+      'sala03 focus'
+      'servidor suporte'
+      'cabines cabines'
+      'arena arena'
+      'comp01 comp02'
+      'comp03 comp04'
+      'mesasE mesasD';
   }
 
+  .planta__cabines {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      'cabine01 cabine02'
+      'cabine03 cabine04'
+      'cabine05 cabine06'
+      'cabine07 cabine07';
+  }
 }
 
 .sala--cabine .sala__marca {

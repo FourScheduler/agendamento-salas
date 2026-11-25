@@ -9,26 +9,27 @@ A busca recebe data, horário inicial, horário final (ou duração) e quantidad
 | Grupo    | Salas             | Capacidade               |
 | -------- | ----------------- | ------------------------ |
 | Foco     | Sala Focus        | 1 a 2 pessoas            |
-| Cabine   | Cabines 03 a 07   | individual (1 pessoa)    |
-| Cabine   | Cabines 01 e 02   | até 4 pessoas            |
+| Cabine   | Cabines 01 a 05   | individual (1 pessoa)    |
+| Cabine   | Cabines 06 e 07   | até 4 pessoas            |
 | Diretoria| Reunião Diretoria | até 4 pessoas            |
 | Tamboré  | Salas 01, 02 e 03 | até 5 pessoas            |
 | Comp     | Salas 01 a 04     | 5 pessoas ou mais        |
 | Restrito | Arena             | eventos (sem capacidade) |
 
 - Reuniões com mais de 10 pessoas podem integrar salas, conforme disponibilidade.
-- Entre Reunião Diretoria e Presidência, apenas Reunião Diretoria é reservável (até 4 pessoas).
+- Entre Reunião Diretoria e Presidência, apenas Reunião Diretoria é reservável (até 4 pessoas),
+  exclusivamente pelo perfil `ADMIN`. Usuário comum recebe `403` ao tentar reservá-la.
   Presidência é uma área fixa da planta, sem agendamento para USER ou ADMIN.
 - Com cinco participantes, Salas 01, 02 e 03 e as Comp podem ser encontradas e selecionadas,
   conforme disponibilidade. A partir de seis, Salas 01, 02 e 03 não atendem à capacidade.
 - Ao selecionar Sala 01, 02 ou 03 para cinco pessoas, o resumo exibe em destaque vermelho:
   `Para cinco pessoas nesta sala, solicite uma cadeira à equipe de Facilities.`
   A orientação vale para USER e ADMIN, sem bloquear a reserva.
-- A célula da sala na planta mostra só a capacidade máxima (`Até N`); as regras de grupo ficam na
+- A célula da sala na planta mostra a faixa de capacidade (`1-N` ou `1`); as regras de grupo ficam na
   nota da legenda.
 - A Arena é de eventos e não tem capacidade definida: não limita a quantidade de pessoas e não
-  aparece nas sugestões do assistente. No mapa do usuário comum ela fica visível como sala restrita
-  não clicável (`Reserva somente com o Facilities.`); no modo administrativo é selecionável quando
+  aparece nas sugestões do assistente, assim como Reunião Diretoria. No mapa do usuário comum a Arena fica visível como sala restrita
+  não clicável (`Somente Facilities`); no modo administrativo é selecionável quando
   livre. Somente o perfil `ADMIN` pode reservá-la — o backend responde `403` para usuário comum.
 
 ## Equipamentos
@@ -69,7 +70,7 @@ A tela administrativa usa o mesmo layout da tela comum (planta de salas + painel
   `GET /api/usuarios`; por padrão o solicitante é o próprio administrador, que aparece uma única vez,
   como primeiro item da lista com o selo `(eu mesmo)` — buscando o próprio nome ele também é
   encontrado.
-- Pode reservar a Arena (sala restrita de eventos); o backend valida o perfil e recusa usuário comum com `403`.
+- Pode reservar a Arena e Reunião Diretoria; o backend valida o perfil e recusa usuário comum com `403`.
 - A reserva fica com o solicitante escolhido como dono e aparece nos **Minhas reservas** dele — não nos do administrador que registrou (o log de auditoria continua gravando quem criou a reserva).
 
 ## Sessão e acesso

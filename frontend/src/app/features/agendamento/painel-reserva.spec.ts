@@ -44,6 +44,20 @@ describe('PainelReserva', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
+  it('emite a sala removida e impede a remoção durante a confirmação', () => {
+    const fixture = montar();
+    const painel = fixture.nativeElement as HTMLElement;
+    const removidas: string[] = [];
+    fixture.componentInstance.salaRemovida.subscribe((nome) => removidas.push(nome));
+    const botao = painel.querySelector<HTMLButtonElement>('.resumo__remover')!;
+    botao.click();
+    fixture.componentRef.setInput('confirmando', true);
+    fixture.detectChanges();
+    expect(botao.disabled).toBe(true);
+    botao.click();
+    expect(removidas).toEqual(['Sala 01']);
+  });
+
   it('should format the duration options', () => {
     const fixture = TestBed.createComponent(PainelReserva);
     const componente = fixture.componentInstance;

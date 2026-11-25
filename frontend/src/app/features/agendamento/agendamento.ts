@@ -113,6 +113,13 @@ export class Agendamento implements OnInit {
     this.buscar();
   }
 
+  removerSala(nome: string): void {
+    if (this.confirmando() || this.selecionada() !== nome) return;
+    this.selecionada.set(null);
+    this.limparErroConfirmacao();
+    this.conversaId = null;
+  }
+
   atualizarHora(valor: string): void {
     this.horaInicio.set(valor);
     this.limparErroConfirmacao();
@@ -148,6 +155,7 @@ export class Agendamento implements OnInit {
       const resposta = await firstValueFrom(
         this.conversasService.enviarMensagem(this.conversaId!, texto),
       );
+      if (resposta.conversaId !== this.conversaId) return { texto: 'Escolha uma sala novamente.' };
       if (!this.sincronizarPainel(resposta)) {
         return { texto: this.mensagemDataAssistenteInvalida(resposta.mensagem) };
       }
@@ -173,7 +181,7 @@ export class Agendamento implements OnInit {
         acoes: resposta.sugestoes.map((sugestao) => ({
           rotulo: `${sugestao.nome} · ${sugestao.capacidade} pessoas`,
           sugestao: true,
-          aoClicar: () => this.selecionarSalaNoChat(sugestao),
+          aoClicar: () => this.selecionarSalaNoChat(resposta.conversaId, sugestao),
         })),
       };
     }
@@ -185,7 +193,7 @@ export class Agendamento implements OnInit {
           {
             rotulo: 'Confirmar agendamento',
             primaria: true,
-            aoClicar: () => this.confirmarNoChat(),
+            aoClicar: () => this.confirmarNoChat(resposta.conversaId),
           },
           { rotulo: 'Ajustar', voltarEdicao: true },
         ],
@@ -196,11 +204,13 @@ export class Agendamento implements OnInit {
   }
 
   /** Escolhe a sala no chat e reflete a escolha no mapa e no painel. */
-  private async selecionarSalaNoChat(sugestao: SugestaoSala): Promise<RespostaAssistente> {
+  private async selecionarSalaNoChat(conversaId: number, sugestao: SugestaoSala): Promise<RespostaAssistente> {
+    if (conversaId !== this.conversaId) return { texto: 'Escolha uma sala novamente.' };
     try {
       const resposta = await firstValueFrom(
-        this.conversasService.selecionarSala(this.conversaId!, sugestao.salaId),
+        this.conversasService.selecionarSala(conversaId, sugestao.salaId),
       );
+      if (conversaId !== this.conversaId) return { texto: 'Escolha uma sala novamente.' };
       this.selecionar(sugestao.nome);
       if (!this.sincronizarPainel(resposta)) {
         return { texto: this.mensagemDataAssistenteInvalida(resposta.mensagem) };
@@ -212,16 +222,19 @@ export class Agendamento implements OnInit {
   }
 
   /** Confirma a reserva pela conversa e recarrega o mapa. */
-  private async confirmarNoChat(): Promise<RespostaAssistente> {
+  private async confirmarNoChat(conversaId: number): Promise<RespostaAssistente> {
+    if (conversaId !== this.conversaId) return { texto: 'Escolha uma sala novamente.' };
+    if (this.confirmando()) return { texto: 'Aguarde, estou confirmando a reserva.' };
     if (this.dataAssistenteInvalida()) {
       return {
         texto: 'Agendamentos são permitidos apenas de segunda a sexta. Informe uma data útil.',
       };
     }
 
+    this.confirmando.set(true);
     try {
       const resposta = await firstValueFrom(
-        this.conversasService.confirmar(this.conversaId!),
+        this.conversasService.confirmar(conversaId),
       );
       // A reserva foi criada; a próxima solicitação começa uma conversa nova.
       this.conversaId = null;
@@ -236,6 +249,8 @@ export class Agendamento implements OnInit {
       return { texto: resposta.mensagem };
     } catch (erro: unknown) {
       return { texto: mensagemDeErro(erro) };
+    } finally {
+      this.confirmando.set(false);
     }
   }
 

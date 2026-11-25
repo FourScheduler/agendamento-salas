@@ -344,7 +344,7 @@ public class OrquestradorAgendamentoService {
                 conversa.getUsuarioId().getEmail()
 
         ).stream()
-                // A Arena é reserva de eventos exclusiva do ADMIN; o assistente não a sugere.
+                // Salas restritas não são sugestões do assistente.
                 .filter(sala -> !Boolean.TRUE.equals(sala.restrito()))
                 .toList();
     }

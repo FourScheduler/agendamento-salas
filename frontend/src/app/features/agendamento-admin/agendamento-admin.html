@@ -47,6 +47,7 @@
       [solicitantes]="usuarios()"
       [solicitanteId]="solicitanteId()"
       [confirmando]="confirmando()"
+      (salaRemovida)="removerSala($event)"
       (dataAlterada)="atualizarData($event)"
       (horaAlterada)="atualizarHora($event)"
       (duracaoAlterada)="atualizarDuracao($event)"

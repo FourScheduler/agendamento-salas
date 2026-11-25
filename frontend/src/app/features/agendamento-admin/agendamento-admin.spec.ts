@@ -252,6 +252,29 @@ describe('AgendamentoAdmin', () => {
     expect(componente.selecionadas()).toEqual(['Componivel 01']);
   });
 
+  it('remove somente a sala escolhida no resumo e sincroniza o mapa', async () => {
+    const fixture = iniciar();
+    responder([
+      { id: 1, nome: 'Sala 01', capacidade: 5 },
+      { id: 2, nome: 'Sala 02', capacidade: 5 },
+    ]);
+    await fixture.whenStable();
+    fixture.componentInstance.alternarSala('Sala 01');
+    fixture.componentInstance.alternarSala('Sala 02');
+    fixture.detectChanges();
+    const pagina = fixture.nativeElement as HTMLElement;
+    pagina.querySelector<HTMLButtonElement>('button[aria-label="Remover sala Sala 01"]')!.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.selecionadas()).toEqual(['Sala 02']);
+    expect(pagina.querySelectorAll('.resumo__salaNome')).toHaveLength(1);
+    const sala = Array.from(pagina.querySelectorAll<HTMLButtonElement>('button.sala'))
+      .find((botao) => botao.querySelector('.sala__nome')?.textContent === 'Sala 01')!;
+    expect(sala.getAttribute('aria-pressed')).toBe('false');
+    pagina.querySelector<HTMLButtonElement>('button[aria-label="Remover sala Sala 02"]')!.click();
+    fixture.detectChanges();
+    expect(pagina.querySelector('.resumo__semSala')).toBeTruthy();
+  });
+
   it('should mark every chosen room on the map', async () => {
     const fixture = iniciar();
     responder([

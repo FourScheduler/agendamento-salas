@@ -227,6 +227,40 @@ class AgendamentoServiceTest {
         }
 
         @Test
+        @DisplayName("Deve impedir reserva da Reunião Diretoria por usuário comum")
+        void naoDevePermitirQueUsuarioComumReserveReuniaoDiretoria() {
+            Usuario usuario = usuario(7L, PerfilUsuario.USER);
+            Sala diretoria = Sala.builder().id(10L).nome("Reunião Diretoria")
+                    .disponivel(true).capacidade(4).restrito(true).build();
+            CriarAgendamentoRequest request = request(
+                    diretoria, null, LocalTime.of(9, 0), LocalTime.of(10, 0), 5
+            );
+            prepararCriacao(usuario, diretoria);
+
+            assertThrows(UsuarioSemPermissaoException.class, () -> service.criar(request, usuario.getId()));
+
+            verifyNoInteractions(agendamentoRepositoryPort, logRepositoryPort);
+        }
+
+        @Test
+        @DisplayName("Deve permitir reserva da Reunião Diretoria por administrador")
+        void devePermitirQueAdministradorReserveReuniaoDiretoria() {
+            Usuario admin = usuario(7L, PerfilUsuario.ADMIN);
+            Sala diretoria = Sala.builder().id(10L).nome("Reunião Diretoria")
+                    .disponivel(true).capacidade(4).restrito(true).build();
+            CriarAgendamentoRequest request = request(
+                    diretoria, null, LocalTime.of(9, 0), LocalTime.of(10, 0), 4
+            );
+            prepararCriacao(admin, diretoria);
+            prepararSalvamento();
+
+            ConfimacaoAgendamentoResponse confirmacao = service.criar(request, admin.getId());
+
+            assertThat(confirmacao.id()).isEqualTo(99L);
+            verify(agendamentoRepositoryPort).salvar(anyList());
+        }
+
+        @Test
         @DisplayName("Deve permitir que administrador reserve a Arena sem validar capacidade")
         void devePermitirQueAdministradorReserveArenaSemCapacidade() {
             Usuario admin = usuario(7L, PerfilUsuario.ADMIN);
