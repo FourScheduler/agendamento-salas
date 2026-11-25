@@ -76,6 +76,8 @@ Padrão do portal (extraído do bundle oficial):
 ## 4. Estrutura de página
 
 - Container centralizado, largura máxima de 1500px, `padding: 2rem clamp(1.5rem, 4vw, 4rem) 4rem`.
+- Nas telas de agendamento comum e administrativo, reduzir o espaçamento vertical do container para
+  `1rem` no topo e `1.5rem` na base, diminuindo a rolagem da página.
 - Breakpoints do portal: `599px`, `700px`, `900px`, `1200px` e `1800px`. Este projeto usa `700px`
   (topbar e lista de salas) e `900px` (colunas do agendamento).
 - Cabeçalho no topo: sobretítulo laranja em caixa alta (`TAMBORÉ`), título, subtítulo.
@@ -95,6 +97,7 @@ Padrão do portal (extraído do bundle oficial):
 
 - Ação primária: fundo `--orange`, texto branco, altura mínima de 44px, raio de 8px, peso 600.
 - Hover escurece levemente; desabilitado usa opacidade 0.55 e cursor `not-allowed`.
+- Em Minhas Reservas, o botão Voltar usa o mesmo estilo e hover da ação primária para todos os perfis.
 - Botão secundário: fundo branco, borda `--gray-150`, texto `--gray-800`.
 - Ícone de seta dentro do botão fica à direita do rótulo.
 
@@ -153,6 +156,7 @@ disposição do desenho de referência do escritório (`frontend/public/novo-map
   faixas de mesas abaixo das cabines e do suporte.
 - As sete cabines ficam numa grade própria (`.planta__cabines`, `role="group"`), em uma única
   fileira, de Cabine 01 a Cabine 07 da esquerda para a direita, com nome e capacidade horizontais.
+  Cabines 03 e 05 comportam até quatro pessoas; as demais são individuais.
   Em cartões de até 800px, a planta e as cabines são redistribuídas em quatro colunas; até 500px,
   em duas colunas, preservando a legibilidade sem rolagem interna.
   A classe `.sala--cabine` reduz a marca de selecionada. O nome na
@@ -196,6 +200,7 @@ disposição do desenho de referência do escritório (`frontend/public/novo-map
 
 - Em ambos os perfis, cada cartão de sala selecionada tem um botão de remoção com rótulo
   acessível que identifica a sala; ao remover, a seleção também é desfeita na planta e na lista.
+- Clicar novamente na sala selecionada na planta também desfaz sua seleção e atualiza o resumo.
 - Todos os campos de data usam o componente compartilhado de calendário
   (`app-calendario-data`), com navegação mensal e seleção acessível de dias. O chamador define os
   limites conforme o contexto: fins de semana são sempre bloqueados; agendamentos também bloqueiam
@@ -217,8 +222,9 @@ disposição do desenho de referência do escritório (`frontend/public/novo-map
   (`aria-activedescendant` + setas/Enter/Esc no teclado). Ao abrir, o nome já escolhido vem selecionado
   no campo.
 - Equipamentos: linha com checkbox (`linha--check`), rótulo `Equipamentos` e valor
-  `Câmera e recursos para reunião híbrida`, seguida da nota
-  `Solicite o equipamento previamente à equipe de Facilities.`
+  `Câmera e recursos para reunião híbrida`. A nota
+  `Solicite o equipamento previamente à equipe de Facilities.` aparece somente quando o checkbox
+  estiver marcado.
 - O estado de equipamentos é local, no signal `equipamentos` do `Agendamento`, e entra no contrato de
   reserva quando a confirmação for implementada.
 

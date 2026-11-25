@@ -9,8 +9,8 @@ A busca recebe data, horário inicial, horário final (ou duração) e quantidad
 | Grupo    | Salas             | Capacidade               |
 | -------- | ----------------- | ------------------------ |
 | Foco     | Sala Focus        | 1 a 2 pessoas            |
-| Cabine   | Cabines 01 a 05   | individual (1 pessoa)    |
-| Cabine   | Cabines 06 e 07   | até 4 pessoas            |
+| Cabine   | Cabines 01, 02, 04, 06 e 07 | individual (1 pessoa) |
+| Cabine   | Cabines 03 e 05   | até 4 pessoas            |
 | Diretoria| Reunião Diretoria | até 4 pessoas            |
 | Tamboré  | Salas 01, 02 e 03 | até 5 pessoas            |
 | Comp     | Salas 01 a 04     | 5 pessoas ou mais        |
@@ -37,7 +37,8 @@ A busca recebe data, horário inicial, horário final (ou duração) e quantidad
 - Reuniões híbridas que precisam de câmera ou de recursos adicionais solicitam o equipamento
   previamente à equipe de Facilities.
 - O painel de resumo tem a linha `Equipamentos` com o checkbox
-  `Câmera e recursos para reunião híbrida` e a nota de orientação.
+  `Câmera e recursos para reunião híbrida`. A nota `Solicite o equipamento previamente à equipe de
+  Facilities.` aparece somente quando o checkbox estiver marcado.
 
 ## Validações
 
@@ -56,6 +57,7 @@ A busca recebe data, horário inicial, horário final (ou duração) e quantidad
   `Esta sala comporta até N pessoas.`; se a seleção exceder a capacidade, a quantidade é reduzida
   para o máximo da sala.
 - Apenas salas disponíveis podem ser exibidas e selecionadas.
+- Clicar novamente em uma sala selecionada na planta desfaz sua seleção, sem alterar os filtros.
 - O usuário deve confirmar os dados antes de concluir a reserva.
 
 ## Perfil administrativo

@@ -2,7 +2,7 @@
 .pagina_agendamento {
   width: min(95%, 1500px);
   margin: 0 auto;
-  padding: 2rem clamp(1.5rem, 4vw, 4rem) 4rem;
+  padding: 1rem clamp(1.5rem, 4vw, 4rem) 1.5rem;
   margin-left: 0px;
 }
 
@@ -28,7 +28,7 @@
 
 @media (min-width: 901px) {
   .agendamento__corpo app-painel-reserva {
-    margin-top: -5.5rem;
+    margin-top: -5rem;
   }
 }
 

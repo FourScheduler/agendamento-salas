@@ -90,12 +90,6 @@
   font-size: 0.75rem;
 }
 
-.resumo__semSala {
-  padding: 0 0 0.75rem;
-  color: var(--muted);
-  font-size: 0.875rem;
-}
-
 .linha {
   border-top: 1px solid var(--border-soft);
 }

@@ -6,8 +6,11 @@
    painel de resumo.
 3. A API retorna as salas compatíveis com a necessidade.
 4. O usuário escolhe uma sala livre na planta e revisa o resumo. O seletor de pessoas respeita a
-   capacidade da sala escolhida e a linha de equipamentos deixa o pedido à equipe de Facilities.
-5. A confirmação fica disponível após o login e apresenta o sucesso em um pop-up (toast), sem
-   mensagem de sucesso dentro do resumo da reserva.
+   capacidade da sala escolhida e a linha de equipamentos permite solicitar recursos para reunião
+   híbrida; a orientação para solicitar previamente à equipe de Facilities aparece somente quando
+   essa opção está marcada.
+5. Ao confirmar uma sala selecionada, o sucesso aparece em um pop-up (toast), sem mensagem de
+   sucesso dentro do resumo da reserva. Sem token ou com token inválido, um pop-up vermelho
+   solicita novo login e nenhuma reserva é confirmada.
 
 Esse fluxo serve para demonstração e não cria eventos reais em calendários corporativos.

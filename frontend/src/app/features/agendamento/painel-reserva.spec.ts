@@ -44,6 +44,16 @@ describe('PainelReserva', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
+  it('não exibe legenda de sala vazia no início do resumo', () => {
+    const fixture = montar();
+    fixture.componentRef.setInput('sala', null);
+    fixture.detectChanges();
+
+    const painel = fixture.nativeElement as HTMLElement;
+    expect(painel.querySelector('.resumo__salas')).toBeNull();
+    expect(painel.textContent).not.toContain('Selecione uma sala na planta para continuar.');
+  });
+
   it('emite a sala removida e impede a remoção durante a confirmação', () => {
     const fixture = montar();
     const painel = fixture.nativeElement as HTMLElement;
@@ -238,13 +248,13 @@ describe('PainelReserva', () => {
     expect(cabecalho?.querySelector('.eyebrow')?.textContent).toContain('Sua reserva');
   });
 
-  it('should keep the confirm action disabled while unauthenticated', async () => {
+  it('should allow a confirmation attempt while unauthenticated when a room is selected', async () => {
     const fixture = montar();
     await fixture.whenStable();
 
     const compiled = fixture.nativeElement as HTMLElement;
     const botao = compiled.querySelector<HTMLButtonElement>('.resumo__confirmar');
-    expect(botao?.disabled).toBe(true);
+    expect(botao?.disabled).toBe(false);
     expect(compiled.textContent).toContain('Faça login para confirmar a reserva.');
   });
 
@@ -259,6 +269,7 @@ describe('PainelReserva', () => {
       '.resumo__confirmar',
     );
     expect(botao?.disabled).toBe(false);
+    expect(botao?.textContent?.trim()).toBe('Confirmar reserva');
 
     botao?.click();
 
@@ -481,20 +492,30 @@ describe('PainelReserva', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('[role="status"]')).toBeNull();
   });
 
-  it('should emit the equipment request flag', async () => {
+  it('should show the Facilities note only when equipment is selected', async () => {
     const fixture = montar();
     await fixture.whenStable();
-
-    let marcado = false;
-    fixture.componentInstance.equipamentosAlterada.subscribe((valor) => (marcado = valor));
 
     const compiled = fixture.nativeElement as HTMLElement;
     const caixa = compiled.querySelector<HTMLInputElement>('#resumo-equipamentos');
     expect(caixa).toBeTruthy();
-    expect(compiled.textContent).toContain('Solicite o equipamento previamente à equipe');
+    expect(compiled.querySelector('.resumo__facilities')).toBeNull();
+
+    let marcado = false;
+    fixture.componentInstance.equipamentosAlterada.subscribe((valor) => (marcado = valor));
+    caixa?.click();
+    expect(marcado).toBe(true);
+
+    fixture.componentRef.setInput('equipamentos', true);
+    fixture.detectChanges();
+    expect(compiled.querySelector('.resumo__facilities')?.textContent?.trim())
+      .toBe('Solicite o equipamento previamente à equipe de Facilities.');
 
     caixa?.click();
+    expect(marcado).toBe(false);
 
-    expect(marcado).toBe(true);
+    fixture.componentRef.setInput('equipamentos', false);
+    fixture.detectChanges();
+    expect(compiled.querySelector('.resumo__facilities')).toBeNull();
   });
 });

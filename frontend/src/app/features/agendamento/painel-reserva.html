@@ -27,8 +27,6 @@
           </div>
         }
       </div>
-    } @else {
-      <p class="resumo__semSala">Selecione uma sala na planta para continuar.</p>
     }
 
     <div class="linha">
@@ -440,7 +438,9 @@
           <strong>Câmera e recursos para reunião híbrida</strong>
         </span>
       </label>
-      <p class="resumo__facilities">Solicite o equipamento previamente à equipe de Facilities.</p>
+      @if (equipamentos()) {
+        <p class="resumo__facilities">Solicite o equipamento previamente à equipe de Facilities.</p>
+      }
     </div>
   </div>
 
@@ -457,7 +457,6 @@
       (click)="confirmar.emit()"
     >
       {{ confirmando() ? 'Confirmando...' : 'Confirmar reserva' }}
-      <span aria-hidden="true">→</span>
     </button>
 
     <p class="resumo__nota">{{ notaConfirmacao() }}</p>

@@ -2,6 +2,8 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 
 export type ToastTipo = 'sucesso' | 'erro' | 'info' | 'aviso';
 
+export const MENSAGEM_TOKEN_INVALIDO = 'Token ausente ou inválido. Faça login novamente.';
+
 export interface Toast {
   id: number;
   tipo: ToastTipo;

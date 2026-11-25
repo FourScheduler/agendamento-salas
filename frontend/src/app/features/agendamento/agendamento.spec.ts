@@ -142,7 +142,7 @@ describe('Agendamento', () => {
     pagina.querySelector<HTMLButtonElement>('button[aria-label="Remover sala Sala 02"]')!.click();
     fixture.detectChanges();
     expect(sala.getAttribute('aria-pressed')).toBe('false');
-    expect(pagina.querySelector('.resumo__semSala')).toBeTruthy();
+    expect(pagina.querySelector('.resumo__sala')).toBeNull();
     expect(confirmar.disabled).toBe(true);
     expect([componente.data(), componente.horaInicio(), componente.duracao(), componente.pessoas(), componente.equipamentos()])
       .toEqual([data, hora, 45, 3, true]);
@@ -150,6 +150,53 @@ describe('Agendamento', () => {
     fixture.detectChanges();
     expect(confirmar.disabled).toBe(false);
     expect(pagina.querySelector('.resumo__salaNome')?.textContent).toBe('Sala 02');
+  });
+
+  it('desmarca a sala ao clicar novamente no mapa e preserva os filtros', async () => {
+    await entrarUsuarioComum(httpMock);
+    TestBed.inject(AuthService).fecharAvisoRegras();
+    const fixture = iniciar();
+    responder([{ id: 2, nome: 'Sala 02' }, { id: 3, nome: 'Sala 03' }]);
+    const componente = fixture.componentInstance;
+    componente.duracao.set(45);
+    componente.pessoas.set(3);
+    componente.equipamentos.set(true);
+    fixture.detectChanges();
+
+    const pagina = fixture.nativeElement as HTMLElement;
+    const botoes = Array.from(pagina.querySelectorAll<HTMLButtonElement>('button.sala'));
+    const sala = botoes.find((botao) => botao.querySelector('.sala__nome')?.textContent === 'Sala 02')!;
+    const outra = botoes.find((botao) => botao.querySelector('.sala__nome')?.textContent === 'Sala 03')!;
+    const confirmar = pagina.querySelector<HTMLButtonElement>('.resumo__confirmar')!;
+    const data = componente.data();
+    const hora = componente.horaInicio();
+
+    sala.click();
+    fixture.detectChanges();
+    expect(sala.getAttribute('aria-pressed')).toBe('true');
+    expect(confirmar.disabled).toBe(false);
+
+    componente.confirmando.set(true);
+    sala.click();
+    expect(componente.selecionada()).toBe('Sala 02');
+    componente.confirmando.set(false);
+
+    sala.click();
+    fixture.detectChanges();
+    expect(sala.getAttribute('aria-pressed')).toBe('false');
+    expect(componente.selecionada()).toBeNull();
+    expect(pagina.querySelector('.resumo__sala')).toBeNull();
+    expect(confirmar.disabled).toBe(true);
+    expect([componente.data(), componente.horaInicio(), componente.duracao(), componente.pessoas(), componente.equipamentos()])
+      .toEqual([data, hora, 45, 3, true]);
+
+    sala.click();
+    fixture.detectChanges();
+    outra.click();
+    fixture.detectChanges();
+    expect(componente.selecionada()).toBe('Sala 03');
+    expect(sala.getAttribute('aria-pressed')).toBe('false');
+    expect(outra.getAttribute('aria-pressed')).toBe('true');
   });
 
   it('descarta a confirmação pendente no assistente quando o USER remove a sala', async () => {
@@ -165,7 +212,11 @@ describe('Agendamento', () => {
       conversaId: 7, estado: 'AGUARDANDO_CONFIRMACAO', mensagem: 'Confirmar?', sugestoes: [],
     });
     const confirmar = (await conversa).acoes!.find(acao => acao.rotulo === 'Confirmar agendamento')!;
-    componente.removerSala('Sala 02');
+    fixture.detectChanges();
+    const sala = (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('button.sala[aria-pressed="true"]')!;
+    sala.click();
+    expect(componente.selecionada()).toBeNull();
     const resposta = await confirmar.aoClicar!() as RespostaAssistente;
     expect(resposta.texto).toContain('Escolha uma sala');
     httpMock.expectNone(`${environment.apiUrl}/api/agendamento/conversas/7/confirmar`);
@@ -346,10 +397,59 @@ describe('Agendamento', () => {
     await fixture.whenStable();
 
     fixture.componentInstance.selecionar('Sala 02');
-    const texto = await fixture.componentInstance.confirmarReserva();
-
-    expect(texto).toContain('Faça login');
+    fixture.detectChanges();
+    const botao = (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('.resumo__confirmar')!;
+    expect(botao.disabled).toBe(false);
+    botao.click();
+    await fixture.whenStable();
+    expect(TestBed.inject(ToastService).toasts()[0]).toMatchObject({
+      tipo: 'erro',
+      titulo: 'Token ausente ou inválido. Faça login novamente.',
+    });
+    expect(fixture.componentInstance.selecionada()).toBe('Sala 02');
     expect(httpMock.match(`${environment.apiUrl}/api/agendamento`).length).toBe(0);
+  });
+
+  it('exibe aviso vermelho quando a confirmação é rejeitada por token inválido', async () => {
+    await entrarUsuarioComum(httpMock);
+    const fixture = iniciar();
+    responder([{ id: 2, nome: 'Sala 02' }]);
+    fixture.componentInstance.selecionar('Sala 02');
+    const promessa = fixture.componentInstance.confirmarReserva();
+    httpMock.expectOne(`${environment.apiUrl}/api/agendamento`).flush(
+      { status: 401, message: 'Token ausente ou inválido. Faça login novamente.' },
+      { status: 401, statusText: 'Unauthorized' },
+    );
+    await promessa;
+    expect(TestBed.inject(ToastService).toasts()[0]).toMatchObject({
+      tipo: 'erro',
+      titulo: 'Token ausente ou inválido. Faça login novamente.',
+    });
+    expect(fixture.componentInstance.selecionada()).toBe('Sala 02');
+  });
+
+  it('exibe aviso vermelho quando a confirmação pelo assistente recebe 401', async () => {
+    await entrarUsuarioComum(httpMock);
+    const fixture = iniciar();
+    responder([{ id: 2, nome: 'Sala 02' }]);
+    const conversa = fixture.componentInstance.processarMensagemAssistente('Reservar Sala 02');
+    httpMock.expectOne(`${environment.apiUrl}/api/agendamento/conversas`).flush({ conversaId: 7 });
+    await aguardarMicrotarefas();
+    httpMock.expectOne(`${environment.apiUrl}/api/agendamento/conversas/mensagens`).flush({
+      conversaId: 7, estado: 'AGUARDANDO_CONFIRMACAO', mensagem: 'Confirmar?', sugestoes: [],
+    });
+    const confirmar = (await conversa).acoes!.find(acao => acao.rotulo === 'Confirmar agendamento')!;
+    const promessa = confirmar.aoClicar!() as Promise<RespostaAssistente>;
+    httpMock.expectOne(`${environment.apiUrl}/api/agendamento/conversas/7/confirmar`).flush(
+      { status: 401, message: 'Token ausente ou inválido. Faça login novamente.' },
+      { status: 401, statusText: 'Unauthorized' },
+    );
+    expect((await promessa).texto).toContain('Faça login');
+    expect(TestBed.inject(ToastService).toasts()[0]).toMatchObject({
+      tipo: 'erro',
+      titulo: 'Token ausente ou inválido. Faça login novamente.',
+    });
   });
 
   it('should reject a weekend date update without searching availability', () => {

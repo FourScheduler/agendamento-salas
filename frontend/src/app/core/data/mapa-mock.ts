@@ -39,11 +39,11 @@ const SALAS_BASE: SalaBase[] = [
   { id: 10, nome: 'Reunião Diretoria', capacidade: 4, area: 'diretoria', restrito: true },
   { id: 11, nome: 'Cabine 01', capacidade: 1, area: 'cabine01' },
   { id: 12, nome: 'Cabine 02', capacidade: 1, area: 'cabine02' },
-  { id: 13, nome: 'Cabine 03', capacidade: 1, area: 'cabine03' },
+  { id: 13, nome: 'Cabine 03', capacidade: 4, area: 'cabine03' },
   { id: 14, nome: 'Cabine 04', capacidade: 1, area: 'cabine04' },
-  { id: 15, nome: 'Cabine 05', capacidade: 1, area: 'cabine05' },
-  { id: 16, nome: 'Cabine 06', capacidade: 4, area: 'cabine06' },
-  { id: 17, nome: 'Cabine 07', capacidade: 4, area: 'cabine07' },
+  { id: 15, nome: 'Cabine 05', capacidade: 4, area: 'cabine05' },
+  { id: 16, nome: 'Cabine 06', capacidade: 1, area: 'cabine06' },
+  { id: 17, nome: 'Cabine 07', capacidade: 1, area: 'cabine07' },
 ];
 
 /** Cabines ocupam a faixa estreita da ala esquerda, com grade própria na planta. */

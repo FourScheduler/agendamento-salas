@@ -553,6 +553,8 @@ describe('MinhasReservas', () => {
     const botao = compilado.querySelector<HTMLButtonElement>('.minhas-reservas__voltar');
     expect(botao).toBeTruthy();
     expect(botao?.textContent).toContain('Voltar');
+    expect(botao?.classList.contains('botao')).toBe(true);
+    expect(botao?.classList.contains('botao--suave')).toBe(false);
 
     botao?.click();
     await fixture.whenStable();

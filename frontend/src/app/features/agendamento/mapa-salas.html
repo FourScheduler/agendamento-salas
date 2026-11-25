@@ -61,7 +61,7 @@
           </div>
           <div class="estrutural estrutural--rh"><span>RH</span></div>
           <div class="estrutural estrutural--financeiro"><span>Financeiro</span></div>
-          <div class="estrutural estrutural--servidor"><span>servidores</span></div>
+          <div class="estrutural estrutural--servidor"><span>servi<br />dores</span></div>
           <div class="estrutural estrutural--suporte"><span>Suporte</span></div>
 
           @for (sala of salasGrade(); track sala.id) {
@@ -102,7 +102,7 @@
             >
               Somente Facilities
               <span class="dica__caixa" [id]="'dica-restrita-' + sala.id" role="tooltip">
-                {{ sala.area === 'arena' ? 'Arena reservável apenas pelo Facilities.' : 'Reunião Diretoria reservável apenas por administradores.' }}
+                {{ sala.area === 'arena' ? 'Arena reservável apenas pelo Facilities.' : 'Reunião Diretoria reservável apenas pelo Facilities.' }}
               </span>
             </span>
           </div>
